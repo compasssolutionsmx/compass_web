@@ -1,7 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      // Assets reales servidos hoy desde el WordPress actual (logos SVG).
+      {
+        protocol: "https",
+        hostname: "compasssolutions.com.mx",
+        pathname: "/wp-content/uploads/**",
+      },
+      // TEMPORAL: placeholders de placehold.co.
+      // TODO: eliminar este patrón cuando todas las imágenes usen assets
+      // propios (`/public` o el CDN definitivo).
+      // Se omite `search` a propósito porque las URLs de placehold.co llevan
+      // query string (`?text=...`).
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

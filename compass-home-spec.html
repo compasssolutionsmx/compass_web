@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compass Solutions — Home (Spec estructural)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!--
+  ================================================================
+  ARCHIVO DE REFERENCIA — NO ES EL SITIO FINAL
+  ================================================================
+  Este HTML es la spec estructural + de contenido del Home actual
+  de Compass Solutions (compasssolutions.com.mx), preparado para
+  que Claude Code lo traduzca a componentes reales de Next.js
+  (App Router) + TypeScript + Tailwind dentro del repo compass_web.
+
+  Pendientes a resolver en la implementación real (NO inventar):
+  - Colores exactos de marca (aquí son aproximaciones visuales
+    tomadas del screenshot, no valores de pantone confirmados)
+  - Tipografía real de marca (aquí Inter como placeholder)
+  - Fotografía real (varias imágenes usan placeholders)
+  - Cifras reales de los contadores animados (hoy en 0 por defecto
+    porque son animaciones JS, no datos faltantes)
+  - El popup de cotización debe conservar el flujo exacto:
+    selector de tipo de servicio -> redirección a WhatsApp
+    -> (nuevo) webhook a studio.scndal.com
+  ================================================================
+-->
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  /* Aproximación de paleta — CONFIRMAR hex reales de marca */
+  :root {
+    --brand-navy-950: #0A2035;
+    --brand-navy-900: #0E2A42;
+    --brand-teal-800: #123A4D;
+    --brand-accent: #1C9AA8;
+  }
+</style>
+</head>
+<body class="bg-white text-slate-800">
+
+  <!-- ============ HEADER / NAV ============ -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
+      <a href="/" class="flex items-center gap-2">
+        <img src="https://compasssolutions.com.mx/wp-content/uploads/2025/06/compass-blue.svg" alt="Compass Solutions" class="h-9" />
+      </a>
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+        <a href="#soluciones" class="hover:text-[var(--brand-navy-900)]">Soluciones</a>
+        <a href="#oferta" class="hover:text-[var(--brand-navy-900)]">Oferta</a>
+        <a href="/nosotros" class="hover:text-[var(--brand-navy-900)]">Nosotros</a>
+        <a href="/blog" class="hover:text-[var(--brand-navy-900)]">Blog</a>
+      </nav>
+      <button class="rounded-full bg-[var(--brand-navy-900)] text-white text-sm font-semibold px-6 py-2.5 hover:opacity-90" data-action="open-cotizacion-modal">
+        CONTÁCTENOS
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-[var(--brand-navy-950)]">
+      <!-- TODO: reemplazar con foto real de puerto/buque, overlay oscuro -->
+      <img src="https://placehold.co/1920x900/0A2035/0A2035?text=+" alt="Puerto de carga internacional" class="w-full h-full object-cover opacity-60" />
+    </div>
+    <div class="relative max-w-7xl mx-auto px-6 py-32 md:py-40">
+      <h1 class="text-white text-4xl md:text-6xl font-bold max-w-2xl leading-tight">
+        Impulsamos su Crecimiento Global
+      </h1>
+      <p class="text-slate-200 max-w-xl mt-6 text-lg">
+        Transformamos los desafíos globales en oportunidades. Diseñamos soluciones logísticas sin fronteras que impulsan el crecimiento de cada industria a través de las fronteras.
+      </p>
+      <a href="#soluciones" class="inline-block mt-8 rounded-full bg-white text-[var(--brand-navy-950)] font-semibold px-7 py-3 hover:bg-slate-100">
+        DESCUBRA MÁS ➝
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ CERTIFICACIONES ============ -->
+  <section class="bg-slate-50 py-10">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <p class="text-sm text-slate-500 mb-6">Estamos certificados y asociados con las mejores entidades.</p>
+      <div class="flex flex-wrap items-center justify-center gap-10 opacity-80">
+        <img src="https://compasssolutions.com.mx/wp-content/uploads/2025/08/alcat.png" alt="ALACAT" class="h-10" />
+        <img src="https://compasssolutions.com.mx/wp-content/uploads/2025/08/amacarga.png" alt="AMACARGA" class="h-10" />
+        <img src="https://compasssolutions.com.mx/wp-content/uploads/2025/08/canacar.png" alt="CANACAR" class="h-10" />
+        <img src="https://compasssolutions.com.mx/wp-content/uploads/2025/08/isoeeee.png" alt="ISO" class="h-10" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOTO + STAT + CONTADORES ============ -->
+  <section class="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-8 items-stretch">
+    <div class="relative rounded-2xl overflow-hidden">
+      <!-- TODO: foto real, trabajadores con chaleco revisando tablet en patio de carga -->
+      <img src="https://placehold.co/900x600/e2e8f0/475569?text=Foto%3A+equipo+en+operaci%C3%B3n" alt="Equipo Compass Solutions en operación" class="w-full h-full object-cover" />
+      <div class="absolute bottom-0 left-0 bg-white rounded-tr-2xl px-6 py-4">
+        <p class="text-3xl font-bold text-[var(--brand-navy-900)]">4.1%</p>
+        <p class="text-xs text-slate-500 max-w-[180px]">Efectividad en servicios expeditados solicitados por nuestros clientes.</p>
+      </div>
+    </div>
+    <div class="flex flex-col gap-6 justify-center">
+      <div class="bg-[var(--brand-teal-800)] rounded-2xl p-8 text-white" data-counter data-counter-target="0">
+        <p class="text-4xl font-bold">+<span data-counter-value>0</span>k</p>
+        <p class="text-slate-200 mt-2">Operaciones aéreas, marítimas y terrestres realizadas con éxito.</p>
+      </div>
+      <div class="bg-[var(--brand-teal-800)] rounded-2xl p-8 text-white" data-counter data-counter-target="0">
+        <p class="text-4xl font-bold">+<span data-counter-value>0</span></p>
+        <p class="text-slate-200 mt-2">Asociados de negocio alineados a nuestros estándares de servicio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES GRID (8) ============ -->
+  <section id="oferta" class="max-w-7xl mx-auto px-6 pb-20">
+    <h2 class="text-3xl md:text-4xl font-bold text-center text-[var(--brand-navy-900)] max-w-3xl mx-auto mb-14">
+      Movemos Tu Carga Con Precisión, Seguridad Y Compromiso
+    </h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- 8 tarjetas de feature -->
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Red de aliados certificados</h3>
+        <p class="text-sm text-slate-500">Trabajamos con una red de socios certificados para asegurar soluciones logísticas nacionales e internacionales con estándares de calidad global.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Flota propia</h3>
+        <p class="text-sm text-slate-500">Contamos con unidades propias para ofrecer un transporte de carga terrestre confiable, seguro y puntual en todo México.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Atención personalizada</h3>
+        <p class="text-sm text-slate-500">Supervisamos cada embarque con un enfoque de logística integral, brindando estatus claros y soluciones a la medida de tu negocio.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Soluciones a la medida</h3>
+        <p class="text-sm text-slate-500">Te asesoramos para diseñar la mejor estrategia con el respaldo de nuestros expertos en logística 360.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Seguimiento activo</h3>
+        <p class="text-sm text-slate-500">Monitoreamos cada envío en tiempo real como parte de nuestra logística integral, garantizando seguridad y cumplimiento.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Rutas optimizadas</h3>
+        <p class="text-sm text-slate-500">Aprovechamos nuestro conocimiento para elegir las rutas más eficientes a nivel nacional e internacional.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Comunicación clara</h3>
+        <p class="text-sm text-slate-500">Información precisa y constante para que estés informado del estatus de tus envíos, ya sea de carga consolidada o dedicada.</p>
+      </div>
+      <div class="border border-slate-100 rounded-xl p-6">
+        <p class="text-[var(--brand-accent)] mb-3">★</p>
+        <h3 class="font-semibold mb-2">Precios competitivos</h3>
+        <p class="text-sm text-slate-500">Ofrecemos soluciones logísticas integrales a precios competitivos, sin comprometer la calidad de nuestro servicio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BANNER +12 AÑOS ============ -->
+  <section class="relative py-16">
+    <div class="absolute inset-0 bg-[var(--brand-teal-800)]">
+      <!-- TODO: foto real de contenedores -->
+      <img src="https://placehold.co/1920x400/123A4D/123A4D?text=+" alt="Contenedores de carga" class="w-full h-full object-cover opacity-50" />
+    </div>
+    <div class="relative max-w-7xl mx-auto px-6 text-center">
+      <p class="text-white text-2xl md:text-3xl font-semibold">+12 años brindado soluciones sin fronteras.</p>
+    </div>
+  </section>
+
+  <!-- ============ SERVICIOS (8 tarjetas) ============ -->
+  <section id="soluciones" class="max-w-7xl mx-auto px-6 py-20">
+    <p class="text-center text-sm font-semibold tracking-wide text-[var(--brand-accent)] mb-3">SERVICIOS Y SOLUCIONES</p>
+    <h2 class="text-3xl md:text-4xl font-bold text-center text-[var(--brand-navy-900)] mb-4">UN SOCIO. TODAS LAS SOLUCIONES.</h2>
+    <p class="text-center text-slate-500 max-w-2xl mx-auto mb-14">
+      En Compass Solutions brindamos soluciones logísticas globales y locales que permiten el crecimiento de pequeñas y grandes empresas. No importa desde ni a donde quieras llegar, nosotros lo podemos lograr.
+    </p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <a href="/tipo-solucion/soluciones-360" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=Portacontenedor" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Portacontenedor</h3>
+          <p class="text-sm text-slate-500">Contamos con servicios Sencillos y full desde y hasta cualquier puerto de México.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/soluciones-360" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=Internacional" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Internacional</h3>
+          <p class="text-sm text-slate-500">Importación y Exportación desde cualquier origen y hacia cualquier destino, adaptándonos a tus necesidades de urgencia y las de tu carga.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/transporte-aereo" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=Nacional" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Nacional</h3>
+          <p class="text-sm text-slate-500">Acortamos distancias y tiempos con entregas aéreas nacionales con vuelos comerciales.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/especializados-terrestre" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=Prioritario" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Prioritario</h3>
+          <p class="text-sm text-slate-500">Si tienes un paro de línea en puerta podemos ayudarte con la mejor solución en tiempos y rutas de acuerdo al tiempo en que requieras tu carga.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/especializados-maritimo" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=Expeditado" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Expeditado</h3>
+          <p class="text-sm text-slate-500">¿Tienes una urgencia? Podemos responder a ella. Solicita una cotización para un servicio en menos de 3 horas.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/transporte-terrestre" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=LTL" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Transporte terrestre consolidado (LTL)</h3>
+          <p class="text-sm text-slate-500">Para ahorrar en tus envíos terrestres nacionales, ofrecemos soluciones menores a un camión completo con tiempos competitivos del mercado.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/transporte-terrestre" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=FTL" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Transporte terrestre dedicado (FTL)</h3>
+          <p class="text-sm text-slate-500">Garantizamos un transporte de carga terrestre seguro y puntual en todo México. Flota propia, monitoreo en tiempo real y cobertura nacional.</p>
+        </div>
+      </a>
+      <a href="/tipo-solucion/transporte-maritimo" class="group rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/600x400/e2e8f0/475569?text=FCL" class="w-full h-48 object-cover" />
+        <div class="p-5">
+          <h3 class="font-semibold mb-1">Transporte Marítimo Completo (FCL)</h3>
+          <p class="text-sm text-slate-500">Soluciones de transporte marítimo en contenedores completos para grandes volúmenes, con rutas directas y gestión aduanal eficiente.</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ SOLUCIONES INTEGRALES (dark, foto + contenido) ============ -->
+  <section class="bg-[var(--brand-navy-950)] py-20">
+    <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+      <div class="rounded-2xl overflow-hidden">
+        <!-- TODO: foto real, camión en carretera -->
+        <img src="https://placehold.co/800x600/0E2A42/0E2A42?text=+" alt="Camión Compass Solutions en carretera" class="w-full h-full object-cover" />
+      </div>
+      <div class="text-white">
+        <p class="text-sm font-semibold text-[var(--brand-accent)] mb-3">Expertos en Logística 360: de la A a la Z</p>
+        <h2 class="text-3xl md:text-4xl font-bold mb-6">Soluciones Logísticas Integrales</h2>
+        <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+          <div class="bg-white/10 rounded-lg p-4">Transportación Aérea</div>
+          <div class="bg-white/10 rounded-lg p-4">Transportación Terrestre</div>
+          <div class="bg-white/10 rounded-lg p-4">Almacenamiento</div>
+          <div class="bg-white/10 rounded-lg p-4">Servicio Nacional e Internacional</div>
+        </div>
+        <p class="text-slate-300 mb-8">
+          La logística no tiene por qué ser complicada. En Compass Solutions, cubrimos todas tus necesidades logísticas, de principio a fin, con una solución, un socio y una cadena de suministro fluida, lo que te permite centrarte en lo que mejor hace tu negocio.
+        </p>
+        <button class="rounded-full border border-white text-white font-semibold px-7 py-3 hover:bg-white hover:text-[var(--brand-navy-950)]" data-action="open-cotizacion-modal">
+          Solicite una Cotización
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ÚLTIMAS NOTICIAS (blog preview) ============ -->
+  <section class="max-w-7xl mx-auto px-6 py-20">
+    <div class="flex items-end justify-between mb-10">
+      <div>
+        <p class="text-sm font-semibold text-[var(--brand-accent)]">Últimas</p>
+        <h2 class="text-3xl font-bold text-[var(--brand-navy-900)]">Noticias</h2>
+      </div>
+      <a href="/blog" class="text-sm font-semibold text-[var(--brand-navy-900)] hover:underline">Ver Más</a>
+    </div>
+    <div class="flex gap-6 overflow-x-auto pb-4 snap-x">
+      <!-- data-source: posts reales via WP headless API en la implementación final -->
+      <a href="/funciones-agente-aduanal-mexico" class="min-w-[280px] snap-start rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/500x300/e2e8f0/475569?text=Post" class="w-full h-40 object-cover" />
+        <p class="p-4 text-sm font-medium">Funciones del agente aduanal en México, ¿qué hace y por qué tu carga depende de él?</p>
+      </a>
+      <a href="/empresa-logistica-internacional-monterrey" class="min-w-[280px] snap-start rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/500x300/e2e8f0/475569?text=Post" class="w-full h-40 object-cover" />
+        <p class="p-4 text-sm font-medium">Lo que tu empresa debe saber antes de elegir una empresa de logística internacional en Monterrey</p>
+      </a>
+      <a href="/ruta-logistica-mx-2026-cierre-comercio-exterior" class="min-w-[280px] snap-start rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/500x300/e2e8f0/475569?text=Post" class="w-full h-40 object-cover" />
+        <p class="p-4 text-sm font-medium">Ruta Logística MX 2026: el cierre del programa que transformó la conversación del comercio exterior</p>
+      </a>
+      <a href="/tarifarios-logisticos-quincenales-que-son-y-por-que-importan" class="min-w-[280px] snap-start rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/500x300/e2e8f0/475569?text=Post" class="w-full h-40 object-cover" />
+        <p class="p-4 text-sm font-medium">Tarifarios logísticos quincenales: qué son y por qué importan</p>
+      </a>
+      <a href="/seguridad-en-transporte-de-carga-como-proteger-tu-mercancia-y-tu-operacion-en-cada-embarque" class="min-w-[280px] snap-start rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/500x300/e2e8f0/475569?text=Post" class="w-full h-40 object-cover" />
+        <p class="p-4 text-sm font-medium">Seguridad en transporte de carga: cómo proteger tu mercancía y tu operación en cada embarque</p>
+      </a>
+      <a href="/manifestacion-valor-electronica-vucem-guia-importadores" class="min-w-[280px] snap-start rounded-xl overflow-hidden border border-slate-100">
+        <img src="https://placehold.co/500x300/e2e8f0/475569?text=Post" class="w-full h-40 object-cover" />
+        <p class="p-4 text-sm font-medium">Manifestación de Valor Electrónica (MVE) en VUCEM</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ MODAL DE COTIZACIÓN (referencia de contenido, oculto) ============ -->
+  <!--
+    IMPORTANTE PARA SPRINT 1: este es el flujo crítico que alimenta
+    las 2 campañas de Google Ads activas. Debe replicarse exacto y
+    ampliarse con el webhook a studio.scndal.com antes del cutover.
+  -->
+  <div id="cotizacion-modal" class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center p-6">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-8">
+      <h3 class="text-2xl font-bold text-[var(--brand-navy-900)] mb-2">El Freight Forwarder Que Su Carga Necesita</h3>
+      <p class="text-slate-500 mb-6">Solicite una cotización y descubra cómo nuestras soluciones logísticas integrales pueden transformar su cadena de suministro.</p>
+      <p class="text-sm text-slate-500 mb-6">
+        Si necesita atención urgente, siempre puede contactarnos por
+        <a href="https://wa.me/525541668470" class="text-[var(--brand-accent)] font-medium">WhatsApp</a>.
+      </p>
+      <form class="space-y-4" data-action="submit-cotizacion">
+        <div>
+          <label class="text-sm font-medium block mb-2">Tipo de Solicitud</label>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <label class="border rounded-full px-4 py-1.5 cursor-pointer"><input type="radio" name="tipo" class="mr-1.5">Marítimo</label>
+            <label class="border rounded-full px-4 py-1.5 cursor-pointer"><input type="radio" name="tipo" class="mr-1.5">Aéreo</label>
+            <label class="border rounded-full px-4 py-1.5 cursor-pointer"><input type="radio" name="tipo" class="mr-1.5">Terrestre</label>
+            <label class="border rounded-full px-4 py-1.5 cursor-pointer"><input type="radio" name="tipo" class="mr-1.5">Especializado</label>
+            <label class="border rounded-full px-4 py-1.5 cursor-pointer"><input type="radio" name="tipo" class="mr-1.5">Otros</label>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium block mb-2">Detalles de la Consulta</label>
+          <textarea class="w-full border rounded-lg p-3 text-sm" rows="3"></textarea>
+        </div>
+        <button type="submit" class="w-full rounded-full bg-[var(--brand-navy-900)] text-white font-semibold py-3">
+          Solicitar Cotización
+        </button>
+      </form>
+      <p class="text-xs text-slate-400 mt-4">
+        ¡Atención! Este formulario es de cotizaciones. Para proveedores o vacantes, usa el espacio correspondiente.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ WHATSAPP FLOTANTE ============ -->
+  <a href="https://wa.me/525541668470" class="fixed bottom-6 right-6 z-40 rounded-full bg-[var(--brand-accent)] text-white font-semibold px-5 py-3 shadow-lg">
+    ¡Habla con un Agente!
+  </a>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="bg-[var(--brand-navy-950)] text-slate-300 pt-16 pb-8">
+    <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-5 gap-10">
+      <div class="md:col-span-2">
+        <img src="https://compasssolutions.com.mx/wp-content/uploads/2025/06/compass-white.svg" alt="Compass Solutions" class="h-9 mb-4" />
+        <p class="text-sm max-w-xs">
+          Expertos en logística integral nacional e internacional. Diseñamos estrategias a la medida de tu cadena de suministro, respaldados por una red de aliados certificados y flota propia.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-4 text-sm">Información</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/nosotros#contactanos">Proveedores</a></li>
+          <li><a href="/vacantes">Trabaja con Nosotros</a></li>
+          <li><a href="/apartado-legal#terminos">Términos y Condiciones</a></li>
+          <li><a href="/apartado-legal#privacidad">Aviso de Privacidad</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-4 text-sm">Servicios</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/tipo-solucion/especializados-maritimo">Especializados Marítimo</a></li>
+          <li><a href="/tipo-solucion/especializados-terrestre">Especializados Terrestre</a></li>
+          <li><a href="/tipo-solucion/soluciones-360">Soluciones 360</a></li>
+          <li><a href="/tipo-solucion/transporte-aereo">Transporte Aéreo</a></li>
+          <li><a href="/tipo-solucion/transporte-maritimo">Transporte Marítimo</a></li>
+          <li><a href="/tipo-solucion/transporte-terrestre">Transporte Terrestre</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-4 text-sm">Ubicación</h4>
+        <p class="text-sm mb-6">Mitikah, Torre M, Av. Río Churubusco 601-piso 17 int 1707, Xoco, Benito Juárez, 03330 Ciudad de México, CDMX</p>
+        <h4 class="text-white font-semibold mb-2 text-sm">Ventas y Soporte</h4>
+        <p class="text-sm">+52 55 4166 8470</p>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400">
+      <p>© Copyright Compass Solutions 2026. All Rights Reserved.</p>
+      <a href="https://scndal.com" class="opacity-80">Grow'd by SCNDAL</a>
+    </div>
+  </footer>
+
+</body>
+</html>
