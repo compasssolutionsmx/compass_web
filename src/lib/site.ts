@@ -9,3 +9,9 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 /** Teléfono de ventas y soporte, formateado como aparece en el footer. */
 export const SALES_PHONE_DISPLAY = "+52 55 4166 8470";
+
+/** Link a WhatsApp, opcionalmente con un mensaje prellenado. */
+export function buildWhatsAppUrl(message?: string): string {
+  if (!message) return WHATSAPP_URL;
+  return `${WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+}

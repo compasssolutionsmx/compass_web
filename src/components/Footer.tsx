@@ -93,9 +93,14 @@ export default function Footer() {
       </div>
 
       <div className="mx-auto mt-12 flex max-w-7xl flex-col items-center justify-between gap-4 border-t border-white/10 px-6 pt-6 text-xs text-slate-400 md:flex-row">
-        {/* TODO: el año está hardcodeado en el spec (2026). Definir si se
-            mantiene fijo o se calcula. */}
-        <p>© Copyright Compass Solutions 2026. All Rights Reserved.</p>
+        {/* OJO: la home se prerenderiza como estática, así que este año se
+            evalúa en BUILD TIME y queda congelado hasta el siguiente deploy.
+            Si el sitio no se redespliega, en enero seguirá mostrando el año
+            anterior. Ver nota en el README/summary sobre cómo hacerlo real. */}
+        <p>
+          © Copyright Compass Solutions {new Date().getFullYear()}. All Rights
+          Reserved.
+        </p>
         <a
           href="https://scndal.com"
           target="_blank"

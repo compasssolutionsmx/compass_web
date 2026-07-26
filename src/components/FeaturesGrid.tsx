@@ -1,7 +1,11 @@
+import { Check } from "lucide-react";
+
 /**
- * TODO: el spec usa "★" como marcador de icono en las 8 tarjetas. Falta el set
- * de iconos real de marca (uno distinto por feature, presumiblemente).
+ * El mismo ícono se repite en las 8 tarjetas (confirmado con el cliente): no
+ * son 8 íconos distintos. Cambiarlo aquí lo cambia en toda la sección.
  */
+const FeatureIcon = Check;
+
 const FEATURES = [
   {
     title: "Red de aliados certificados",
@@ -57,9 +61,10 @@ export default function FeaturesGrid() {
             key={feature.title}
             className="rounded-xl border border-slate-100 p-6"
           >
-            <p aria-hidden="true" className="mb-3 text-brand-accent">
-              ★
-            </p>
+            <FeatureIcon
+              aria-hidden="true"
+              className="mb-3 h-6 w-6 text-brand-accent"
+            />
             <h3 className="mb-2 font-semibold">{feature.title}</h3>
             <p className="text-sm text-slate-500">{feature.description}</p>
           </li>

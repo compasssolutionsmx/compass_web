@@ -24,7 +24,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { WHATSAPP_URL } from "@/lib/site";
+import { WHATSAPP_URL, buildWhatsAppUrl } from "@/lib/site";
 
 /**
  * Opciones del selector "Tipo de Solicitud".
@@ -45,21 +45,23 @@ export type QuoteFormData = {
   detalles: string;
 };
 
+/** Mensaje prellenado que se manda a WhatsApp tras enviar el formulario. */
+function buildWhatsAppMessage(tipoServicioSeleccionado: string): string {
+  return `Hola Compass Solutions, necesito información sobre ${tipoServicioSeleccionado}.`;
+}
+
 /**
- * STUB — no conectar todavía.
+ * STUB del POST al webhook — el endpoint real todavía no existe.
  *
- * TODO(sprint siguiente): implementar el submit real.
- *   1. POST a la Route Handler propia (p. ej. `/api/cotizacion`) que a su vez
- *      reenvía al webhook de studio.scndal.com. No exponer la URL/secreto del
- *      webhook en el cliente.
- *   2. Conservar el flujo actual del sitio en producción:
- *      selector de tipo de servicio -> redirección a WhatsApp.
- *      TODO: falta la spec de esa redirección (¿mensaje prellenado?, ¿mismo
- *      número que el botón flotante?, ¿antes o después del webhook?).
- *   3. Definir estados de éxito/error y el evento de conversión de Google Ads.
+ * TODO(sprint siguiente): implementar el POST real.
+ *   1. Mandarlo a una Route Handler propia (p. ej. `/api/cotizacion`) que a su
+ *      vez reenvíe al webhook de studio.scndal.com. No exponer la URL ni el
+ *      secreto del webhook en el cliente.
+ *   2. Definir el contrato del payload (ver también el TODO de REQUEST_TYPES).
+ *   3. Añadir el evento de conversión de Google Ads.
  */
-async function submitQuoteRequest(data: QuoteFormData): Promise<void> {
-  console.info("[QuoteModal] submit stub — sin conectar todavía:", data);
+async function postToWebhook(data: QuoteFormData): Promise<void> {
+  console.info("[QuoteModal] POST al webhook (stub, sin conectar):", data);
 }
 
 type QuoteModalContextValue = {
@@ -115,17 +117,27 @@ export function QuoteButton({
 }
 
 function QuoteModal() {
-  const { isOpen, closeModal } = useQuoteModal();
+  const { isOpen } = useQuoteModal();
+
+  // Se monta sólo mientras está abierto, así el estado del formulario (y el
+  // mensaje de error) se reinicia solo en cada apertura.
+  if (!isOpen) return null;
+  return <QuoteDialog />;
+}
+
+function QuoteDialog() {
+  const { closeModal } = useQuoteModal();
   const titleId = useId();
+  const errorId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  const typeGroupRef = useRef<HTMLFieldSetElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Cerrar con Escape y bloquear el scroll del body mientras está abierto.
   useEffect(() => {
-    if (!isOpen) return;
-
     previouslyFocused.current = document.activeElement as HTMLElement | null;
     closeButtonRef.current?.focus();
 
@@ -165,27 +177,50 @@ function QuoteModal() {
       document.body.style.overflow = previousOverflow;
       previouslyFocused.current?.focus();
     };
-  }, [isOpen, closeModal]);
+  }, [closeModal]);
 
+  /** Flujo confirmado: validar -> POST al webhook -> redirect a WhatsApp. */
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const tipo = String(formData.get("tipo") ?? "");
 
-    setIsSubmitting(true);
-    try {
-      await submitQuoteRequest({
-        tipo: String(formData.get("tipo") ?? ""),
-        detalles: String(formData.get("detalles") ?? ""),
-      });
-      // TODO: mostrar confirmación / disparar conversión / redirigir a WhatsApp
-      // cuando exista la spec del webhook. Por ahora sólo cierra.
-      closeModal();
-    } finally {
-      setIsSubmitting(false);
+    // 1. Validar. El tipo de servicio es obligatorio: alimenta el mensaje de
+    // WhatsApp.
+    // TODO: confirmar si "Detalles de la Consulta" debe ser obligatorio — hoy
+    // el sitio actual no lo exige, así que se deja opcional.
+    const selectedType = REQUEST_TYPES.find((type) => type.value === tipo);
+    if (!selectedType) {
+      setError("Selecciona un tipo de solicitud para continuar.");
+      typeGroupRef.current
+        ?.querySelector<HTMLInputElement>('input[name="tipo"]')
+        ?.focus();
+      return;
     }
-  }
 
-  if (!isOpen) return null;
+    setError(null);
+    setIsSubmitting(true);
+
+    const payload: QuoteFormData = {
+      tipo,
+      detalles: String(formData.get("detalles") ?? ""),
+    };
+
+    // 2. POST al webhook. Si falla NO se aborta el flujo: perder el handoff a
+    // WhatsApp costaría el lead, que es lo que realmente convierte.
+    try {
+      await postToWebhook(payload);
+    } catch (webhookError) {
+      console.error("[QuoteModal] falló el POST al webhook:", webhookError);
+    }
+
+    // 3. Redirect a WhatsApp con el mensaje prellenado.
+    // No se limpia `isSubmitting` a propósito: evita un doble envío mientras
+    // el navegador sale de la página.
+    window.location.href = buildWhatsAppUrl(
+      buildWhatsAppMessage(selectedType.label),
+    );
+  }
 
   return (
     <div
@@ -234,8 +269,12 @@ function QuoteModal() {
           .
         </p>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <fieldset>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <fieldset
+            ref={typeGroupRef}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+          >
             <legend className="mb-2 block text-sm font-medium">
               Tipo de Solicitud
             </legend>
@@ -249,12 +288,18 @@ function QuoteModal() {
                     type="radio"
                     name="tipo"
                     value={type.value}
+                    onChange={() => setError(null)}
                     className="mr-1.5 accent-brand-accent focus-visible:outline-none"
                   />
                   {type.label}
                 </label>
               ))}
             </div>
+            {error && (
+              <p id={errorId} role="alert" className="mt-2 text-sm text-red-600">
+                {error}
+              </p>
+            )}
           </fieldset>
 
           <div>
@@ -277,7 +322,7 @@ function QuoteModal() {
             disabled={isSubmitting}
             className="w-full rounded-full bg-brand-navy-900 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            Solicitar Cotización
+            {isSubmitting ? "Enviando…" : "Solicitar Cotización"}
           </button>
         </form>
 
