@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# masters de video sin comprimir. Sólo se versiona lo que sale del encode y
+# vive en public/ (back-hero.mp4 / .webm / .av1.mp4 + el poster).
+# El master está respaldado fuera del repo; media-src/ es una copia local.
+/media-src/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

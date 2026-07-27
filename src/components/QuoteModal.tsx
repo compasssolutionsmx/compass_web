@@ -6,6 +6,11 @@
  * FLUJO CRÍTICO: alimenta las 2 campañas de Google Ads activas. El copy y los
  * campos deben mantenerse idénticos al sitio actual.
  *
+ * Es un diálogo a PANTALLA COMPLETA, en vertical: arriba el pitch, abajo el
+ * mismo <QuoteWizard> de 4 pasos que usa la sección del hero. Este archivo sólo
+ * aporta el chasis del diálogo (fondo, cierre, focus trap, scroll); el
+ * formulario y su lógica no se duplican.
+ *
  * Este archivo expone:
  *  - <QuoteModalProvider>  envuelve la página y monta el modal
  *  - <QuoteButton>         cualquier botón que abre el modal
@@ -21,48 +26,12 @@ import {
   useMemo,
   useRef,
   useState,
-  type FormEvent,
   type ReactNode,
 } from "react";
-import { WHATSAPP_URL, buildWhatsAppUrl } from "@/lib/site";
-
-/**
- * Opciones del selector "Tipo de Solicitud".
- * Las etiquetas son las exactas del spec. Los `value` son slugs propuestos:
- * TODO: confirmar los valores que espera el webhook de studio.scndal.com
- * (¿slug, etiqueta literal, id numérico?) cuando llegue su spec.
- */
-const REQUEST_TYPES = [
-  { value: "maritimo", label: "Marítimo" },
-  { value: "aereo", label: "Aéreo" },
-  { value: "terrestre", label: "Terrestre" },
-  { value: "especializado", label: "Especializado" },
-  { value: "otros", label: "Otros" },
-] as const;
-
-export type QuoteFormData = {
-  tipo: string;
-  detalles: string;
-};
-
-/** Mensaje prellenado que se manda a WhatsApp tras enviar el formulario. */
-function buildWhatsAppMessage(tipoServicioSeleccionado: string): string {
-  return `Hola Compass Solutions, necesito información sobre ${tipoServicioSeleccionado}.`;
-}
-
-/**
- * STUB del POST al webhook — el endpoint real todavía no existe.
- *
- * TODO(sprint siguiente): implementar el POST real.
- *   1. Mandarlo a una Route Handler propia (p. ej. `/api/cotizacion`) que a su
- *      vez reenvíe al webhook de studio.scndal.com. No exponer la URL ni el
- *      secreto del webhook en el cliente.
- *   2. Definir el contrato del payload (ver también el TODO de REQUEST_TYPES).
- *   3. Añadir el evento de conversión de Google Ads.
- */
-async function postToWebhook(data: QuoteFormData): Promise<void> {
-  console.info("[QuoteModal] POST al webhook (stub, sin conectar):", data);
-}
+import { X } from "lucide-react";
+import QuoteWizard from "./QuoteWizard";
+import { useSmoothScroll } from "./SmoothScroll";
+import { useWhatsAppModal } from "./WhatsAppModal";
 
 type QuoteModalContextValue = {
   isOpen: boolean;
@@ -128,13 +97,12 @@ function QuoteModal() {
 function QuoteDialog() {
   const { closeModal } = useQuoteModal();
   const titleId = useId();
-  const errorId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
-  const typeGroupRef = useRef<HTMLFieldSetElement>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { pause: pauseSmoothScroll, resume: resumeSmoothScroll } =
+    useSmoothScroll();
+  const { openModal: openWhatsAppModal } = useWhatsAppModal();
 
   // Cerrar con Escape y bloquear el scroll del body mientras está abierto.
   useEffect(() => {
@@ -168,6 +136,9 @@ function QuoteDialog() {
       }
     };
 
+    // Lenis se pausa mientras el scroll del body está bloqueado: si sigue
+    // vivo, el fondo se desplaza por debajo del modal.
+    pauseSmoothScroll();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
@@ -175,161 +146,73 @@ function QuoteDialog() {
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      resumeSmoothScroll();
       previouslyFocused.current?.focus();
     };
-  }, [closeModal]);
-
-  /** Flujo confirmado: validar -> POST al webhook -> redirect a WhatsApp. */
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const tipo = String(formData.get("tipo") ?? "");
-
-    // 1. Validar. El tipo de servicio es obligatorio: alimenta el mensaje de
-    // WhatsApp.
-    // TODO: confirmar si "Detalles de la Consulta" debe ser obligatorio — hoy
-    // el sitio actual no lo exige, así que se deja opcional.
-    const selectedType = REQUEST_TYPES.find((type) => type.value === tipo);
-    if (!selectedType) {
-      setError("Selecciona un tipo de solicitud para continuar.");
-      typeGroupRef.current
-        ?.querySelector<HTMLInputElement>('input[name="tipo"]')
-        ?.focus();
-      return;
-    }
-
-    setError(null);
-    setIsSubmitting(true);
-
-    const payload: QuoteFormData = {
-      tipo,
-      detalles: String(formData.get("detalles") ?? ""),
-    };
-
-    // 2. POST al webhook. Si falla NO se aborta el flujo: perder el handoff a
-    // WhatsApp costaría el lead, que es lo que realmente convierte.
-    try {
-      await postToWebhook(payload);
-    } catch (webhookError) {
-      console.error("[QuoteModal] falló el POST al webhook:", webhookError);
-    }
-
-    // 3. Redirect a WhatsApp con el mensaje prellenado.
-    // No se limpia `isSubmitting` a propósito: evita un doble envío mientras
-    // el navegador sale de la página.
-    window.location.href = buildWhatsAppUrl(
-      buildWhatsAppMessage(selectedType.label),
-    );
-  }
+  }, [closeModal, pauseSmoothScroll, resumeSmoothScroll]);
 
   return (
+    // Contenedor a pantalla completa. Lleva el scroll (`overflow-y-auto`) y el
+    // fondo; el diálogo va dentro para que en móvil, con el cotizador de 4
+    // pasos, el contenido pueda desbordar y hacer scroll en vez de recortarse.
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) closeModal();
-      }}
+      className="brand-gradient fixed inset-0 z-50 overflow-y-auto"
+      data-lenis-prevent
     >
+      <button
+        ref={closeButtonRef}
+        type="button"
+        onClick={closeModal}
+        aria-label="Cerrar"
+        className="fixed right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:right-6 sm:top-6"
+      >
+        <X className="h-6 w-6" aria-hidden="true" />
+      </button>
+
+      {/* `min-h-full` + `justify-center`: centrado vertical cuando cabe, y
+          scroll natural desde arriba cuando no. */}
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 sm:p-8"
+        className="mx-auto flex min-h-full w-full max-w-4xl flex-col justify-center px-4 py-20 sm:px-6"
       >
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={closeModal}
-          aria-label="Cerrar"
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-2xl leading-none text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-
-        <h3
-          id={titleId}
-          className="mb-2 pr-10 text-2xl font-bold text-brand-navy-900"
-        >
-          El Freight Forwarder Que Su Carga Necesita
-        </h3>
-        <p className="mb-6 text-slate-500">
-          Solicite una cotización y descubra cómo nuestras soluciones logísticas
-          integrales pueden transformar su cadena de suministro.
-        </p>
-        <p className="mb-6 text-sm text-slate-500">
-          Si necesita atención urgente, siempre puede contactarnos por{" "}
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-brand-accent hover:underline"
+        {/* ---------- Arriba: el pitch ---------- */}
+        <div className="mb-8 max-w-2xl">
+          <h2
+            id={titleId}
+            className="font-heading text-3xl font-bold text-white md:text-4xl"
           >
-            WhatsApp
-          </a>
-          .
-        </p>
-
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          <fieldset
-            ref={typeGroupRef}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
-          >
-            <legend className="mb-2 block text-sm font-medium">
-              Tipo de Solicitud
-            </legend>
-            <div className="flex flex-wrap gap-2 text-sm">
-              {REQUEST_TYPES.map((type) => (
-                <label
-                  key={type.value}
-                  className="flex cursor-pointer items-center rounded-full border border-slate-300 px-4 py-1.5 transition-colors has-[:checked]:border-brand-accent has-[:checked]:text-brand-accent has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-accent"
-                >
-                  <input
-                    type="radio"
-                    name="tipo"
-                    value={type.value}
-                    onChange={() => setError(null)}
-                    className="mr-1.5 accent-brand-accent focus-visible:outline-none"
-                  />
-                  {type.label}
-                </label>
-              ))}
-            </div>
-            {error && (
-              <p id={errorId} role="alert" className="mt-2 text-sm text-red-600">
-                {error}
-              </p>
-            )}
-          </fieldset>
-
-          <div>
-            <label
-              htmlFor="cotizacion-detalles"
-              className="mb-2 block text-sm font-medium"
+            El Freight Forwarder Que Su Carga Necesita
+          </h2>
+          <p className="mt-4 text-lg text-brand-50">
+            Solicite una cotización y descubra cómo nuestras soluciones
+            logísticas integrales pueden transformar su cadena de suministro.
+          </p>
+          {/* Ya no enlaza a wa.me: abre la captura corta. Cierra ANTES este
+              diálogo para no apilar dos modales — dos focus traps a la vez se
+              pelean el foco. */}
+          <p className="mt-4 text-sm text-brand-100">
+            Si necesita atención urgente, siempre puede contactarnos por{" "}
+            <button
+              type="button"
+              onClick={() => {
+                closeModal();
+                openWhatsAppModal();
+              }}
+              className="font-semibold text-white underline underline-offset-2 hover:no-underline"
             >
-              Detalles de la Consulta
-            </label>
-            <textarea
-              id="cotizacion-detalles"
-              name="detalles"
-              rows={3}
-              className="w-full rounded-lg border border-slate-300 p-3 text-sm"
-            />
-          </div>
+              WhatsApp
+            </button>
+            .
+          </p>
+        </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-full bg-brand-navy-900 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {isSubmitting ? "Enviando…" : "Solicitar Cotización"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-xs text-slate-400">
-          ¡Atención! Este formulario es de cotizaciones. Para proveedores o
-          vacantes, usa el espacio correspondiente.
-        </p>
+        {/* ---------- Abajo: el mismo cotizador de la sección del hero ----------
+            Se oculta su título porque el <h2> de arriba ya nombra el diálogo.
+            El banner de proveedores/vacantes viene dentro, en el paso 4. */}
+        <QuoteWizard showHeading={false} />
       </div>
     </div>
   );

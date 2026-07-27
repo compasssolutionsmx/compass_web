@@ -2,19 +2,44 @@
 
 @theme {
   /* ------------------------------------------------------------------
-     PALETA DE MARCA
-     TODO: los hex de abajo vienen del spec estructural y son APROXIMACIONES
-     tomadas de un screenshot, NO valores de marca confirmados.
-     Confirmar contra el manual de identidad antes del cutover.
-     ------------------------------------------------------------------ */
-  --color-brand-navy-950: #0a2035;
-  --color-brand-navy-900: #0e2a42;
-  --color-brand-teal-800: #123a4d;
-  --color-brand-accent: #1c9aa8;
+     ESCALA DE MARCA — brand-50 … brand-950
 
-  /* TODO: tipografía real de marca sin confirmar. Inter es el placeholder
-     que ya usaba el spec de referencia. */
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+     Tailwind v4 usa config CSS-first: los tokens viven aquí, NO en un
+     tailwind.config.ts (el proyecto no tiene uno y v4 no lo leería sin una
+     directiva `@config`). Cada `--color-brand-*` genera automáticamente
+     `bg-brand-*`, `text-brand-*`, `border-brand-*`, etc.
+
+     Los pasos 900 y 950 son los valores exactos de
+     compass-liquid-glass-demo.html (--brand-900 / --brand-950); el 900 es
+     además el tinte de `.glass` y `.glass-solid`. El resto de la escala se
+     derivó bajando la saturación hacia el extremo claro, a propósito, para que
+     los pasos 300–500 no deriven a cian.
+
+     Esta escala sustituye a los cuatro tokens sueltos que había antes (dos
+     navy, un teal y un acento cian), que ya no existen. El cian/turquesa queda
+     eliminado del proyecto: no reintroducirlo en ningún componente.
+     TODO: confirmar la escala contra el manual de identidad antes del cutover.
+     ------------------------------------------------------------------ */
+  --color-brand-50: #f0f6f9;
+  /* Fondo claro de marca estándar. Para secciones y cajas que necesiten este
+     tono, usar brand-100 en vez de introducir grises nuevos. */
+  --color-brand-100: #e6eef1;
+  --color-brand-200: #b3d0dc;
+  --color-brand-300: #7fb2c5;
+  --color-brand-400: #4a93ac;
+  --color-brand-500: #1d7695;
+  --color-brand-600: #0b5f7d;
+  --color-brand-700: #014a66;
+  --color-brand-800: #013a50;
+  --color-brand-900: #012a3a;
+  --color-brand-950: #011b26;
+
+  /* TIPOGRAFÍA — dos familias, cargadas con next/font en layout.tsx.
+     `--font-sans` es el default del <body>; `--font-heading` genera la utilidad
+     `font-heading`, que se aplica a mano en cada h1-h4.
+     Inter ya no se usa en el proyecto. */
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-heading: var(--font-manrope), system-ui, sans-serif;
 
   /* Animaciones del panel deslizante del menú móvil. */
   --animate-slide-in-right: slide-in-right 0.25s ease-out;
@@ -39,13 +64,438 @@
   }
 }
 
+/* ============ RECETA LIQUID GLASS ============
+   Copiada tal cual de compass-liquid-glass-demo.html.
+   3 ingredientes: blur del fondo + fondo semitransparente + borde muy sutil
+   que simula el "borde de vidrio" que atrapa la luz. El saturate() es lo que
+   le da el aspecto "líquido" en vez de solo "esmerilado".
+
+   RESTRAINT (confirmado con el cliente): el efecto se reserva para el "chrome"
+   de interfaz — header flotante, modal de cotización, botón de WhatsApp. NO va
+   en tarjetas de contenido (FeaturesGrid, ServicesGrid, BlogPreview) ni en el
+   Footer: esos se quedan sólidos.
+
+   Las dos variantes son claras u oscuras de forma CONSISTENTE, así que el color
+   del texto encima es fijo y no depende de lo que haya detrás:
+   `.glass` -> texto oscuro (brand-900);  `.glass-solid` -> texto blanco. */
+@utility glass {
+  /* Vidrio esmerilado neutro, sin tinte de marca. Lo usa la cápsula del nav.
+
+     SIN saturate. Cualquier boost de saturación amplifica el color del video a
+     través del blur y el pill acaba leyéndose como "vidrio azul" — se confundía
+     con el cielo nocturno de las tomas de grúas. Medido: el saturate(120%)
+     aportaba ~19% del croma del pill. No reintroducirlo.
+
+     LA OPACIDAD LA MANDA EL COLOR, NO EL CONTRASTE. El contraste ya pasaba AA
+     de sobra desde 0.65 (6.34:1 en el peor frame); el criterio real es que el
+     pill lea blanco lechoso encima de CUALQUIER frame. Medido sobre 28 frames
+     del master, croma del pill (0% = gris neutro):
+        0.65 -> croma 7.8% peor / 3.2% medio   se ve azulado
+        0.75 -> croma 5.1% / 2.1%              todavía con tinte frío
+        0.80 -> croma 4.0% / 1.6%              casi neutro
+        0.85 -> croma 2.9% / 1.2%              blanco inequívoco  <- el elegido
+     A 0.85 el blur del fondo sigue visible dentro del pill, así que lee vidrio
+     y no placa sólida. Subir más sí lo aplana.
+     Contraste resultante con texto brand-900: 10.75:1 en el peor frame. */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 8px 32px rgba(1, 20, 30, 0.35),
+    /* highlight superior, simula el filo del vidrio */ inset 0 1px 0
+      rgba(255, 255, 255, 0.12);
+}
+
+/* Misma receta (blur + saturate + borde + highlight) pero casi opaca, para el
+   chrome que queda flotando sobre el contenido BLANCO del sitio — ahí `.glass`
+   se lava y falla AA. Compuesto sobre blanco: ~rgb(21,59,74) → 12:1 con texto
+   blanco. Lo usa el header a partir del momento en que el hero deja de estar
+   detrás.
+   TODO: la opacidad 0.92 es propuesta, no viene del demo. Ajustable. */
+@utility glass-solid {
+  background: rgba(1, 42, 58, 0.92);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(1, 20, 30, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Velo de marca sobre el video del hero. Sustituye al gradiente negro lineal
+   (from-black/50 via-black/20 to-black/60) que había antes.
+
+   Son DOS radiales superpuestos, no un lineal, para que el tinte tenga
+   profundidad en vez de ser un velo plano:
+     - capa de arriba: foco claro anclado en la esquina superior derecha, donde
+       está el CTA (que es opaco y no necesita ayuda). Ahí el overlay baja al
+       25% y el video se lee casi limpio.
+     - capa de abajo: refuerzo radial en la esquina inferior izquierda, que es
+       justo donde cae el bloque de texto. Ahí sube al 88%.
+   Opacidad resultante: 25% sup-der / 64% sup-izq / 59% centro / 88% inf-izq.
+
+   El stop transparente usa el MISMO rgb que el opaco (y no `transparent`) para
+   que la interpolación no pase por gris.
+
+   CONTRASTE — medido per-pixel sobre 27 frames del video, con la geometría real
+   de cada elemento. Peor caso de cada uno:
+     eyebrow  brand-50   7.98:1
+     H1       blanco     7.19:1
+     párrafo  slate-200  7.02:1
+     logo     blanco     8.38:1
+   Los cuatro pasan AA (4.5:1) y de hecho AAA (7:1). Si se aclara el overlay,
+   el párrafo es el primero en caer: es el que menos margen tiene. */
+@utility hero-overlay {
+  background:
+    radial-gradient(
+      120% 90% at 85% 5%,
+      rgba(1, 42, 58, 0.18) 0%,
+      rgba(1, 27, 38, 0.58) 55%,
+      rgba(1, 27, 38, 0.78) 100%
+    ),
+    radial-gradient(
+      90% 80% at 5% 95%,
+      rgba(1, 27, 38, 0.5) 0%,
+      rgba(1, 27, 38, 0) 70%
+    );
+}
+
+/* Tarjeta con borde y glow al hover. La usan las 8 tarjetas de FeaturesGrid.
+
+   Antes esto era un conic-gradient girando en un ::before. Se descartó: para
+   que el gradiente cubra las esquinas al rotar tiene que desbordar la caja
+   (`inset: -60%`), y sin un `overflow: hidden` que lo recorte se derramaba
+   sobre las tarjetas vecinas. Contenerlo es posible, pero depende de que
+   encajen a la vez el recorte, el `z-index: -1` y el orden de pintado — tres
+   cosas que pueden romperse por separado.
+
+   Esto no puede romperse: sólo cambian `border-color` y `box-shadow`.
+
+   El borde mide 1px SIEMPRE (transparente en reposo), así que no hay salto de
+   layout al aparecer, y `border-color` nunca interpola desde el `currentColor`
+   oscuro que deja el Preflight de Tailwind — el mismo problema que producía las
+   líneas espurias en el header.
+
+   `:focus-within` replica el hover para quien navega con teclado. */
+@utility tech-card {
+  border: 1px solid var(--color-slate-200);
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--color-brand-700);
+    box-shadow:
+      0 0 0 3px rgba(1, 74, 102, 0.08),
+      0 10px 30px rgba(1, 20, 30, 0.08);
+  }
+
+  /* El cambio de estado se conserva —es lo que marca la tarjeta activa— pero
+     sin transición: nada se mueve ni se desvanece progresivamente. */
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+/* Red de rutas del mapa mundial (WorldMapNetwork).
+
+   El pulso que recorre cada ruta es el MISMO path con un guion corto y un hueco
+   larguísimo: al animar `stroke-dashoffset`, el guion viaja de un extremo al
+   otro. Los paths llevan `pathLength="100"`, así que las medidas de abajo son
+   porcentaje de ruta y todas viajan al mismo ritmo relativo pese a medir
+   distinto.
+
+   Sólo se anima `stroke-dashoffset` y `opacity`: nada provoca reflow, así que
+   el scroll no se resiente. */
+@keyframes route-travel {
+  from {
+    stroke-dashoffset: 109;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  40% {
+    opacity: 0.55;
+  }
+  80% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+@utility route-pulse {
+  stroke-dasharray: 9 100;
+  stroke-dashoffset: 109;
+  animation: route-travel 4s linear infinite;
+
+  /* Sin movimiento el pulso sobra: la red ya se lee con el trazo base, que no
+     se anima nunca. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    display: none;
+  }
+}
+
+@utility map-node-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: node-pulse 3.5s ease-in-out infinite;
+
+  /* Los nodos siguen visibles (el círculo sólido de debajo no se toca); lo que
+     desaparece es el halo que latía. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0.25;
+  }
+}
+
+/* Botón flotante de WhatsApp: llamada de atención periódica, no continua.
+   El movimiento ocupa del 80% al 97% del ciclo, o sea ~1s de cada 6s; el resto
+   el botón está completamente quieto.
+
+   El pulso verde va en un ::after y no en el propio botón para no pisar el
+   box-shadow de `.glass-solid`, que es lo que le da el cuerpo de vidrio. */
+@keyframes wa-wiggle {
+  0%,
+  80%,
+  97%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  83% {
+    transform: rotate(-10deg) scale(1.06);
+  }
+  87% {
+    transform: rotate(9deg) scale(1.06);
+  }
+  90% {
+    transform: rotate(-7deg) scale(1.03);
+  }
+  94% {
+    transform: rotate(4deg) scale(1.01);
+  }
+}
+
+@keyframes wa-glow {
+  0%,
+  78%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+  }
+  85% {
+    box-shadow: 0 0 0 12px rgba(37, 211, 102, 0.25);
+  }
+  97% {
+    box-shadow: 0 0 0 26px rgba(37, 211, 102, 0);
+  }
+}
+
+@utility wa-fab {
+  position: relative;
+  animation: wa-wiggle 6s ease-in-out infinite;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    animation: wa-glow 6s ease-in-out infinite;
+  }
+
+  /* El movimiento periódico es justo el patrón que molesta a quien es sensible
+     al movimiento, así que con la preferencia activa se detiene por completo.
+     El botón sigue visible y funcional. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+
+    &::after {
+      animation: none;
+      box-shadow: none;
+    }
+  }
+}
+
+/* Logo de certificación teñido en color de marca.
+
+   Los archivos de logo-certs/ son monocromos: un único color opaco, blanco
+   puro, sobre alfa (verificado píxel a píxel en los tres). Sobre la tarjeta
+   clara desaparecerían.
+
+   Se resuelve con `mask-image` en vez de un filtro: el PNG aporta sólo la
+   silueta y el color lo pone `background-color`. Así el logo sale exactamente
+   en brand-900 —no en el negro plano al que llevaría un `brightness(0)`— y no
+   hay distorsión posible, porque no se está transformando ningún color.
+   El `mask-image` concreto lo pone cada logo por estilo inline.
+
+   CONTRASTE medido per-pixel sobre 27 frames en la zona de la tarjeta:
+   peor caso 11.02:1 contra el vidrio `.glass`. */
+@utility cert-mark {
+  background-color: var(--color-brand-900);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+
+/* Misma composición que `hero-overlay` — dos radiales, foco claro arriba a la
+   derecha y refuerzo abajo a la izquierda — pero OPACA, para el modal a
+   pantalla completa, que no tiene video debajo sino que es el fondo mismo.
+
+   Por eso los colores son sólidos en vez de alfa. El punto más claro usa
+   brand-800 y no brand-900: entre 900 (#012a3a) y 950 (#011b26) sólo hay
+   1.17:1 de diferencia y el degradado se veía plano; con el 800 la profundidad
+   se percibe sin salirse de la familia.
+
+   CONTRASTE del texto encima (peor caso = el punto más claro, brand-800):
+     blanco    12.19:1
+     brand-50  11.35:1
+     brand-100  9.86:1
+   Los tres pasan AA y AAA. */
+@utility brand-gradient {
+  background:
+    radial-gradient(
+        120% 90% at 85% 5%,
+        #013a50 0%,
+        #012a3a 55%,
+        #011b26 100%
+      )
+      #011b26;
+  background-blend-mode: normal;
+}
+
+/* CTA de cristal azul. Hoy sólo lo usa el botón "Contáctenos" del header.
+   TODO: si funciona, unificar con el botón del cotizador y el CTA de
+   IntegratedSolutions, que por ahora siguen planos a propósito.
+
+   A diferencia de `.glass` (nav), aquí el color de marca DOMINA: al 88% el
+   fondo de atrás no se lee, pero el backdrop-filter conserva textura y evita
+   que se vea como una placa lisa. */
+@utility glass-cta {
+  position: relative;
+  overflow: hidden; /* contiene el barrido de brillo */
+  isolation: isolate; /* para que el ::before con z-index negativo no escape */
+  background: rgba(1, 42, 58, 0.88);
+  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    /* sombra suave exterior */ 0 8px 24px rgba(1, 20, 30, 0.4),
+    /* highlight especular arriba */ inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    /* glow interno inferior */ inset 0 -8px 16px rgba(1, 20, 30, 0.2);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Barrido de brillo. `z-index: -1` lo deja encima del fondo del botón pero
+     debajo del texto, sin necesidad de envolver el label en un <span>. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.28) 50%,
+      transparent 80%
+    );
+    transform: translateX(-120%);
+    /* Sin transición al salir: así vuelve a su sitio de golpe y el barrido se
+       percibe como un gesto único de izquierda a derecha, no como un vaivén. */
+    transition: none;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(1, 42, 58, 0.94);
+    box-shadow:
+      0 14px 32px rgba(1, 20, 30, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -8px 16px rgba(1, 20, 30, 0.25);
+  }
+
+  &:hover::before {
+    transform: translateX(120%);
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Presionar devuelve el botón a su sitio. */
+  &:active {
+    transform: translateY(0);
+  }
+
+  /* Con la preferencia activa se quitan SÓLO los movimientos (elevación y
+     barrido). El cambio de color y de sombra se conserva: sin él el botón se
+     quedaría sin ninguna respuesta visible al hover. */
+  @media (prefers-reduced-motion: reduce) {
+    transition:
+      background-color 0.25s ease,
+      box-shadow 0.25s ease;
+
+    &:hover,
+    &:active {
+      transform: none;
+    }
+
+    &::before {
+      display: none;
+    }
+  }
+}
+
+/* Cursor de los botones.
+
+   Tailwind v4 quitó `button { cursor: pointer }` del Preflight que sí traía la
+   v3: ahora se alinea con el user-agent stylesheet, donde <button> usa
+   `cursor: default`. O sea que NINGÚN botón del sitio mostraba la manita, no
+   sólo los dos que se detectaron.
+
+   Se restaura globalmente y no botón por botón: el problema es de todos.
+   Los deshabilitados quedan fuera — ahí la manita mentiría sobre lo que pasa
+   al hacer clic. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* El header es fixed: los anchors (#soluciones, #oferta) tienen que frenar
+   antes para no quedar debajo de él. */
+html {
+  scroll-padding-top: 6rem;
+}
+
 body {
   background: #ffffff;
   color: var(--color-slate-800);
 }
 
-/* Foco visible consistente en todo elemento interactivo (a11y). */
+/* Foco visible consistente en todo elemento interactivo (a11y).
+
+   Anillo de dos tonos: el outline blanco se dibuja sobre el borde del elemento
+   y el box-shadow navy queda 2px más afuera. Así sobrevive en los dos fondos
+   del sitio sin necesidad de overrides por sección — sobre el contenido blanco
+   se ve el aro navy, y sobre el header/hero/footer oscuros se ve el aro blanco.
+   `outline-offset: 0` a propósito: con offset el outline se separaría del
+   box-shadow y el anillo se partiría en dos.
+
+   TODO(cosmético, baja prioridad): este `box-shadow` pisa el de `.glass-solid`
+   mientras el botón de WhatsApp está enfocado, así que en ese instante se
+   pierde el inset highlight del vidrio. El anillo de foco se ve correcto y el
+   contraste no se ve afectado; es puramente visual. */
 :focus-visible {
-  outline: 2px solid var(--color-brand-accent);
-  outline-offset: 2px;
+  outline: 2px solid #ffffff;
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px var(--color-brand-900);
 }

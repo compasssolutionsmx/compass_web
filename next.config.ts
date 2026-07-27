@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      // Assets reales servidos hoy desde el WordPress actual (logos SVG).
+      // Ya sólo queda el logo de ALACAT: los demás assets del WordPress
+      // (logotipo de marca y los otros 3 logos de certificaciones) migraron a
+      // /public.
+      // TODO: eliminar este patrón en cuanto llegue alacat.png.
       {
         protocol: "https",
         hostname: "compasssolutions.com.mx",

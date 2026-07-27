@@ -26,18 +26,19 @@ const SERVICE_LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="bg-brand-navy-950 pb-8 pt-16 text-slate-300">
+    <footer className="bg-brand-950 pb-8 pt-16 text-slate-300">
       <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-5">
         <div className="md:col-span-2">
-          {/* Logo real servido desde el WordPress actual.
-              width/height = viewBox real del SVG (ver mismo comentario en
-              Header). TODO: migrar el SVG a /public. */}
+          {/* Mismo archivo que el Header. Aquí el fondo es siempre brand-950,
+              así que el filtro va fijo: el logo se ve blanco todo el tiempo.
+              Ver el comentario del Header para el detalle del SVG monocromo. */}
           <Image
-            src="https://compasssolutions.com.mx/wp-content/uploads/2025/06/compass-white.svg"
+            src="/brand/logotipo.svg"
             alt="Compass Solutions"
             width={1617}
             height={362}
-            className="mb-4 h-9 w-auto"
+            unoptimized
+            className="mb-4 h-9 w-auto brightness-0 invert"
           />
           <p className="max-w-xs text-sm">
             Expertos en logística integral nacional e internacional. Diseñamos
@@ -47,7 +48,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 text-sm font-semibold text-white">Información</h4>
+          <h4 className="mb-4 font-heading text-sm font-semibold text-white">Información</h4>
           <ul className="space-y-2 text-sm">
             {INFO_LINKS.map((link) => (
               <li key={link.href}>
@@ -60,7 +61,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 text-sm font-semibold text-white">Servicios</h4>
+          <h4 className="mb-4 font-heading text-sm font-semibold text-white">Servicios</h4>
           <ul className="space-y-2 text-sm">
             {SERVICE_LINKS.map((link) => (
               <li key={link.href}>
@@ -73,12 +74,12 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 text-sm font-semibold text-white">Ubicación</h4>
+          <h4 className="mb-4 font-heading text-sm font-semibold text-white">Ubicación</h4>
           <p className="mb-6 text-sm">
             Mitikah, Torre M, Av. Río Churubusco 601-piso 17 int 1707, Xoco,
             Benito Juárez, 03330 Ciudad de México, CDMX
           </p>
-          <h4 className="mb-2 text-sm font-semibold text-white">
+          <h4 className="mb-2 font-heading text-sm font-semibold text-white">
             Ventas y Soporte
           </h4>
           <p className="text-sm">
@@ -101,13 +102,26 @@ export default function Footer() {
           © Copyright Compass Solutions {new Date().getFullYear()}. All Rights
           Reserved.
         </p>
+        {/* public/Black-webtag.png es el webtag "Created By ✕ SCNDAL" (1814x221),
+            no el logo de Compass — por eso va aquí, en el crédito de agencia,
+            y no en el slot de arriba.
+            `invert` porque el arte es negro y el footer es brand-950: sin él
+            queda prácticamente invisible.
+            TODO: pedir la versión blanca del webtag y quitar el filtro; invertir
+            por CSS funciona sólo mientras el arte sea monocromo. */}
         <a
           href="https://scndal.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="opacity-80 hover:opacity-100"
+          className="opacity-80 transition-opacity hover:opacity-100"
         >
-          Grow&apos;d by SCNDAL
+          <Image
+            src="/Black-webtag.png"
+            alt="Created by SCNDAL"
+            width={1814}
+            height={221}
+            className="h-5 w-auto invert"
+          />
         </a>
       </div>
     </footer>
