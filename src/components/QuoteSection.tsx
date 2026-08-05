@@ -14,6 +14,10 @@ export default function QuoteSection() {
   const titleId = useId();
 
   return (
+    // El `pb` es corto a propósito (40/48px): debajo va <Certifications>, que
+    // no lleva padding superior, así que este valor ES el hueco entre el
+    // cotizador y la fila de logos. Bajó de 64/80px para acercarlos.
+    //
     // Sobrepuesta al hero con margen negativo. En móvil el margen es menor
     // porque la tarjeta crece (los grids colapsan a 1 columna) y taparía el
     // párrafo del hero.
@@ -24,7 +28,7 @@ export default function QuoteSection() {
     <section
       id="cotizador"
       aria-labelledby={titleId}
-      className="relative z-10 -mt-16 pb-16 md:-mt-40 md:pb-20"
+      className="relative z-10 -mt-16 pb-10 md:-mt-40 md:pb-12"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <QuoteWizard headingId={titleId} />

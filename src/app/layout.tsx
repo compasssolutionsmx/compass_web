@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { DM_Sans, Manrope } from "next/font/google";
 import "./globals.css";
+import ConsentProvider from "@/components/ConsentProvider";
+import GoogleTagManagerGate from "@/components/GoogleTagManagerGate";
+import CookieBanner from "@/components/CookieBanner";
 import SmoothScroll from "@/components/SmoothScroll";
+import { consentBootstrapScript } from "@/lib/consent";
 
 /**
  * Dos familias, self-hosted por next/font (no salen requests a Google):
@@ -76,7 +80,39 @@ export default function RootLayout({
       className={`${dmSans.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <SmoothScroll>{children}</SmoothScroll>
+        {/* Estado por defecto de Google Consent Mode v2 (todo denegado) más la
+            reproducción de la decisión ya guardada. El cuerpo se genera en
+            lib/consent, para que no se desincronice de las constantes que usa
+            el resto de la app.
+
+            ETIQUETA CRUDA Y NO <Script strategy="beforeInteractive">, aunque
+            los docs de Next recomienden lo segundo para scripts de terceros.
+            Comprobado en el HTML compilado: `beforeInteractive` no emite un
+            <script> síncrono, sino que encola el código en `self.__next_s` para
+            que lo evalúe el runtime de Next. Eso corre antes de la hidratación,
+            que es suficiente para casi todo, pero deja una rendija: una
+            etiqueta de terceros pegada a mano en el documento podría ejecutarse
+            antes que esa cola, y a Consent Mode llegar tarde es exactamente el
+            fallo que no puede ocurrir — sin un `default` previo, gtag.js asume
+            consentimiento y su primer hit ya sale con cookies.
+
+            Así, en cambio, el navegador lo ejecuta al parsear, antes de
+            cualquier otra cosa del <body>. Es el mismo patrón con el que se
+            evita el parpadeo de tema. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: consentBootstrapScript() }}
+        />
+        <ConsentProvider>
+          {/* GTM va DENTRO del provider porque lee el consentimiento, y sólo se
+              monta cuando lo hay. Ver <GoogleTagManagerGate>. */}
+          <GoogleTagManagerGate />
+          {/* El banner va ANTES del contenido en el DOM, aunque se vea abajo:
+              así el tabulador y los lectores de pantalla se topan con él al
+              entrar, en vez de después de recorrer la página entera. Su posición
+              visual la fija `position: fixed`, no el orden del marcado. */}
+          <CookieBanner />
+          <SmoothScroll>{children}</SmoothScroll>
+        </ConsentProvider>
       </body>
     </html>
   );

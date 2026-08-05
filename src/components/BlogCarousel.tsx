@@ -17,7 +17,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 /**
  * Los datos llegan YA RESUELTOS desde el servidor, incluidos el href y la fecha
@@ -82,6 +82,18 @@ export default function BlogCarousel({ posts }: { posts: CarouselPost[] }) {
         ],
   );
 
+  // ¿Ya nos movimos del principio? Es lo que decide si hace falta difuminar el
+  // borde izquierdo (ver el `mask-*` del viewport).
+  const [desplazado, setDesplazado] = useState(false);
+  useEffect(() => {
+    if (!emblaApi) return;
+    const alSeleccionar = () => setDesplazado(emblaApi.canScrollPrev());
+    emblaApi.on("select", alSeleccionar).on("reInit", alSeleccionar);
+    return () => {
+      emblaApi.off("select", alSeleccionar).off("reInit", alSeleccionar);
+    };
+  }, [emblaApi]);
+
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
@@ -116,20 +128,49 @@ export default function BlogCarousel({ posts }: { posts: CarouselPost[] }) {
           `mousedown` y `touchstart`, nunca `wheel`, así que el scroll vertical
           nunca estuvo en disputa: lo único que conviene apartar es el gesto
           horizontal del trackpad. */}
+      {/* `bleed-right` (globals.css) saca el viewport del contenedor de página
+          y lo lleva hasta el borde derecho de la ventana: la tarjeta que queda
+          a medias se corta contra la pantalla, no contra un margen. Sólo lo
+          lleva el track — las flechas de arriba se quedan alineadas con el
+          resto de la página. */}
+      {/* DIFUMINADO DEL BORDE IZQUIERDO, y sólo cuando ya se desplazó.
+          Aquí el corte por la izquierda no se puede eliminar como en el rotador
+          de Casos de éxito. Con 4 tarjetas al 28% se ven ~3.5, y el recorrido
+          total (212px a 1440) es MENOR que un paso completo (303px), así que el
+          único snap final posible es el que alinea el track a la derecha — y
+          ése deja 59px de la primera tarjeta asomando, rebanados contra el
+          borde izquierdo. Alinear ese snap a un inicio de slide exigiría que el
+          desbordamiento fuera múltiplo exacto del paso, y como el viewport
+          cambia de ancho con la ventana (por el sangrado), no hay porcentaje
+          que lo cumpla en todos los tamaños.
+          La máscara convierte ese tajo en un desvanecido de 48px. Va condicionada
+          a `canScrollPrev` para que en reposo, con la primera tarjeta al ras del
+          borde, NO se difumine nada. */}
       <div
-        className="overflow-hidden"
+        className={`bleed-right overflow-hidden ${
+          desplazado
+            ? "[mask-image:linear-gradient(to_right,transparent_0,#000_48px,#000_100%)]"
+            : ""
+        }`}
         data-lenis-prevent-horizontal
         ref={emblaRef}
       >
-        <ul className="flex gap-5">
+        <ul className="flex gap-6 lg:gap-8">
           {posts.map((post) => (
             <li
               key={post.slug}
-              /* En `lg` el 32% dejaba la tercera tarjeta terminando justo en el
-                 borde: sin hueco, pero tampoco se veía que hubiera más. Con 30%
-                 sobra un tramo de la cuarta y el gesto de arrastre se anuncia
-                 solo. */
-              className="min-w-0 flex-[0_0_78%] sm:flex-[0_0_48%] lg:flex-[0_0_30%]"
+              /* TRES tarjetas y media en desktop, no cuatro. Con cuatro notas
+                 publicadas, cuatro visibles dejarían el carrusel sin nada que
+                 deslizar: Embla desactiva el arrastre cuando todo cabe, y las
+                 flechas y el autoplay se quedarían de adorno. Además la tarjeta
+                 es vertical (3/4), así que repartir el ancho entre cuatro
+                 aprieta los títulos largos a cinco líneas. Cuando el blog pase
+                 de ~8 notas, subir aquí a 4 visibles es cambiar este número.
+
+                 Los porcentajes bajaron (30->28, 48->45) para pagar el gap más
+                 grande sin perder el trozo de la tarjeta siguiente: es ese
+                 asomo el que anuncia que hay más y invita a arrastrar. */
+              className="min-w-0 flex-[0_0_78%] sm:flex-[0_0_45%] lg:flex-[0_0_28%]"
             >
               <Link
                 href={post.href}
@@ -180,7 +221,6 @@ export default function BlogCarousel({ posts }: { posts: CarouselPost[] }) {
           ))}
         </ul>
       </div>
-
     </div>
   );
 }

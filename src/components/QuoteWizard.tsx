@@ -9,7 +9,8 @@
  *   - <QuoteModal>    modal a pantalla completa del botón "Contáctenos"
  *
  * NO calcula tarifas. Es un formulario de contacto cualificado que termina en
- * el flujo de `useQuoteRequest`: POST al webhook stub -> redirect a WhatsApp.
+ * el flujo de `useQuoteRequest`: correo de respaldo -> webhook stub -> pantalla
+ * de confirmación DENTRO de la propia tarjeta. Ya no saca al usuario del sitio.
  *
  * La tarjeta es blanca en los dos contextos a propósito. En el modal el fondo
  * es el degradado azul oscuro, y una tarjeta clara encima da mejor contraste
@@ -20,6 +21,7 @@
 import { Boxes, Ellipsis, Plane, Ship, Truck } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { REQUEST_TYPES, useQuoteRequest } from "./useQuoteRequest";
+import { LeadError, LeadSuccess } from "./LeadConfirmation";
 
 type TypeValue = (typeof REQUEST_TYPES)[number]["value"];
 
@@ -140,12 +142,28 @@ export default function QuoteWizard({
   /** El modal ya tiene su propio título, así que ahí se oculta el de la tarjeta. */
   showHeading = true,
   headingId,
+  /**
+   * Sólo lo pasa <QuoteModal>. Su presencia es lo que le dice a la pantalla de
+   * éxito que hay un modal que cerrar; montado inline en el home no hay nada
+   * que cerrar y la salida es "Hacer otra cotización".
+   */
+  onClose,
 }: {
   showHeading?: boolean;
   headingId?: string;
+  onClose?: () => void;
 }) {
   const errorId = useId();
-  const { isSubmitting, error, setError, submitQuote } = useQuoteRequest();
+  const {
+    status,
+    isSubmitting,
+    whatsappUrl,
+    error,
+    setError,
+    submitQuote,
+    retryLead,
+    resetLead,
+  } = useQuoteRequest();
 
   const [step, setStep] = useState(1);
   const [tipo, setTipo] = useState<TypeValue | "">("");
@@ -225,6 +243,28 @@ export default function QuoteWizard({
     setStep((s) => Math.max(s - 1, 1));
   }
 
+  /**
+   * "Hacer otra cotización": deja el cotizador como recién montado. Hay que
+   * limpiar TODOS los campos además del estado del envío — si no, la segunda
+   * cotización saldría con los datos de la primera ya escritos.
+   */
+  function restartWizard() {
+    setStep(1);
+    setTipo("");
+    setSub("");
+    setOrigen("");
+    setDestino("");
+    setDescripcion("");
+    setFecha("");
+    setDetalles("");
+    setNombre("");
+    setEmpresa("");
+    setCorreo("");
+    setTelefono("");
+    setError(null);
+    resetLead();
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedType) {
@@ -258,6 +298,31 @@ export default function QuoteWizard({
         telefono: telefono.trim() || undefined,
       },
       selectedType.label,
+    );
+  }
+
+  // Terminado el envío, la tarjeta deja de ser un formulario. Se sustituye
+  // entera —pasos, barra de progreso y campos incluidos— por la confirmación,
+  // en el mismo sitio y con el mismo chasis blanco, para que el usuario no
+  // pierda el contexto ni salga del sitio.
+  if (status === "success" || status === "error") {
+    return (
+      <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10">
+        {status === "success" ? (
+          <LeadSuccess
+            whatsappUrl={whatsappUrl}
+            onReset={restartWizard}
+            resetLabel="Hacer otra cotización"
+            onClose={onClose}
+          />
+        ) : (
+          <LeadError
+            whatsappUrl={whatsappUrl}
+            onRetry={retryLead}
+            isRetrying={isSubmitting}
+          />
+        )}
+      </div>
     );
   }
 

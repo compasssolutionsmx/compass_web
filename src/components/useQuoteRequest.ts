@@ -12,19 +12,10 @@
 import { useCallback, useState } from "react";
 import { useLeadSubmit } from "./useLeadSubmit";
 
-/**
- * Opciones del selector "Tipo de Solicitud".
- * Las etiquetas son las exactas del spec. Los `value` son slugs propuestos:
- * TODO: confirmar los valores que espera el webhook de studio.scndal.com
- * (¿slug, etiqueta literal, id numérico?) cuando llegue su spec.
- */
-export const REQUEST_TYPES = [
-  { value: "maritimo", label: "Marítimo" },
-  { value: "aereo", label: "Aéreo" },
-  { value: "terrestre", label: "Terrestre" },
-  { value: "especializado", label: "Especializado" },
-  { value: "otros", label: "Otros" },
-] as const;
+// REQUEST_TYPES se mudó a `lib/request-types` para que el Route Handler del
+// correo pueda traducir el slug a etiqueta sin importar un módulo de cliente.
+// Se reexporta para no romper a quien ya lo importaba desde aquí.
+export { REQUEST_TYPES } from "@/lib/request-types";
 
 /**
  * Payload que se manda al webhook.
@@ -74,29 +65,45 @@ function buildWhatsAppMessage(
  * el DOM.
  */
 export function useQuoteRequest() {
-  const { isSubmitting, submitLead } = useLeadSubmit();
+  const {
+    status,
+    isSubmitting,
+    whatsappUrl,
+    submitLead,
+    retryLead,
+    resetLead,
+  } = useLeadSubmit();
   const [error, setError] = useState<string | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
 
   /**
    * Arma el mensaje de WhatsApp y delega el envío en `useLeadSubmit`, que es
-   * quien tiene el stub del webhook y el redirect. La validación por paso la
+   * quien manda el correo, llama al stub del webhook y expone el estado que
+   * <QuoteWizard> usa para pintar la confirmación. La validación por paso la
    * hace <QuoteWizard> antes de llamar aquí.
    */
   const submitQuote = useCallback(
     async (payload: QuoteFormData, tipoLabel: string) => {
       setError(null);
-      await submitLead(payload, buildWhatsAppMessage(tipoLabel, payload.sub));
+      await submitLead(
+        payload,
+        buildWhatsAppMessage(tipoLabel, payload.sub),
+        "cotizador",
+      );
     },
     [submitLead],
   );
 
   return {
+    status,
     isSubmitting,
+    whatsappUrl,
     error,
     setError,
     clearError,
     submitQuote,
+    retryLead,
+    resetLead,
   };
 }

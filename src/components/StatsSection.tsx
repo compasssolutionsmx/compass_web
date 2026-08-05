@@ -13,9 +13,11 @@ const PARTNERS_COUNT = 200;
 
 export default function StatsSection() {
   return (
-    // `pt` reducido: encima queda la tarjeta del cotizador, que ya aporta su
-    // propio padding interno además del `pb` de su sección. Con py-20 aquí, el
-    // blanco acumulado entre ambas era de 160px.
+    // `pt` reducido porque la sección de encima ya cierra con su propio `pb`:
+    // con py-20 aquí el blanco acumulado entre ambas se iba a 160px. Antes esa
+    // vecina era <QuoteSection>; hoy es <Certifications>, que lleva el mismo
+    // `pb-16 md:pb-20`, así que el hueco resultante no cambió: 80px en móvil y
+    // 104px en desktop.
     <section className="mx-auto max-w-7xl px-6 pb-20 pt-4 md:pt-6">
       <div className="rounded-3xl bg-brand-100 p-6 md:p-10 lg:p-14">
         {/* ---------- Bloque superior: imagen izquierda, texto derecha ---------- */}
@@ -23,7 +25,7 @@ export default function StatsSection() {
           {/* Primera en el DOM, así que en móvil queda arriba al apilarse. */}
           <div className="overflow-hidden rounded-2xl">
             <Image
-              src="/compass-hub.webp"
+              src="/home/compass-hub.webp"
               alt="Supervisor de operaciones observando una terminal portuaria al atardecer"
               width={1000}
               height={1000}

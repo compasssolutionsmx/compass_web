@@ -1,4 +1,5 @@
 import BlogPreview from "@/components/BlogPreview";
+import Certifications from "@/components/Certifications";
 import FeaturesGrid from "@/components/FeaturesGrid";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -8,6 +9,7 @@ import { QuoteModalProvider } from "@/components/QuoteModal";
 import QuoteSection from "@/components/QuoteSection";
 import ServicesGrid from "@/components/ServicesGrid";
 import StatsSection from "@/components/StatsSection";
+import SuccessStories from "@/components/SuccessStories";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import YearsBanner from "@/components/YearsBanner";
@@ -24,10 +26,12 @@ export default function Home() {
         <main className="flex-1">
           <Hero />
           <QuoteSection />
+          <Certifications />
           <StatsSection />
           <FeaturesGrid />
           <YearsBanner />
           <ServicesGrid />
+          <SuccessStories />
           <IntegratedSolutions />
           <BlogPreview />
         </main>

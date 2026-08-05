@@ -23,9 +23,9 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
  * H.264 al final como fallback universal.
  */
 const SOURCES = [
-  { src: "/back-hero.av1.mp4", type: 'video/mp4; codecs="av01.0.05M.08"' },
-  { src: "/back-hero.webm", type: 'video/webm; codecs="vp9"' },
-  { src: "/back-hero.mp4", type: "video/mp4" },
+  { src: "/home/back-hero.av1.mp4", type: 'video/mp4; codecs="av01.0.05M.08"' },
+  { src: "/home/back-hero.webm", type: 'video/webm; codecs="vp9"' },
+  { src: "/home/back-hero.mp4", type: "video/mp4" },
 ] as const;
 
 /** No hay nada a lo que suscribirse: el valor sólo cambia de servidor a cliente. */

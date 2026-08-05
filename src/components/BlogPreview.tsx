@@ -20,9 +20,13 @@ export default function BlogPreview() {
   }));
 
   return (
-    // El padding superior es la mitad del inferior: la sección de arriba ya
-    // cierra con su propio aire y aquí sobraba espacio muerto antes del bloque.
-    <section className="mx-auto max-w-7xl px-6 pb-20 pt-10 md:pt-12">
+    // El padding superior es corto: la sección de arriba ya cierra con su
+    // propio aire y aquí sobraba espacio muerto antes del bloque.
+    //
+    // El inferior, en cambio, es el más generoso del home (112/128px). Debajo
+    // va el footer, que arranca en brand-950 a sangre: con `pb-20` las tarjetas
+    // del carrusel quedaban casi pegadas a esa banda oscura.
+    <section className="mx-auto max-w-7xl px-6 pb-28 pt-10 md:pb-32 md:pt-12">
       {/* Columna izquierda fija + carrusel a la derecha. En móvil se apilan:
           primero el encabezado, luego las tarjetas. */}
       <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-12">

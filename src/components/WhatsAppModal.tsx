@@ -24,11 +24,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
+  type Ref,
 } from "react";
 import { X } from "lucide-react";
 import { REQUEST_TYPES } from "./useQuoteRequest";
 import { useLeadSubmit } from "./useLeadSubmit";
+import { LeadError, LeadSuccess } from "./LeadConfirmation";
 import { useSmoothScroll } from "./SmoothScroll";
 
 type WhatsAppModalContextValue = {
@@ -71,24 +74,38 @@ export function WhatsAppModalProvider({ children }: { children: ReactNode }) {
 /** Botón que abre el modal. */
 export function WhatsAppButton({
   className,
+  style,
   ariaLabel,
+  ref,
   children,
 }: {
   className?: string;
+  /**
+   * Para lo que no cabe en una clase estática. Hoy lo usa sólo el botón
+   * flotante, que calcula su desplazamiento vertical en tiempo real.
+   */
+  style?: CSSProperties;
   /**
    * Necesario cuando el texto visible se oculta (el botón flotante lo esconde
    * en móvil). Debe CONTENER el texto visible, no contradecirlo: si no, el
    * nombre accesible y la etiqueta visual dejan de coincidir (WCAG 2.5.3).
    */
   ariaLabel?: string;
+  /**
+   * El botón flotante lo necesita para medirse y posicionarse contra el footer.
+   * En React 19 el ref es un prop más: no hace falta forwardRef.
+   */
+  ref?: Ref<HTMLButtonElement>;
   children: ReactNode;
 }) {
   const { openModal } = useWhatsAppModal();
   return (
     <button
       type="button"
+      ref={ref}
       aria-label={ariaLabel}
       className={className}
+      style={style}
       onClick={openModal}
     >
       {children}
@@ -136,7 +153,8 @@ function WhatsAppDialog() {
   const telefonoRef = useRef<HTMLInputElement>(null);
   const correoRef = useRef<HTMLInputElement>(null);
 
-  const { isSubmitting, submitLead } = useLeadSubmit();
+  const { status, isSubmitting, whatsappUrl, submitLead, retryLead } =
+    useLeadSubmit();
   const [error, setError] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -218,9 +236,13 @@ function WhatsAppDialog() {
     }
 
     setError(null);
+    // OJO: aquí había un campo `origen: "whatsapp-rapido"` para marcar la
+    // procedencia. Se quitó porque colisionaba: en el payload del cotizador
+    // `origen` es la CIUDAD/PUERTO de salida, y los dos formularios comparten
+    // ya el mismo endpoint de correo. La procedencia ahora va en el tercer
+    // argumento de `submitLead`, que es explícito y no se puede confundir.
     void submitLead(
       {
-        origen: "whatsapp-rapido",
         nombre: nombre.trim(),
         telefono: telefono.trim(),
         correo: correo.trim(),
@@ -228,6 +250,7 @@ function WhatsAppDialog() {
         mensaje: mensaje.trim() || undefined,
       },
       buildMessage({ nombre, correo, telefono, tipo, mensaje }),
+      "whatsapp",
     );
   }
 
@@ -256,116 +279,141 @@ function WhatsAppDialog() {
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
-        <h2
-          id={titleId}
-          className="mb-2 pr-10 font-heading text-2xl font-bold text-brand-900"
-        >
-          Hable con un agente
-        </h2>
-        <p className="mb-6 text-sm text-slate-500">
-          Déjenos sus datos y continuamos la conversación por WhatsApp.
-        </p>
-
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="wa-nombre" className={LABEL}>
-                Nombre <span aria-hidden="true">*</span>
-              </label>
-              <input
-                ref={nombreRef}
-                id="wa-nombre"
-                type="text"
-                required
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                className={FIELD}
+        {/* Terminado el envío, el diálogo cambia de contenido en su sitio: el
+            usuario ya no sale a wa.me. El <h2> sigue existiendo pero oculto,
+            porque `aria-labelledby` del diálogo apunta a él y sin él el modal
+            se quedaría sin nombre accesible. */}
+        {status === "success" || status === "error" ? (
+          <>
+            <h2 id={titleId} className="sr-only">
+              Hable con un agente
+            </h2>
+            {status === "success" ? (
+              <LeadSuccess whatsappUrl={whatsappUrl} onClose={closeModal} />
+            ) : (
+              <LeadError
+                whatsappUrl={whatsappUrl}
+                onRetry={retryLead}
+                isRetrying={isSubmitting}
               />
-            </div>
-            <div>
-              <label htmlFor="wa-telefono" className={LABEL}>
-                Teléfono <span aria-hidden="true">*</span>
-              </label>
-              <input
-                ref={telefonoRef}
-                id="wa-telefono"
-                type="tel"
-                required
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                className={FIELD}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="wa-correo" className={LABEL}>
-              Correo <span aria-hidden="true">*</span>
-            </label>
-            <input
-              ref={correoRef}
-              id="wa-correo"
-              type="email"
-              required
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              className={FIELD}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="wa-tipo" className={LABEL}>
-              Tipo de servicio{" "}
-              <span className="font-normal text-slate-500">(opcional)</span>
-            </label>
-            <select
-              id="wa-tipo"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className={FIELD}
+            )}
+          </>
+        ) : (
+          <>
+            <h2
+              id={titleId}
+              className="mb-2 pr-10 font-heading text-2xl font-bold text-brand-900"
             >
-              <option value="">Seleccione una opción</option>
-              {REQUEST_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="wa-mensaje" className={LABEL}>
-              Mensaje{" "}
-              <span className="font-normal text-slate-500">(opcional)</span>
-            </label>
-            <textarea
-              id="wa-mensaje"
-              rows={2}
-              value={mensaje}
-              onChange={(e) => setMensaje(e.target.value)}
-              className={FIELD}
-            />
-          </div>
-
-          {error && (
-            <p
-              id={errorId}
-              role="alert"
-              className="text-sm font-medium text-red-600"
-            >
-              {error}
+              Hable con un agente
+            </h2>
+            <p className="mb-6 text-sm text-slate-500">
+              Déjenos sus datos y continuamos la conversación por WhatsApp.
             </p>
-          )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            aria-describedby={error ? errorId : undefined}
-            className="w-full rounded-full bg-brand-900 px-8 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {isSubmitting ? "Abriendo WhatsApp…" : "Continuar por WhatsApp"}
-          </button>
-        </form>
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="wa-nombre" className={LABEL}>
+                    Nombre <span aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    ref={nombreRef}
+                    id="wa-nombre"
+                    type="text"
+                    required
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    className={FIELD}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="wa-telefono" className={LABEL}>
+                    Teléfono <span aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    ref={telefonoRef}
+                    id="wa-telefono"
+                    type="tel"
+                    required
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className={FIELD}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="wa-correo" className={LABEL}>
+                  Correo <span aria-hidden="true">*</span>
+                </label>
+                <input
+                  ref={correoRef}
+                  id="wa-correo"
+                  type="email"
+                  required
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  className={FIELD}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="wa-tipo" className={LABEL}>
+                  Tipo de servicio{" "}
+                  <span className="font-normal text-slate-500">(opcional)</span>
+                </label>
+                <select
+                  id="wa-tipo"
+                  value={tipo}
+                  onChange={(e) => setTipo(e.target.value)}
+                  className={FIELD}
+                >
+                  <option value="">Seleccione una opción</option>
+                  {REQUEST_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="wa-mensaje" className={LABEL}>
+                  Mensaje{" "}
+                  <span className="font-normal text-slate-500">(opcional)</span>
+                </label>
+                <textarea
+                  id="wa-mensaje"
+                  rows={2}
+                  value={mensaje}
+                  onChange={(e) => setMensaje(e.target.value)}
+                  className={FIELD}
+                />
+              </div>
+
+              {error && (
+                <p
+                  id={errorId}
+                  role="alert"
+                  className="text-sm font-medium text-red-600"
+                >
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                aria-describedby={error ? errorId : undefined}
+                className="w-full rounded-full bg-brand-900 px-8 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {/* Ya no "abre WhatsApp": ahora registra la solicitud y la
+                confirma aquí mismo. */}
+                {isSubmitting ? "Enviando…" : "Enviar mi solicitud"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

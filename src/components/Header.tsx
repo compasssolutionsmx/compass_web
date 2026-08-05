@@ -7,10 +7,18 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { QuoteButton } from "./QuoteModal";
 import { useSmoothScroll } from "./SmoothScroll";
 
+/**
+ * Una sola lista para el nav de escritorio y para el panel móvil: son la misma
+ * navegación en dos formatos, y duplicarla es cómo se desincronizan.
+ *
+ * OJO CON LA LONGITUD DE LAS ETIQUETAS. El nav suelto es la pieza que fija el
+ * ancho mínimo del header, y no tiene mucho margen: ver la nota del breakpoint
+ * en el <nav> de abajo antes de alargar una etiqueta o añadir un enlace.
+ */
 const NAV_LINKS = [
   { href: "#soluciones", label: "Soluciones" },
   { href: "#oferta", label: "Oferta" },
-  { href: "/nosotros", label: "Nosotros" },
+  { href: "/nosotros", label: "Nuestra Compañía" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -183,10 +191,30 @@ export default function Header({
           {/* 2. NAV — en A es una cápsula `.glass` independiente. En B pierde
               su propio vidrio: la barra ya lo aporta, y apilar dos superficies
               glass ensucia el blur y oscurece de más. El texto se queda en
-              brand-900 en los dos estados (sobre vidrio claro en ambos). */}
+              brand-900 en los dos estados (sobre vidrio claro en ambos).
+
+              APARECE EN `lg` (1024px), NO EN `md` (768px). El estado suelto es
+              el que manda, porque es el más ancho: logo a h-10 (179px) + nav
+              (428px con las etiquetas actuales) + CTA (184px) + los dos gap-4
+              suman 823px, y a 768px sólo hay 736 disponibles descontando el
+              px-4 del header. El nav es el único hijo sin `shrink-0`, así que
+              al no caber se encoge y los enlaces envuelven a dos líneas: el
+              header entero cambia de alto. Medido con las fuentes reales del
+              build (DM Sans 500 a 14px), el estado suelto necesita 855px de
+              viewport; en `lg` sobran 169px.
+
+              Antes estaba en `md` y ya se pasaba 24px entre 768 y 792px —el
+              defecto existía con la etiqueta corta, sólo que en una franja
+              estrechísima—. Al alargar "Nosotros" a "Nuestra Compañía" esa
+              franja creció a 768–855px, que es justo donde caen las tablets en
+              vertical (iPad 810, iPad Air 820), así que dejó de ser teórico.
+
+              El estado condensado no tiene este problema: va a max-w-4xl y le
+              sobran 188px. Si alguna vez se acorta el nav, esto puede volver a
+              `md`. */}
           <nav
             aria-label="Principal"
-            className={`hidden items-center border border-transparent text-sm font-medium text-brand-900 transition-[max-width,padding,gap,background-color,border-radius,box-shadow] duration-300 motion-reduce:transition-none md:flex ${
+            className={`hidden items-center border border-transparent text-sm font-medium text-brand-900 transition-[max-width,padding,gap,background-color,border-radius,box-shadow] duration-300 motion-reduce:transition-none lg:flex ${
               isCondensed
                 ? "gap-6 px-2 py-1"
                 : "glass gap-8 rounded-full px-8 py-3"
@@ -240,7 +268,7 @@ export default function Header({
               aria-controls={MOBILE_PANEL_ID}
               // Sin fondo propio detrás, este ícono cambia de color por la
               // misma razón que el logo.
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors md:hidden ${
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors lg:hidden ${
                 onDarkSurface
                   ? "text-white hover:bg-white/15"
                   : "text-brand-900 hover:bg-brand-900/10"
@@ -254,7 +282,7 @@ export default function Header({
 
       {/* ---- Menú móvil: panel deslizante ---- */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div
             className="absolute inset-0 bg-black/50 motion-safe:animate-fade-in"
             onClick={() => setIsMenuOpen(false)}

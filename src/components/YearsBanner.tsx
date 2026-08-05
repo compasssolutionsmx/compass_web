@@ -8,9 +8,13 @@ export default function YearsBanner() {
     <section className="relative flex min-h-[320px] items-center overflow-hidden py-20 md:min-h-[400px]">
       <div className="absolute inset-0 bg-brand-950">
         {/* OJO: aquí va back-compass-all.webp. La otra foto del sitio,
-            compass-hub.webp, es la de StatsSection — no son intercambiables. */}
+            compass-hub.webp, es la de StatsSection — no son intercambiables.
+            Las dos viven en public/home/. Todo en public/ va en minúscula a
+            propósito: en macOS la caja da igual, pero en el Linux de Vercel sí
+            distingue, y una carpeta con mayúscula es un 404 esperando a que
+            alguien teclee la ruta de otra forma. */}
         <Image
-          src="/back-compass-all.webp"
+          src="/home/back-compass-all.webp"
           alt="Terminal de contenedores de Compass Solutions"
           width={1728}
           height={608}

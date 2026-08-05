@@ -212,7 +212,10 @@ function QuoteDialog() {
         {/* ---------- Abajo: el mismo cotizador de la sección del hero ----------
             Se oculta su título porque el <h2> de arriba ya nombra el diálogo.
             El banner de proveedores/vacantes viene dentro, en el paso 4. */}
-        <QuoteWizard showHeading={false} />
+        {/* `onClose` sólo se pasa aquí: es lo que hace que la pantalla de éxito
+            ofrezca "Volver al sitio". Montado inline en el home no hay modal
+            que cerrar y esa salida no aparece. */}
+        <QuoteWizard showHeading={false} onClose={closeModal} />
       </div>
     </div>
   );

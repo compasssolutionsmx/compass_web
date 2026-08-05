@@ -1,4 +1,3 @@
-import HeroCertifications from "./HeroCertifications";
 import HeroVideo from "./HeroVideo";
 import Eyebrow from "./Eyebrow";
 
@@ -32,7 +31,8 @@ export default function Hero() {
             mantiene su peso fuera del LCP viven en HeroVideo, que es cliente
             por eso. El `bg-brand-950` de este contenedor es el relleno que se
             ve hasta el primer frame. El master sin comprimir está en
-            media-src/, fuera de public/ y gitignoreado. */}
+            media-src/, fuera de public/ y gitignoreado; las versiones
+            servidas están en public/home/. */}
         <HeroVideo />
         {/* Velo de marca: dos radiales superpuestos que oscurecen la esquina
             inferior izquierda (donde cae el texto) y dejan la superior derecha
@@ -46,38 +46,32 @@ export default function Hero() {
           debajo, dos botones a menos de 100px uno del otro competían por la
           misma atención y el secundario mandaba fuera del embudo. El cotizador
           es ahora el CTA principal del hero. */}
-      {/* Dos columnas sólo a partir de `xl`, no de `lg`: el <h1> lleva
-          `lg:whitespace-nowrap` y necesita 791px. A 1024px el contenedor da
-          976px, y restarle la tarjeta (256px + gap) lo dejaría en 676px, con lo
-          que el título se desbordaría. A partir de 1280px sobra sitio para las
-          dos. Debajo de `xl` la tarjeta cae bajo el párrafo, que es lo que
-          queremos en móvil. */}
-      <div className="relative mx-auto grid w-full max-w-7xl gap-6 px-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-10">
-        <div>
-          {/* Eyebrow de posicionamiento. <Eyebrow> renderiza un <p>, NO un
-              heading: el hero ya tiene su <h1> y meter un heading encima
-              rompería la jerarquía del documento.
-              `tone="dark"` por ir sobre el video: 6.00:1 en el peor frame. */}
-          <Eyebrow tone="dark" className="mb-4">
-            Freight forwarder y logística internacional en México
-          </Eyebrow>
-          {/* Una sola línea en desktop. Medido con la Manrope real: el texto
+      {/* Antes esto era un grid de dos columnas —texto y la tarjeta de
+          certificaciones— que sólo se separaba en `xl`. Las certificaciones se
+          movieron a su propia sección bajo el cotizador, así que aquí queda una
+          sola columna y el grid sobra. */}
+      <div className="relative mx-auto w-full max-w-7xl px-6">
+        {/* Eyebrow de posicionamiento. <Eyebrow> renderiza un <p>, NO un
+            heading: el hero ya tiene su <h1> y meter un heading encima
+            rompería la jerarquía del documento.
+            `tone="dark"` por ir sobre el video: 6.00:1 en el peor frame. */}
+        <Eyebrow tone="dark" className="mb-4">
+          Freight forwarder y logística internacional en México
+        </Eyebrow>
+        {/* Una sola línea en desktop. Medido con la Manrope real: el texto
             ocupa 15.259 em, o sea ~791px en bold a text-5xl, y necesita un
             viewport de ~839px. Por eso el `nowrap` entra en `lg` (1024px) y no
             en `md` (768px), donde se desbordaría.
             El `max-w-4xl` (896px) se libera en lg: si no, seguiría partiendo
             aunque el viewport diera de sobra. En móvil sí parte, es inevitable. */}
-          <h1 className="max-w-4xl font-heading text-4xl font-bold leading-tight text-white md:text-5xl lg:max-w-none lg:whitespace-nowrap">
-            Impulsamos su Crecimiento Global
-          </h1>
-          <p className="mt-6 max-w-3xl text-lg text-slate-200">
-            Transformamos los desafíos globales en oportunidades. Diseñamos
-            soluciones logísticas sin fronteras que impulsan el crecimiento de
-            cada industria a través de las fronteras.
-          </p>
-        </div>
-
-        <HeroCertifications />
+        <h1 className="max-w-4xl font-heading text-4xl font-bold leading-tight text-white md:text-5xl lg:max-w-none lg:whitespace-nowrap">
+          Impulsamos su Crecimiento Global
+        </h1>
+        <p className="mt-6 max-w-3xl text-lg text-slate-200">
+          Transformamos los desafíos globales en oportunidades. Diseñamos
+          soluciones logísticas sin fronteras que impulsan el crecimiento de
+          cada industria a través de las fronteras.
+        </p>
       </div>
     </section>
   );

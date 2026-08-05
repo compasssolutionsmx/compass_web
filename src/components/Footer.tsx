@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import CookiePreferencesButton from "./CookiePreferencesButton";
 import { SALES_PHONE_DISPLAY } from "@/lib/site";
 
 const INFO_LINKS = [
@@ -21,7 +22,10 @@ const SERVICE_LINKS = [
   { href: "/tipo-solucion/soluciones-360", label: "Soluciones 360" },
   { href: "/tipo-solucion/transporte-aereo", label: "Transporte Aéreo" },
   { href: "/tipo-solucion/transporte-maritimo", label: "Transporte Marítimo" },
-  { href: "/tipo-solucion/transporte-terrestre", label: "Transporte Terrestre" },
+  {
+    href: "/tipo-solucion/transporte-terrestre",
+    label: "Transporte Terrestre",
+  },
 ];
 
 export default function Footer() {
@@ -48,7 +52,9 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 font-heading text-sm font-semibold text-white">Información</h4>
+          <h4 className="mb-4 font-heading text-sm font-semibold text-white">
+            Información
+          </h4>
           <ul className="space-y-2 text-sm">
             {INFO_LINKS.map((link) => (
               <li key={link.href}>
@@ -57,11 +63,19 @@ export default function Footer() {
                 </Link>
               </li>
             ))}
+            {/* Retirar el consentimiento tiene que ser tan fácil como darlo
+                (GDPR art. 7.3), así que la puerta de vuelta al banner vive
+                aquí, junto al resto de lo legal. */}
+            <li>
+              <CookiePreferencesButton />
+            </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="mb-4 font-heading text-sm font-semibold text-white">Servicios</h4>
+          <h4 className="mb-4 font-heading text-sm font-semibold text-white">
+            Servicios
+          </h4>
           <ul className="space-y-2 text-sm">
             {SERVICE_LINKS.map((link) => (
               <li key={link.href}>
@@ -74,7 +88,9 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 font-heading text-sm font-semibold text-white">Ubicación</h4>
+          <h4 className="mb-4 font-heading text-sm font-semibold text-white">
+            Ubicación
+          </h4>
           <p className="mb-6 text-sm">
             Mitikah, Torre M, Av. Río Churubusco 601-piso 17 int 1707, Xoco,
             Benito Juárez, 03330 Ciudad de México, CDMX
@@ -102,7 +118,7 @@ export default function Footer() {
           © Copyright Compass Solutions {new Date().getFullYear()}. All Rights
           Reserved.
         </p>
-        {/* public/Black-webtag.png es el webtag "Created By ✕ SCNDAL" (1814x221),
+        {/* public/brand/Black-webtag.png es el webtag "Created By ✕ SCNDAL" (1814x221),
             no el logo de Compass — por eso va aquí, en el crédito de agencia,
             y no en el slot de arriba.
             `invert` porque el arte es negro y el footer es brand-950: sin él
@@ -116,7 +132,7 @@ export default function Footer() {
           className="opacity-80 transition-opacity hover:opacity-100"
         >
           <Image
-            src="/Black-webtag.png"
+            src="/brand/Black-webtag.png"
             alt="Created by SCNDAL"
             width={1814}
             height={221}

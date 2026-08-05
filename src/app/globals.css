@@ -363,14 +363,13 @@
      brand-100  9.86:1
    Los tres pasan AA y AAA. */
 @utility brand-gradient {
-  background:
-    radial-gradient(
-        120% 90% at 85% 5%,
-        #013a50 0%,
-        #012a3a 55%,
-        #011b26 100%
-      )
-      #011b26;
+  background: radial-gradient(
+      120% 90% at 85% 5%,
+      #013a50 0%,
+      #012a3a 55%,
+      #011b26 100%
+    )
+    #011b26;
   background-blend-mode: normal;
 }
 
@@ -389,7 +388,8 @@
   backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow:
-    /* sombra suave exterior */ 0 8px 24px rgba(1, 20, 30, 0.4),
+    /* sombra suave exterior */
+    0 8px 24px rgba(1, 20, 30, 0.4),
     /* highlight especular arriba */ inset 0 1px 0 rgba(255, 255, 255, 0.25),
     /* glow interno inferior */ inset 0 -8px 16px rgba(1, 20, 30, 0.2);
   transition:
@@ -471,14 +471,45 @@ button:not(:disabled),
 }
 
 /* El header es fixed: los anchors (#soluciones, #oferta) tienen que frenar
-   antes para no quedar debajo de él. */
+   antes para no quedar debajo de él.
+
+   `overflow-x: clip` es el seguro de `bleed-right` (ver abajo). Ese sangrado se
+   calcula con 100vw, y 100vw INCLUYE el ancho de la barra de scroll: en
+   Windows/Linux —o en macOS con las barras siempre visibles— el track se pasa
+   ~15px del área visible y aparece un scroll horizontal parásito. Con `clip`
+   ese sobrante se recorta y no hay barra.
+
+   `clip` y no `hidden` a propósito: `hidden` convertiría a <html> en contenedor
+   de scroll —rompiendo el scroll nativo y peleándose con Lenis—, mientras que
+   `clip` recorta sin crear scroll y admite dejar el eje vertical en `visible`,
+   que es exactamente el par que se necesita aquí. */
 html {
   scroll-padding-top: 6rem;
+  overflow-x: clip;
 }
 
 body {
   background: #ffffff;
   color: var(--color-slate-800);
+}
+
+/* Sangrado a la derecha: estira un bloque desde donde termina el contenedor de
+   página hasta el borde mismo de la ventana. Lo usa el track del carrusel de
+   noticias, para que la tarjeta cortada se corte contra la pantalla y no contra
+   un margen.
+
+   Da por hecho el contenedor estándar del sitio —`mx-auto max-w-7xl px-6`— y de
+   ahí salen las dos constantes: 80rem es el max-w-7xl y 1.5rem el px-6. La
+   distancia que hay que recuperar es el margen que reparte `mx-auto` a un lado,
+   (100vw - 80rem)/2, más el padding lateral. El `min()` es para las ventanas
+   más angostas que 80rem, donde ese margen es 0 y sólo queda el padding.
+
+   Va como margen NEGATIVO, no como width: así el bloque crece hacia la derecha
+   sin mover su borde izquierdo ni empujar a nadie. Su contenedor debe poder
+   desbordarse —nada de `overflow-hidden` en el camino— y el sobrante de la
+   barra de scroll lo recorta el `overflow-x: clip` de <html>. */
+@utility bleed-right {
+  margin-right: calc(-1 * ((100vw - min(100vw, 80rem)) / 2 + 1.5rem));
 }
 
 /* Foco visible consistente en todo elemento interactivo (a11y).
