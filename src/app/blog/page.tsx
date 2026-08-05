@@ -53,7 +53,18 @@ export default function BlogIndex() {
             </div>
           </section>
 
-          <section className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <section
+            aria-labelledby="blog-lista"
+            className="mx-auto max-w-7xl px-6 py-16 md:py-24"
+          >
+            {/* Encabezado de la lista, sólo para lectores de pantalla. Existe
+                por jerarquía: sin él la página salta del <h1> del hero a los
+                títulos de tarjeta, y del último de ésos a los <h4> del footer.
+                Con este <h2> la secuencia queda h1 -> h2 -> h3 -> h4, sin
+                saltos, y de paso le da nombre accesible a la sección. */}
+            <h2 id="blog-lista" className="sr-only">
+              Artículos
+            </h2>
             <ul className="flex flex-col gap-14 md:gap-20">
               {posts.map((post) => (
                 <li key={post.slug}>
@@ -91,9 +102,12 @@ export default function BlogIndex() {
                         </time>
                       </div>
 
-                      <h2 className="font-heading text-2xl font-bold leading-snug text-brand-900 md:text-3xl">
+                      {/* <h3> y no <h2>: el título de la tarjeta cuelga del
+                          <h2> de la lista. Las clases no cambian, así que se ve
+                          exactamente igual. */}
+                      <h3 className="font-heading text-2xl font-bold leading-snug text-brand-900 md:text-3xl">
                         {post.title}
-                      </h2>
+                      </h3>
 
                       <p className="mt-4 max-w-xl text-slate-600">
                         {post.description}

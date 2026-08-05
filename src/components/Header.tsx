@@ -6,6 +6,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { QuoteButton } from "./QuoteModal";
 import { useSmoothScroll } from "./SmoothScroll";
+import { SALES_PHONE_DISPLAY } from "@/lib/site";
 
 /**
  * Una sola lista para el nav de escritorio y para el panel móvil: son la misma
@@ -15,10 +16,14 @@ import { useSmoothScroll } from "./SmoothScroll";
  * ancho mínimo del header, y no tiene mucho margen: ver la nota del breakpoint
  * en el <nav> de abajo antes de alargar una etiqueta o añadir un enlace.
  */
+/**
+ * "Nuestra Compañía" (-> /nosotros) se quitó: esa ruta no existe todavía
+ * (auditoría de enlaces internos), y un nav con un 404 es peor que un nav más
+ * corto. Vuelve a añadirse en cuanto exista la página.
+ */
 const NAV_LINKS = [
   { href: "#soluciones", label: "Soluciones" },
   { href: "#oferta", label: "Oferta" },
-  { href: "/nosotros", label: "Nuestra Compañía" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -41,9 +46,19 @@ export default function Header({
    *   - `light` una página que arranca en blanco         -> logo en su color
    */
   topTone,
+  /**
+   * `full`        el header del sitio: nav completo + CTA + hamburguesa.
+   * `conversion`  el de las landings de campaña: logo, teléfono y un solo CTA.
+   *               Se quitan los enlaces de nav porque en una landing de una
+   *               sola sección apuntarían fuera de la página — una salida
+   *               gratuita en la única página cuyo trabajo es convertir.
+   */
+  variant = "full",
 }: {
   topTone: "dark" | "light";
+  variant?: "full" | "conversion";
 }) {
+  const esConversion = variant === "conversion";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // El disparador es la POSICIÓN DE SCROLL, no "estar sobre el hero". Así el
@@ -212,29 +227,43 @@ export default function Header({
               El estado condensado no tiene este problema: va a max-w-4xl y le
               sobran 188px. Si alguna vez se acorta el nav, esto puede volver a
               `md`. */}
-          <nav
-            aria-label="Principal"
-            className={`hidden items-center border border-transparent text-sm font-medium text-brand-900 transition-[max-width,padding,gap,background-color,border-radius,box-shadow] duration-300 motion-reduce:transition-none lg:flex ${
-              isCondensed
-                ? "gap-6 px-2 py-1"
-                : "glass gap-8 rounded-full px-8 py-3"
-            }`}
-          >
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-opacity hover:opacity-70"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          {!esConversion && (
+            <nav
+              aria-label="Principal"
+              className={`hidden items-center border border-transparent text-sm font-medium text-brand-900 transition-[max-width,padding,gap,background-color,border-radius,box-shadow] duration-300 motion-reduce:transition-none lg:flex ${
+                isCondensed
+                  ? "gap-6 px-2 py-1"
+                  : "glass gap-8 rounded-full px-8 py-3"
+              }`}
+            >
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="transition-opacity hover:opacity-70"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* 3. CTA — cristal AZUL. Al 88% es casi opaco, así que dentro de la
               barra glass de B no se lee como vidrio sobre vidrio sino como una
               pastilla sólida de acento. Por eso no hace falta adaptarlo. */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            {esConversion && (
+              /* El teléfono es la otra vía de contacto de la landing. Se oculta
+                 en pantallas muy angostas para que no compita con el CTA. */
+              <a
+                href={`tel:+${SALES_PHONE_DISPLAY.replace(/\D/g, "")}`}
+                className={`hidden font-heading text-sm font-semibold transition-opacity hover:opacity-80 sm:inline ${
+                  onDarkSurface ? "text-white" : "text-brand-900"
+                }`}
+              >
+                {SALES_PHONE_DISPLAY}
+              </a>
+            )}
             {/* Cristal azul: el cuerpo, las sombras en capas, el barrido de
               brillo y el respeto a prefers-reduced-motion viven en la utilidad
               `.glass-cta` de globals.css. Aquí sólo va la forma y el contenido.
@@ -259,29 +288,31 @@ export default function Header({
               />
             </QuoteButton>
 
-            <button
-              ref={openButtonRef}
-              type="button"
-              onClick={() => setIsMenuOpen(true)}
-              aria-label="Abrir menú"
-              aria-expanded={isMenuOpen}
-              aria-controls={MOBILE_PANEL_ID}
-              // Sin fondo propio detrás, este ícono cambia de color por la
-              // misma razón que el logo.
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors lg:hidden ${
-                onDarkSurface
-                  ? "text-white hover:bg-white/15"
-                  : "text-brand-900 hover:bg-brand-900/10"
-              }`}
-            >
-              <Menu className="h-6 w-6" aria-hidden="true" />
-            </button>
+            {!esConversion && (
+              <button
+                ref={openButtonRef}
+                type="button"
+                onClick={() => setIsMenuOpen(true)}
+                aria-label="Abrir menú"
+                aria-expanded={isMenuOpen}
+                aria-controls={MOBILE_PANEL_ID}
+                // Sin fondo propio detrás, este ícono cambia de color por la
+                // misma razón que el logo.
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors lg:hidden ${
+                  onDarkSurface
+                    ? "text-white hover:bg-white/15"
+                    : "text-brand-900 hover:bg-brand-900/10"
+                }`}
+              >
+                <Menu className="h-6 w-6" aria-hidden="true" />
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* ---- Menú móvil: panel deslizante ---- */}
-      {isMenuOpen && (
+      {isMenuOpen && !esConversion && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
             className="absolute inset-0 bg-black/50 motion-safe:animate-fade-in"

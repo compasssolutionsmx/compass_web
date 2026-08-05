@@ -1,8 +1,16 @@
 import Image from "next/image";
-import Link from "next/link";
 import CookiePreferencesButton from "./CookiePreferencesButton";
 import { SALES_PHONE_DISPLAY } from "@/lib/site";
 
+/**
+ * NINGUNO DE LOS 10 ENLACES DE ABAJO ES CLICABLE HOY (auditoría de enlaces
+ * internos): las cuatro rutas de INFO_LINKS y las seis de SERVICE_LINKS
+ * devuelven 404 — ninguna página existe todavía. Los `href` se quedan en los
+ * datos porque son el destino real una vez que Alex confirme la arquitectura
+ * de URLs de servicios y se construyan /nosotros, /vacantes y
+ * /apartado-legal; reactivarlos es volver a envolver cada `label` en
+ * `<Link href={link.href}>` en las dos listas de abajo.
+ */
 const INFO_LINKS = [
   { href: "/nosotros#contactanos", label: "Proveedores" },
   { href: "/vacantes", label: "Trabaja con Nosotros" },
@@ -56,16 +64,18 @@ export default function Footer() {
             Información
           </h4>
           <ul className="space-y-2 text-sm">
+            {/* Texto plano, no `<Link>`: las cuatro rutas son 404 hoy (ver la
+                nota de INFO_LINKS). Sin subrayado ni hover que insinúe que se
+                puede hacer clic — eso sería peor que no tener el enlace. */}
             {INFO_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="hover:text-white">
-                  {link.label}
-                </Link>
+              <li key={link.href} className="text-slate-400">
+                {link.label}
               </li>
             ))}
             {/* Retirar el consentimiento tiene que ser tan fácil como darlo
                 (GDPR art. 7.3), así que la puerta de vuelta al banner vive
-                aquí, junto al resto de lo legal. */}
+                aquí, junto al resto de lo legal. Éste SÍ es interactivo de
+                verdad: no navega, sólo reabre el banner ya montado. */}
             <li>
               <CookiePreferencesButton />
             </li>
@@ -77,11 +87,11 @@ export default function Footer() {
             Servicios
           </h4>
           <ul className="space-y-2 text-sm">
+            {/* Texto plano, no `<Link>`: las seis rutas de /tipo-solucion/*
+                son 404 hoy (ver la nota de SERVICE_LINKS). */}
             {SERVICE_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="hover:text-white">
-                  {link.label}
-                </Link>
+              <li key={link.href} className="text-slate-400">
+                {link.label}
               </li>
             ))}
           </ul>

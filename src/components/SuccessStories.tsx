@@ -1,4 +1,3 @@
-import Eyebrow from "./Eyebrow";
 import { QuoteButton } from "./QuoteModal";
 import SuccessStoriesCarousel, {
   type SuccessStory,
@@ -15,10 +14,14 @@ import SuccessStoriesCarousel, {
  * <SuccessStoriesCarousel>, igual que <BlogPreview> con <BlogCarousel>.
  *
  * Los tres casos son los del sitio actual de Compass, con sus cifras tal cual.
- * El verde limón que usa el sitio actual NO viaja aquí. La SECCIÓN entera va
- * sobre una franja brand-100 a sangre, para separarla de <ServicesGrid> arriba
- * y <IntegratedSolutions> abajo, que van sobre el blanco de página; la tarjeta
- * del rotador es blanca encima de esa franja.
+ * COLOR: el verde limón del sitio actual NO viaja aquí. Las tarjetas van en
+ * brand-100 sobre el blanco de página, que es el default seguro que fija el
+ * mockup de la landing y respeta la regla de "sin color de acento" del
+ * proyecto.
+ *
+ * COMPARTIDO por el home y por /importaciones-a-mexico: el mockup de la landing
+ * trae esta misma sección, con los mismos tres clientes y el mismo copy, así
+ * que se construye una vez y se monta en las dos.
  *
  * USO DE MARCAS: los tres son logos de clientes y el cliente confirmó tener
  * autorización para exhibirlos. Si esa autorización cambia para alguno, se
@@ -46,6 +49,18 @@ import SuccessStoriesCarousel, {
  */
 const STORIES: SuccessStory[] = [
   {
+    client: "Arca Continental",
+    logo: {
+      src: "/logo-clients/arca-continental.webp",
+      width: 900,
+      height: 366,
+    },
+    headline: "Rentabilidad Maximizada",
+    subtitle: "Optimización de Costos en Fletes.",
+    description:
+      "Gracias a nuestras alianzas globales, ofrecemos tarifas competitivas en transporte multimodal, permitiendo a nuestros clientes expandir su alcance sin incrementar su presupuesto logístico.",
+  },
+  {
     client: "CEMEX",
     logo: { src: "/logo-clients/cemex.webp", width: 874, height: 167 },
     headline: "+19% Rendimiento Energético",
@@ -61,18 +76,6 @@ const STORIES: SuccessStory[] = [
     description:
       "Rediseñamos sus flujos de importación desde Asia, Europa y América, logrando reducir los tiempos de tránsito a la mitad mediante la consolidación inteligente de carga.",
   },
-  {
-    client: "Arca Continental",
-    logo: {
-      src: "/logo-clients/arca-continental.webp",
-      width: 900,
-      height: 366,
-    },
-    headline: "Rentabilidad Maximizada",
-    subtitle: "Optimización de Costos en Fletes.",
-    description:
-      "Gracias a nuestras alianzas globales, ofrecemos tarifas competitivas en transporte multimodal, permitiendo a nuestros clientes expandir su alcance sin incrementar su presupuesto logístico.",
-  },
 ];
 
 export default function SuccessStories() {
@@ -80,12 +83,14 @@ export default function SuccessStories() {
     // `py-20` como <ServicesGrid> encima y <IntegratedSolutions> debajo: es el
     // ritmo de esta zona del home, así que esta sección no introduce saltos.
     //
-    // Franja tintada de borde a borde: el fondo va en el <section>, que es a
-    // sangre, y el ancho máximo lo pone el <div> de dentro. Si el fondo fuera
-    // al contenedor con `max-w-7xl`, el color se cortaría a los 1280px y
-    // quedaría una tira blanca a cada lado.
-    <section aria-labelledby="casos-titulo" className="bg-brand-100">
-      <div className="mx-auto max-w-7xl px-6 py-20">
+    // Sección sobre el blanco de página: el tinte brand-100 vive ahora en las
+    // TARJETAS, no en la franja. Si fueran los dos, las tarjetas se perderían
+    // contra su propio fondo.
+    <section
+      aria-labelledby="casos-titulo"
+      className="mx-auto max-w-7xl px-6 py-20"
+    >
+      <div>
         {/* DOS COLUMNAS, 2fr/3fr — o sea 40/60, que es lo que pedía el diseño.
             Es el mismo esquema de <BlogPreview> (bloque fijo de texto a un
             lado, pieza que se mueve al otro), sólo que allí la izquierda es de
@@ -106,22 +111,14 @@ export default function SuccessStories() {
             el mismo motivo por el que la fila de `lg` usa `minmax(0,...)`. */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center lg:gap-12">
           <div>
-            {/* `tone="tint"` y no el `light` por defecto: ese pill es
-                brand-100, exactamente el color de la franja de esta sección, y
-                se volvía invisible. El `tint` lo invierte a blanco — es el caso
-                para el que existe, y el mismo que ya usa <StatsSection> dentro
-                de su caja brand-100. */}
-            <Eyebrow tone="tint" className="mb-3">
-              Casos de éxito
-            </Eyebrow>
+            {/* Sin eyebrow: el mockup de la landing abre directo en el H2, y
+                este bloque es el mismo en las dos páginas. */}
             <h2
               id="casos-titulo"
               className="font-heading text-3xl font-bold text-brand-900 md:text-4xl"
             >
-              Resultados Que Se Pueden Medir
+              Impacto Real en la Cadena de Suministro
             </h2>
-            {/* slate-600 y no el slate-500 del resto del sitio: sobre la franja
-                brand-100 el 500 da 4.05:1 y NO pasa AA. El 600 da 6.45:1. */}
             <p className="mt-4 text-slate-600">
               No solo gestionamos logística, entregamos resultados tangibles.
               Transformamos los desafíos de importación en oportunidades de
@@ -131,7 +128,7 @@ export default function SuccessStories() {
 
             {/* Mismo <QuoteButton> que el CTA de <IntegratedSolutions>; cambia
                 sólo la piel, porque allá va sobre la caja oscura y aquí sobre
-                la franja clara. */}
+                el blanco de la página. */}
             <QuoteButton className="mt-8 rounded-full bg-brand-900 px-8 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90">
               Solicite una Cotización
             </QuoteButton>

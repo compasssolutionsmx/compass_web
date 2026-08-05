@@ -15,6 +15,17 @@ const BLOG_DIR = path.join(process.cwd(), "src/content/blog");
 
 export type PostFrontmatter = {
   title: string;
+  /**
+   * Title tag alternativo, sólo para SEO. Cuando existe manda en el <title> y
+   * en nada más: el <h1> del artículo, la tarjeta del índice y el `headline`
+   * del JSON-LD siguen usando `title`.
+   *
+   * Existe porque un buen H1 y un buen title tag no siempre son la misma frase:
+   * el H1 puede permitirse ser largo y conversacional, mientras que el title se
+   * corta a ~60 caracteres en el resultado de búsqueda y conviene que abra con
+   * la keyword. Sin este campo, cambiar uno obligaba a cambiar el otro.
+   */
+  seoTitle?: string;
   description: string;
   /** ISO `YYYY-MM-DD`. */
   date: string;

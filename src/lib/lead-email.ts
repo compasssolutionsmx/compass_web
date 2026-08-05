@@ -8,9 +8,12 @@ import "server-only";
  * filtrar la configuración —y, por arrastre, la clave de Resend— al bundle del
  * navegador.
  *
- * ESTE CORREO ES UN RESPALDO, no el canal principal. El formulario sigue
- * mandando al usuario a WhatsApp; esto existe para que el lead no se pierda si
- * esa conversación nunca llega a empezar.
+ * QUÉ ES ESTE CORREO DEPENDE DEL FORMULARIO, desde que ninguno de los dos
+ * redirige ya a WhatsApp:
+ *   - cotizador  es el REGISTRO PRINCIPAL del lead
+ *   - whatsapp   sigue siendo un RESPALDO por si el prospecto nunca abre la
+ *                conversación que se le ofrece al final
+ * Esa diferencia se refleja en el pie de cada correo (ver SOURCE_FOOTNOTES).
  *
  * VARIABLES DE ENTORNO:
  *   RESEND_KEY        obligatoria. Secreta: NUNCA prefijarla con NEXT_PUBLIC_.
@@ -132,6 +135,7 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     ["empresa", "Empresa"],
     ["correo", "Correo"],
     ["telefono", "Teléfono"],
+    ["contactoPreferido", "Contacto preferido"],
   ],
   whatsapp: [
     ["nombre", "Nombre"],
@@ -145,6 +149,30 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
 const SOURCE_LABELS: Record<LeadSource, string> = {
   cotizador: "Cotizador (formulario de 4 pasos)",
   whatsapp: "Modal rápido de WhatsApp",
+};
+
+/**
+ * Pie del correo. DEPENDE DEL ORIGEN, y no es un matiz de redacción.
+ *
+ * El cotizador ya NO manda a nadie a WhatsApp: desde que termina en pantalla de
+ * confirmación, su correo es el registro PRINCIPAL del lead. Decirle a ventas
+ * que "es un respaldo" y que "el prospecto fue enviado a WhatsApp" les haría
+ * suponer que la conversación ya empezó en otro lado, y no empezó.
+ *
+ * El modal corto sí conserva el aviso de respaldo: su razón de ser sigue siendo
+ * capturar al prospecto por si nunca abre la conversación de WhatsApp.
+ *
+ * OJO (corregido respecto del texto anterior): ese modal TAMPOCO redirige ya de
+ * forma automática — ahora ofrece el enlace en la pantalla de confirmación. La
+ * frase decía "fue enviado a WhatsApp al terminar el formulario", que dejó de
+ * ser cierto cuando se quitó el redirect; se ajusta a lo que de verdad pasa sin
+ * perder la advertencia de que puede no haber mensaje.
+ */
+const SOURCE_FOOTNOTES: Record<LeadSource, string> = {
+  cotizador:
+    "Nueva solicitud de cotización recibida desde compasssolutions.com.mx.",
+  whatsapp:
+    "Aviso automático del sitio compasssolutions.com.mx. Es un respaldo: al prospecto se le ofreció continuar por WhatsApp al terminar el formulario, pero puede que nunca haya mandado el mensaje.",
 };
 
 /**
@@ -304,9 +332,7 @@ export function buildHtml(lead: Lead): string {
     </tr>
     <tr>
       <td style="padding:16px 28px 24px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.5;">
-        Aviso automático del sitio compasssolutions.com.mx. Es un respaldo: el
-        prospecto fue enviado a WhatsApp al terminar el formulario, pero puede
-        que nunca haya mandado el mensaje.
+        ${escapeHtml(SOURCE_FOOTNOTES[lead.formulario])}
       </td>
     </tr>
   </table>
@@ -326,6 +352,6 @@ export function buildText(lead: Lead): string {
     "",
     rows,
     "",
-    "Aviso automático del sitio compasssolutions.com.mx. Es un respaldo: el prospecto fue enviado a WhatsApp al terminar el formulario, pero puede que nunca haya mandado el mensaje.",
+    SOURCE_FOOTNOTES[lead.formulario],
   ].join("\n");
 }

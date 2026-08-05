@@ -55,18 +55,15 @@ function subscribeToReducedMotion(onChange: () => void) {
 
 function StoryCard({ story }: { story: SuccessStory }) {
   return (
-    // BLANCA sobre la franja brand-100 de la sección. Blanco contra brand-100
-    // son sólo 1.18:1 de luminancia —se distinguen, pero apenas—, así que la
-    // separación la termina de marcar la sombra: sin ella la tarjeta se
-    // confundiría con su propio fondo.
+    // TARJETA EN brand-100 sobre el blanco de la sección — el default seguro
+    // que fija el mockup, en lugar del verde limón del sitio en vivo.
+    //
+    // El cuerpo va en slate-600 y NO en el slate-500 habitual del sitio: sobre
+    // brand-100 el 500 da 4.05:1 y no pasa AA; el 600 da 6.45:1.
     //
     // Sin glow al hover, a diferencia de `.tech-card`: no es clicable ni
     // seleccionable, y reaccionar al puntero prometería algo que no ocurre.
-    //
-    // El cuerpo va en slate-600 (7.58:1 aquí) y no en el slate-500 habitual:
-    // se eligió cuando la tarjeta era tintada y se conserva porque a `text-base`
-    // en un bloque de tres líneas se lee mejor.
-    <div className="flex h-full flex-col rounded-3xl bg-white p-8 shadow-xl shadow-brand-950/10">
+    <div className="flex h-full flex-col rounded-3xl bg-brand-100 p-8">
       {/* Alto fijo y ancho máximo a la vez: los tres archivos tienen
           proporciones muy distintas —CEMEX es 5.2 veces más ancho que alto,
           Arca 2.5— y sin el tope de ancho el de CEMEX saldría desproporcionado.

@@ -35,6 +35,8 @@ type Certification = {
   alt: string;
   /** Se pinta tal cual, sin `mask-image`, porque el arte ya viene a color. */
   color?: boolean;
+  /** Sin archivo todavía: se dibuja un marcador con el nombre. */
+  placeholder?: boolean;
 };
 
 /**
@@ -46,7 +48,7 @@ type Certification = {
  * Cuando llegue alacat.png a /public/logo-certs/, verificar que sea monocromo y
  * añadirlo aquí; la fila pasaría a cinco y habría que revisar el grid.
  */
-const CERTIFICATIONS: Certification[] = [
+export const CERTIFICATIONS_HOME: Certification[] = [
   { src: "/logo-certs/amacarga-trim.png", alt: "AMACARGA" },
   { src: "/logo-certs/canacar-trim.png", alt: "CANACAR" },
   { src: "/logo-certs/isoeeee-trim.png", alt: "ISO" },
@@ -80,7 +82,19 @@ const CERTIFICATIONS: Certification[] = [
  * El <span> enmascarado no es una imagen para el navegador, de ahí el
  * `role="img"` + `aria-label`: es lo que conserva el equivalente del `alt`.
  */
-function CertLogo({ src, alt, color }: Certification) {
+function CertLogo({ src, alt, color, placeholder }: Certification) {
+  if (placeholder) {
+    return (
+      <span
+        role="img"
+        aria-label={alt}
+        className="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 font-heading text-xs font-semibold text-brand-900"
+      >
+        {alt}
+      </span>
+    );
+  }
+
   if (color) {
     return (
       <Image src={src} alt={alt} fill unoptimized className="object-contain" />
@@ -97,7 +111,28 @@ function CertLogo({ src, alt, color }: Certification) {
   );
 }
 
-export default function Certifications() {
+/**
+ * Juego de logos de la landing de importaciones. Cambia WCA por ALACAT, que es
+ * la asociación que el mockup de esa página pone en el set.
+ *
+ * TODO(assets): falta el archivo de ALACAT. La nota de la landing dice que la
+ * URL del sitio en vivo respondía —lo que contradice el bloqueo anti-bot que se
+ * documentó antes—, así que vale la pena reintentar la descarga directa. Hasta
+ * entonces entra como marcador de posición, no como logo real.
+ */
+export const CERTIFICATIONS_IMPORTACIONES: Certification[] = [
+  { src: "", alt: "ALACAT", placeholder: true },
+  ...CERTIFICATIONS_HOME.filter((c) => !c.alt.startsWith("WCA")),
+];
+
+export default function Certifications({
+  items = CERTIFICATIONS_HOME,
+  title = "Certificados y asociados con",
+}: {
+  items?: Certification[];
+  /** El mockup de la landing lo titula "Certificados para el éxito". */
+  title?: string;
+} = {}) {
   return (
     // SIN padding superior: el hueco de arriba lo pone entero el `pb` de
     // <QuoteSection>, que se recortó a `pb-10 md:pb-12` (40/48px) para acercar
@@ -116,7 +151,7 @@ export default function Certifications() {
         id="certificaciones-titulo"
         className="text-center font-heading text-sm font-semibold text-brand-900"
       >
-        Certificados y asociados con
+        {title}
       </h2>
 
       {/* Dos columnas hasta `lg` y cuatro a partir de ahí. Los logos se ajustan
@@ -124,7 +159,7 @@ export default function Certifications() {
           los recortes tienen proporciones distintas, ninguno llena su caja en
           los dos ejes a la vez. */}
       <ul className="mt-6 grid grid-cols-2 items-center gap-x-8 gap-y-10 md:mt-8 lg:grid-cols-4 lg:gap-x-12">
-        {CERTIFICATIONS.map((cert) => (
+        {items.map((cert) => (
           <li
             key={cert.alt}
             /* Acotado por ALTO y por ANCHO. Los cuatro recortes tienen

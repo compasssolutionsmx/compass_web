@@ -1,6 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
-import { ArrowUpRight, Plane, Ship, Truck, Warehouse } from "lucide-react";
+import { Plane, Ship, Truck, Warehouse } from "lucide-react";
 import Eyebrow from "./Eyebrow";
 import {
   SCOPE_BRANCHES,
@@ -16,8 +15,12 @@ import {
  * contenido se deriva del árbol de `lib/services.ts`. Los nombres de servicio
  * no se escriben aquí — si el árbol cambia, esta sección cambia sola.
  *
- * TODO(páginas): ninguna de las rutas que arma `servicePath()` existe todavía.
- * Los enlaces quedan listos para cuando se construyan.
+ * SIN ENLACES REALES, a propósito: ninguna de las rutas que arma
+ * `servicePath()` existe todavía (confirmado — 404 en las seis), así que las
+ * tarjetas dejaron de ser `<Link>`. `href` se queda en los datos (SCOPE_CARDS,
+ * MODE_CARDS) porque es la ruta real que tendrán en cuanto existan las
+ * páginas: revertir a clicables es cambiar `<div>` por `<Link href={href}>`
+ * en las dos listas de abajo, nada más.
  */
 
 const [INTERNACIONAL, NACIONAL] = SCOPE_BRANCHES;
@@ -141,27 +144,21 @@ export default function ServicesGrid() {
 
       {/* ---- Fila 1: las dos ramas de alcance, protagonistas ---- */}
       <ul className="grid gap-6 md:grid-cols-2">
-        {SCOPE_CARDS.map(({ branch, href, copy, chips }) => (
+        {SCOPE_CARDS.map(({ branch, copy, chips }) => (
           <li key={branch.slug}>
-            <Link
-              href={href}
-              className="group brand-gradient flex h-full flex-col rounded-3xl p-7 transition-shadow duration-300 hover:shadow-2xl hover:shadow-brand-950/25 md:p-8"
-            >
-              {/* Título a la izquierda y el enlace en la esquina superior
-                  derecha. Antes el enlace cerraba la tarjeta y el copy llevaba
-                  `flex-1` para empujarlo abajo: ese `flex-1` era el hueco
-                  muerto. Al subir el enlace, el contenido se compacta solo. */}
+            {/* `<div>` y no `<Link>`: sus páginas no existen todavía. Se quitó
+                también el "Ver servicios" con la flecha — prometía una
+                navegación que no ocurre, y dejarlo habría sido peor que no
+                tener nada. La pastilla "Próximamente" comunica el estado real
+                sin fingir que la tarjeta es clicable. */}
+            <div className="brand-gradient flex h-full flex-col rounded-3xl p-7 md:p-8">
               <div className="flex items-start justify-between gap-4">
                 <h3 className="font-heading text-2xl font-bold text-white md:text-3xl">
                   {branch.name}
                 </h3>
 
-                <span className="mt-1 inline-flex shrink-0 items-center gap-1.5 font-heading text-sm font-semibold text-white">
-                  Ver servicios
-                  <ArrowUpRight
-                    aria-hidden="true"
-                    className="h-4 w-4 transition-transform duration-250 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:group-hover:-translate-y-[3px] motion-safe:group-hover:translate-x-[3px]"
-                  />
+                <span className="mt-1 inline-flex shrink-0 items-center rounded-full bg-white/15 px-3 py-1 font-heading text-xs font-semibold text-brand-100 backdrop-blur-sm">
+                  Próximamente
                 </span>
               </div>
 
@@ -182,7 +179,7 @@ export default function ServicesGrid() {
                   </li>
                 ))}
               </ul>
-            </Link>
+            </div>
           </li>
         ))}
       </ul>
@@ -196,22 +193,25 @@ export default function ServicesGrid() {
       <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {MODE_CARDS.map((card) => (
           <li key={card.name}>
-            <Link
-              href={card.href}
-              className={`group relative flex aspect-square flex-col justify-end overflow-hidden rounded-2xl border border-white/15 transition-[border-color,box-shadow] duration-300 hover:border-brand-300 hover:shadow-2xl hover:shadow-brand-950/30 ${
+            {/* `<div>` y no `<Link>`, mismo motivo que la fila 1: su página no
+                existe. Se quitó también el hover que simulaba interactividad
+                (zoom de la foto, borde que se enciende) — con la tarjeta ya
+                inerte, ese hover prometía un clic que no lleva a ningún lado. */}
+            <div
+              className={`relative flex aspect-square flex-col justify-end overflow-hidden rounded-2xl border border-white/15 ${
                 card.image ? "" : "brand-gradient"
               }`}
             >
               {card.image && (
                 /* `alt=""`: la foto es decorativa y el nombre del servicio ya
-                   está en el <h3>. Darle texto duplicaría el anuncio del enlace. */
+                   está en el <h3>. */
                 <Image
                   src={card.image.src}
                   alt=""
                   width={card.image.w}
                   height={card.image.h}
                   sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:group-hover:scale-105"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               )}
 
@@ -221,6 +221,10 @@ export default function ServicesGrid() {
               {card.image && (
                 <div className="absolute inset-0 bg-linear-to-t from-brand-950/95 via-brand-950/55 to-transparent" />
               )}
+
+              <span className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 font-heading text-[11px] font-semibold text-brand-100 backdrop-blur-sm">
+                Próximamente
+              </span>
 
               <div className="relative p-5">
                 <card.icon
@@ -247,7 +251,7 @@ export default function ServicesGrid() {
                   )}
                 </ul>
               </div>
-            </Link>
+            </div>
           </li>
         ))}
       </ul>

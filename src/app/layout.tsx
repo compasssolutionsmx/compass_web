@@ -27,17 +27,22 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
-const SITE_DESCRIPTION =
-  "Transformamos los desafíos globales en oportunidades. Diseñamos soluciones logísticas sin fronteras que impulsan el crecimiento de cada industria a través de las fronteras.";
+/**
+ * Dominio final, confirmado. ÚNICA FUENTE de la URL absoluta del sitio: la
+ * consumen `metadataBase` de aquí abajo, el JSON-LD del artículo y el sitemap.
+ * Antes había una segunda copia hardcodeada en blog/[slug]/page.tsx.
+ */
+export const SITE_URL = "https://compasssolutions.com.mx";
 
-// TODO: definir title/description reales de SEO con el equipo de contenido.
-// El spec de referencia sólo trae el <title> del archivo de spec, no el del
-// sitio en producción.
+const SITE_TITLE = "Freight Forwarder en México | Compass Solutions";
+const SITE_DESCRIPTION =
+  "Coordinamos tu logística internacional: transporte aéreo, marítimo y terrestre, despacho aduanal y gestión documental, bajo un solo punto de contacto.";
+
 export const metadata: Metadata = {
-  // Dominio final, confirmado. Necesario para que las URLs relativas de Open
-  // Graph se resuelvan a absolutas: los crawlers no siguen rutas relativas.
-  metadataBase: new URL("https://compasssolutions.com.mx"),
-  title: "Compass Solutions",
+  // Necesario para que las URLs relativas de Open Graph y los canonical se
+  // resuelvan a absolutas: los crawlers no siguen rutas relativas.
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   // 512x512, el tamaño que recomienda Next para el icono base: desde ahí
   // resuelve el resto de densidades. No hace falta generar más medidas.
@@ -49,7 +54,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_MX",
     siteName: "Compass Solutions",
-    title: "Compass Solutions",
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     // 1200x630 (1.91:1), la medida estándar de Open Graph. El archivo original
     // venía en 1200x674 y se recortó centrado (22px arriba y abajo).

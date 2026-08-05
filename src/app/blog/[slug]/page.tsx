@@ -11,6 +11,7 @@ import Header from "@/components/Header";
 import { QuoteButton, QuoteModalProvider } from "@/components/QuoteModal";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
+import { SITE_URL } from "@/app/layout";
 import {
   buildBlogPostingJsonLd,
   extractHeadings,
@@ -20,8 +21,6 @@ import {
   getPostBySlug,
   postHref,
 } from "@/lib/blog";
-
-const SITE_URL = "https://compasssolutions.com.mx";
 
 /** Rutas estáticas: una por .mdx. */
 export function generateStaticParams() {
@@ -39,7 +38,9 @@ export async function generateMetadata({
 
   const url = postHref(post.slug);
   return {
-    title: `${post.title} | Compass Solutions`,
+    // `seoTitle` ya viene con su propio sufijo de marca cuando se usa, así que
+    // no se le vuelve a añadir; el `title` normal sí lo lleva.
+    title: post.seoTitle ?? `${post.title} | Compass Solutions`,
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: url },

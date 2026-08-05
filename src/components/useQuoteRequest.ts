@@ -41,6 +41,8 @@ export type QuoteFormData = {
   empresa?: string;
   correo?: string;
   telefono?: string;
+  /** "Correo" · "WhatsApp" · "Llamada". Opcional, no bloquea el envío. */
+  contactoPreferido?: string;
 };
 
 /**

@@ -47,13 +47,18 @@ const TEXTO_WHATSAPP =
  */
 function WhatsAppCard({ url, texto }: { url: string; texto: string }) {
   return (
-    <div className="mt-8 rounded-2xl bg-brand-100 p-5 text-left">
+    // UNA SOLA LÍNEA: texto a la izquierda, botón a la derecha. Antes eran dos
+    // filas —párrafo arriba y botón a todo lo ancho debajo— y entre eso y los
+    // botones de abajo la pantalla ofrecía tres bloques apilados de acción.
+    // `flex-wrap` para que en pantallas angostas caiga a dos renglones en vez
+    // de comprimir el botón.
+    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-100 px-5 py-4 text-left">
       <p className="text-sm text-brand-900">{texto}</p>
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-4 inline-flex items-center gap-2.5 rounded-full bg-brand-900 px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className="inline-flex shrink-0 items-center gap-2.5 rounded-full bg-brand-900 px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
         {/* Mismo criterio de color que el botón flotante: navy con el glyph en
             el verde de WhatsApp. El verde de marca como fondo con texto blanco

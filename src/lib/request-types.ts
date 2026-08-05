@@ -15,6 +15,7 @@ export const REQUEST_TYPES = [
   { value: "maritimo", label: "Marítimo" },
   { value: "aereo", label: "Aéreo" },
   { value: "terrestre", label: "Terrestre" },
+  { value: "integral", label: "Integral" },
   { value: "especializado", label: "Especializado" },
   { value: "otros", label: "Otros" },
 ] as const;

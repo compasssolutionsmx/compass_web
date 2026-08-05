@@ -42,6 +42,18 @@ type SmoothScrollApi = {
    * `scroll-padding-top` del CSS.
    */
   scrollTo: (target: HTMLElement) => void;
+  /**
+   * Centra un elemento en el viewport, en vez de alinear su borde superior
+   * (que es lo que hace `scrollTo`, pensado para anclas de nav). Lo usa el
+   * auto-avance del paso 1 del cotizador inline: al elegir tipo de servicio la
+   * tarjeta crece hacia abajo, y sin esto quedaría con el borde superior
+   * pegado al header en vez de centrada.
+   *
+   * Calcula la posición absoluta a mano en vez de delegar en el `offset` de
+   * `lenis.scrollTo` con el elemento: ese offset se SUMA a la alineación por
+   * borde superior, no calcula un centrado real.
+   */
+  scrollToCenter: (target: HTMLElement) => void;
 };
 
 /** Por defecto no hace nada: si Lenis está apagado, pausar y reanudar sobran. */
@@ -49,6 +61,8 @@ const SmoothScrollContext = createContext<SmoothScrollApi>({
   pause: () => {},
   resume: () => {},
   scrollTo: (target) => target.scrollIntoView(),
+  scrollToCenter: (target) =>
+    target.scrollIntoView({ block: "center", behavior: "smooth" }),
 });
 
 export function useSmoothScroll(): SmoothScrollApi {
@@ -107,6 +121,22 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
         const lenis = lenisRef.current;
         if (lenis) lenis.scrollTo(target, { offset: -96 });
         else target.scrollIntoView();
+      },
+      scrollToCenter: (target) => {
+        const lenis = lenisRef.current;
+        if (!lenis) {
+          target.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+        // Posición absoluta que deja al elemento centrado: su borde superior
+        // actual, más el scroll ya acumulado, menos la mitad del sobrante
+        // entre el alto del viewport y el alto del elemento.
+        const rect = target.getBoundingClientRect();
+        const destino =
+          window.scrollY +
+          rect.top -
+          Math.max(0, window.innerHeight - rect.height) / 2;
+        lenis.scrollTo(Math.max(0, destino));
       },
     }),
     [],

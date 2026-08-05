@@ -32,11 +32,13 @@ export default function BlogPreview() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-12">
         <div>
           <Eyebrow className="mb-3">Blog</Eyebrow>
-          {/* Dos líneas. El <br> no cambia el nombre accesible: un lector de
-              pantalla sigue leyendo "Últimas Noticias". */}
+          {/* Dos líneas en pantalla, UNA sola cadena para quien no la ve. El
+              espacio antes del <br> es obligatorio: sin él, `textContent` —que
+              es de donde salen el nombre accesible y lo que indexa un
+              buscador— decía "ÚltimasNoticias", todo junto. El <br> no aporta
+              separación de palabra. */}
           <h2 className="font-heading text-3xl font-bold leading-tight text-brand-900 md:text-4xl">
-            Últimas
-            <br />
+            Últimas <br />
             Noticias
           </h2>
           <p className="mt-4 max-w-sm text-slate-600">

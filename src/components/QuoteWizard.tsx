@@ -18,18 +18,37 @@
  * oscuro, además de mantener un solo juego de estilos para el formulario.
  */
 
-import { Boxes, Ellipsis, Plane, Ship, Truck } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Boxes,
+  Ellipsis,
+  Plane,
+  Ship,
+  Truck,
+} from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { REQUEST_TYPES, useQuoteRequest } from "./useQuoteRequest";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
+import { useSmoothScroll } from "./SmoothScroll";
 
 type TypeValue = (typeof REQUEST_TYPES)[number]["value"];
 
-/** Un ícono por tipo de solicitud, en el mismo orden de REQUEST_TYPES. */
+/**
+ * Un ícono por tipo de solicitud, en el mismo orden de REQUEST_TYPES.
+ *
+ * "Integral" usa `ArrowLeftRight` y no un compuesto avión+barco+flechas: a los
+ * 20px del slot del chip, superponer dos o tres glifos de lucide se vuelve
+ * ilegible — se probó y no se distinguía nada. `ArrowLeftRight` es justo el
+ * primer nombre que se sugirió, comunica "intercambiable/combinado" con un
+ * solo trazo limpio, y mantiene la consistencia visual con el resto de los
+ * íconos del paso (todos son un solo glifo de lucide a este tamaño).
+ */
 const TYPE_ICONS: Record<TypeValue, typeof Ship> = {
   maritimo: Ship,
   aereo: Plane,
   terrestre: Truck,
+  integral: ArrowLeftRight,
   especializado: Boxes,
   otros: Ellipsis,
 };
@@ -40,10 +59,14 @@ const TYPE_ICONS: Record<TypeValue, typeof Ship> = {
  * etiqueta seca ("Servicio"), que no pedía nada.
  */
 const STEPS = [
-  { id: 1, label: "Servicio", prompt: "¿Qué tipo de servicio necesita?" },
+  {
+    id: 1,
+    label: "Servicio",
+    prompt: "Seleccione el tipo de transporte que está buscando",
+  },
   { id: 2, label: "Ruta", prompt: "¿Cuál es la ruta de su carga?" },
   { id: 3, label: "Embarque", prompt: "¿Qué va a mover y cuándo?" },
-  { id: 4, label: "Contacto", prompt: "¿A quién le respondemos?" },
+  { id: 4, label: "Contacto", prompt: "¿Cómo lo contactamos?" },
 ] as const;
 
 /**
@@ -92,6 +115,17 @@ const ROUTE_STEP = {
     legend: "Tipo de servicio terrestre",
     options: ["LTL consolidado", "FTL dedicado"],
   },
+  /**
+   * "Integral" combina modos (aéreo+terrestre, marítimo+terrestre, etc.), así
+   * que no tiene un selector de puerto/aeropuerto propio — es texto libre,
+   * igual que Especializado y Otros, describiendo la combinación.
+   */
+  integral: {
+    kind: "text" as const,
+    legend: "Describa su necesidad de transporte combinado",
+    placeholder:
+      "Ej. marítimo + terrestre, aéreo + terrestre, cambio de modo a media ruta…",
+  },
   especializado: {
     kind: "text" as const,
     legend: "Describa su carga especializada",
@@ -104,6 +138,9 @@ const ROUTE_STEP = {
     placeholder: "Cuéntenos qué necesita mover y le proponemos una solución.",
   },
 };
+
+/** Opciones del chip "¿Cómo prefiere que lo contactemos?" (paso 4, opcional). */
+const CONTACT_PREFERENCES = ["Correo", "WhatsApp", "Llamada"];
 
 const FIELD =
   "w-full rounded-lg border border-slate-500 px-3 py-2.5 text-sm transition-colors focus:border-brand-900";
@@ -138,6 +175,45 @@ function Chip({
   );
 }
 
+/**
+ * Enlace discreto para desviar a quien en realidad busca ser proveedor de
+ * Compass o trabajar ahí — antes de que llene el formulario de cotización.
+ * Texto secundario a propósito: no debe competir visualmente con los chips de
+ * servicio, sólo estar disponible para quien de verdad busca otra cosa.
+ *
+ * No se monta en la rama "Otros": ahí ya están los dos botones grandes
+ * dedicados (ver el bloque de texto libre del paso 2), y repetir el mismo par
+ * de destinos sería redundante.
+ */
+function ProveedorVacantesLink({
+  onProveedor,
+  onVacantes,
+}: {
+  onProveedor: () => void;
+  onVacantes: () => void;
+}) {
+  return (
+    <p className="mt-3 text-xs text-slate-400">
+      ¿Busca ser proveedor o trabajar con nosotros?{" "}
+      <button
+        type="button"
+        onClick={onProveedor}
+        className="underline underline-offset-2 hover:text-slate-600"
+      >
+        Proveedores
+      </button>
+      {" · "}
+      <button
+        type="button"
+        onClick={onVacantes}
+        className="underline underline-offset-2 hover:text-slate-600"
+      >
+        Vacantes
+      </button>
+    </p>
+  );
+}
+
 export default function QuoteWizard({
   /** El modal ya tiene su propio título, así que ahí se oculta el de la tarjeta. */
   showHeading = true,
@@ -164,6 +240,8 @@ export default function QuoteWizard({
     retryLead,
     resetLead,
   } = useQuoteRequest();
+  const router = useRouter();
+  const { scrollToCenter } = useSmoothScroll();
 
   const [step, setStep] = useState(1);
   const [tipo, setTipo] = useState<TypeValue | "">("");
@@ -171,16 +249,27 @@ export default function QuoteWizard({
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [otroPuerto, setOtroPuerto] = useState("");
   const [fecha, setFecha] = useState("");
   const [detalles, setDetalles] = useState("");
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [contactoPreferido, setContactoPreferido] = useState("");
 
+  const wizardRef = useRef<HTMLDivElement>(null);
   const stepHeadingRef = useRef<HTMLParagraphElement>(null);
   const isFirstRender = useRef(true);
   const advanceTimer = useRef<number | null>(null);
+  /**
+   * Marca si el próximo cambio de `step` debe centrar la tarjeta en el
+   * viewport. Sólo se enciende para el auto-avance de paso 1 -> 2 en la
+   * instancia INLINE (home). El modal ya está centrado por ser modal, y las
+   * demás transiciones (Continuar/Atrás) son un clic explícito del usuario,
+   * que ya sabe dónde está mirando — no hace falta re-centrar la vista ahí.
+   */
+  const shouldCenterOnNextStep = useRef(false);
 
   // Si el componente se desmonta durante el retraso del auto-avance (p. ej. al
   // cerrar el modal), el timer no debe seguir vivo.
@@ -202,7 +291,30 @@ export default function QuoteWizard({
       return;
     }
     stepHeadingRef.current?.focus();
-  }, [step]);
+
+    if (shouldCenterOnNextStep.current) {
+      shouldCenterOnNextStep.current = false;
+      if (wizardRef.current) scrollToCenter(wizardRef.current);
+    }
+  }, [step, scrollToCenter]);
+
+  /**
+   * Saca al usuario del cotizador SIN enviar nada: sin POST de correo, sin
+   * pantalla de confirmación, sin evento de conversión (hoy no existe ninguno
+   * atado al éxito del formulario, así que aquí no hay nada que suprimir a
+   * propósito — sólo que quede documentado que esta salida no debe disparar
+   * uno si algún día se añade).
+   *
+   * `onClose?.()` cierra el modal primero cuando aplica; en la instancia
+   * inline no hay nada que cerrar y la navegación reemplaza la página entera.
+   */
+  function exitTo(path: string) {
+    if (advanceTimer.current !== null) {
+      window.clearTimeout(advanceTimer.current);
+    }
+    onClose?.();
+    router.push(path);
+  }
 
   const selectedType = REQUEST_TYPES.find((t) => t.value === tipo);
   const route = tipo ? ROUTE_STEP[tipo] : null;
@@ -215,6 +327,7 @@ export default function QuoteWizard({
     setOrigen("");
     setDestino("");
     setDescripcion("");
+    setOtroPuerto("");
     setError(null);
 
     // El paso 1 no tiene botón "Continuar": elegir servicio ES avanzar. Como
@@ -224,8 +337,37 @@ export default function QuoteWizard({
     if (advanceTimer.current !== null) {
       window.clearTimeout(advanceTimer.current);
     }
+    // Sólo en la instancia INLINE (sin `onClose`): la tarjeta crece hacia abajo
+    // al entrar al paso 2 y, sin recentrar, el borde superior queda pegado al
+    // header en vez de centrada en pantalla. El modal ya está centrado por ser
+    // modal, así que ahí este re-centrado sobraría.
+    if (!onClose) shouldCenterOnNextStep.current = true;
     advanceTimer.current = window.setTimeout(() => {
       setStep(2);
+    }, AUTO_ADVANCE_MS);
+  }
+
+  /**
+   * Selección de puerto/aeropuerto (paso 2, ramas Marítimo y Aéreo).
+   *
+   * Auto-avanza igual que el paso 1, EXCEPTO cuando es Marítimo + "Otro": ahí
+   * se revela un campo de texto para el nombre del puerto, y hay que esperar a
+   * que el usuario termine de escribir. El botón "Continuar" de la barra de
+   * abajo —que ya existe para este paso— es el que cubre esa espera; no hace
+   * falta un botón nuevo.
+   */
+  function pickSub(option: string) {
+    setSub(option);
+    setError(null);
+
+    const esperaTextoLibre = tipo === "maritimo" && option === "Otro";
+    if (esperaTextoLibre) return;
+
+    if (advanceTimer.current !== null) {
+      window.clearTimeout(advanceTimer.current);
+    }
+    advanceTimer.current = window.setTimeout(() => {
+      setStep(3);
     }, AUTO_ADVANCE_MS);
   }
 
@@ -255,12 +397,14 @@ export default function QuoteWizard({
     setOrigen("");
     setDestino("");
     setDescripcion("");
+    setOtroPuerto("");
     setFecha("");
     setDetalles("");
     setNombre("");
     setEmpresa("");
     setCorreo("");
     setTelefono("");
+    setContactoPreferido("");
     setError(null);
     resetLead();
   }
@@ -283,10 +427,18 @@ export default function QuoteWizard({
       return;
     }
 
+    // El puerto escrito a mano reemplaza al literal "Otro" en el payload y en
+    // el correo; si el usuario no llegó a escribir nada, se manda "Otro" tal
+    // cual en vez de perder el dato.
+    const subResuelto =
+      tipo === "maritimo" && sub === "Otro"
+        ? otroPuerto.trim() || "Otro"
+        : sub;
+
     void submitQuote(
       {
         tipo,
-        sub: sub || undefined,
+        sub: subResuelto || undefined,
         origen: origen || undefined,
         destino: destino || undefined,
         fecha: fecha || undefined,
@@ -296,6 +448,7 @@ export default function QuoteWizard({
         empresa: empresa.trim() || undefined,
         correo: correo.trim(),
         telefono: telefono.trim() || undefined,
+        contactoPreferido: contactoPreferido || undefined,
       },
       selectedType.label,
     );
@@ -327,7 +480,10 @@ export default function QuoteWizard({
   }
 
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10">
+    <div
+      ref={wizardRef}
+      className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10"
+    >
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         {showHeading ? (
           <h2
@@ -395,32 +551,38 @@ export default function QuoteWizard({
             vertical medían 98px de alto cada una y el paso 1 empujaba la
             tarjeta fuera del pliegue. Así bajan a 46px.
 
-            `px-3` y no `px-4`: la etiqueta más larga ("Especializado") mide
-            90px a 14px en DM Sans, y con 5 columnas dentro del modal —que es
-            max-w-4xl, más estrecho que la sección del hero— sólo quedan 154px
-            por columna. Con px-4 el contenido pediría 150px y en móvil, a 2
-            columnas, se desbordaría por 1px. */}
+            `sm:grid-cols-3` SIN override en `lg`: con 6 tipos (se sumó
+            "Integral"), 5 columnas dejaba un sexto chip huérfano en su propia
+            fila. 3 columnas da dos filas parejas de tres, con de sobra ancho
+            por columna incluso para "Especializado" —la etiqueta más larga—
+            dentro del modal (max-w-4xl, el contexto más estrecho). */}
         {step === 1 && (
-          <div
-            role="group"
-            aria-label="Tipo de servicio"
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-          >
-            {REQUEST_TYPES.map((type) => {
-              const Icon = TYPE_ICONS[type.value];
-              return (
-                <Chip
-                  key={type.value}
-                  selected={tipo === type.value}
-                  onClick={() => pickTipo(type.value)}
-                  className="flex items-center justify-center gap-2 px-3 py-3"
-                >
-                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
-                  {type.label}
-                </Chip>
-              );
-            })}
-          </div>
+          <>
+            <div
+              role="group"
+              aria-label="Tipo de servicio"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+            >
+              {REQUEST_TYPES.map((type) => {
+                const Icon = TYPE_ICONS[type.value];
+                return (
+                  <Chip
+                    key={type.value}
+                    selected={tipo === type.value}
+                    onClick={() => pickTipo(type.value)}
+                    className="flex items-center justify-center gap-2 px-3 py-3"
+                  >
+                    <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
+                    {type.label}
+                  </Chip>
+                );
+              })}
+            </div>
+            <ProveedorVacantesLink
+              onProveedor={() => exitTo("/nosotros#contactanos")}
+              onVacantes={() => exitTo("/vacantes")}
+            />
+          </>
         )}
 
         {/* ---------- PASO 2 · Ruta (condicional) ---------- */}
@@ -431,18 +593,42 @@ export default function QuoteWizard({
             </legend>
 
             {route.kind === "options" && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                {route.options.map((option) => (
-                  <Chip
-                    key={option}
-                    selected={sub === option}
-                    onClick={() => setSub(option)}
-                    className="px-3 py-3"
-                  >
-                    {option}
-                  </Chip>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                  {route.options.map((option) => (
+                    <Chip
+                      key={option}
+                      selected={sub === option}
+                      onClick={() => pickSub(option)}
+                      className="px-3 py-3"
+                    >
+                      {option}
+                    </Chip>
+                  ))}
+                </div>
+
+                {/* Sólo Marítimo + "Otro": el aeropuerto no lo pide el
+                    encargo, y para el resto de las opciones el nombre ya está
+                    completo con el chip. Sin auto-avance mientras se escribe
+                    —lo evita `pickSub`—, así que la barra de abajo con
+                    "Continuar" es la salida natural una vez que se termina. */}
+                {tipo === "maritimo" && sub === "Otro" && (
+                  <div className="mt-3">
+                    <label htmlFor="cot-otro-puerto" className={LABEL}>
+                      Nombre del puerto
+                    </label>
+                    <input
+                      id="cot-otro-puerto"
+                      type="text"
+                      value={otroPuerto}
+                      onChange={(e) => setOtroPuerto(e.target.value)}
+                      placeholder="Escriba el puerto de operación"
+                      autoFocus
+                      className={FIELD}
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {route.kind === "terrestre" && (
@@ -499,17 +685,60 @@ export default function QuoteWizard({
             )}
 
             {route.kind === "text" && (
-              <textarea
-                id="cot-descripcion"
-                aria-label={route.legend}
-                rows={3}
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                placeholder={route.placeholder}
-                className={FIELD}
-              />
+              <>
+                <textarea
+                  id="cot-descripcion"
+                  aria-label={route.legend}
+                  rows={3}
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder={route.placeholder}
+                  className={FIELD}
+                />
+
+                {/* Sólo en "Otros": accesos directos para sacar del flujo de
+                    cotización a quien en realidad busca ser proveedor o
+                    trabajar en Compass, ANTES de que llene el resto del
+                    formulario. Ninguno de los dos manda nada — `exitTo` sólo
+                    navega, no dispara el POST del correo ni la pantalla de
+                    confirmación. Sustituyen al aviso "Este formulario es de
+                    cotizaciones..." que había aquí antes: eso era una
+                    advertencia pasiva; esto es la salida en sí. */}
+                {tipo === "otros" && (
+                  <div className="mt-4 border-t border-slate-100 pt-4">
+                    <p className="mb-2 text-xs text-slate-500">
+                      ¿Busca algo distinto?
+                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => exitTo("/nosotros#contactanos")}
+                        className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-brand-900 hover:text-brand-900"
+                      >
+                        Quiero ser proveedor de Compass Solutions
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => exitTo("/vacantes")}
+                        className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-brand-900 hover:text-brand-900"
+                      >
+                        Quiero trabajar en Compass Solutions
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </fieldset>
+        )}
+
+        {/* Enlace discreto a proveedores/vacantes, en TODAS las ramas del
+            paso 2 salvo "Otros" (que ya tiene los dos botones de arriba). */}
+        {step === 2 && route && tipo !== "otros" && (
+          <ProveedorVacantesLink
+            onProveedor={() => exitTo("/nosotros#contactanos")}
+            onVacantes={() => exitTo("/vacantes")}
+          />
         )}
 
         {/* ---------- PASO 3 · Embarque ---------- */}
@@ -524,8 +753,29 @@ export default function QuoteWizard({
                 type="date"
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
+                aria-describedby="cot-fecha-ayuda"
+                /* En un `input[type=date]` el navegador sólo abre el calendario
+                   al pulsar su ícono; el resto del campo —que es la mayor parte
+                   de su superficie— no hace nada. `showPicker()` lo abre desde
+                   cualquier clic dentro.
+                   Va con dos guardas: el método no existe en navegadores viejos,
+                   y donde sí existe lanza `InvalidStateError` si la llamada no
+                   viene de un gesto del usuario. En ambos casos se cae al
+                   comportamiento nativo, que es el de hoy. */
+                onClick={(event) => {
+                  const input = event.currentTarget;
+                  if (typeof input.showPicker !== "function") return;
+                  try {
+                    input.showPicker();
+                  } catch {
+                    // Se queda el comportamiento nativo del navegador.
+                  }
+                }}
                 className={FIELD}
               />
+              <p id="cot-fecha-ayuda" className="mt-1.5 text-xs text-slate-500">
+                Si no tiene fecha definida, puede dejarlo en blanco.
+              </p>
             </div>
             <div>
               <label htmlFor="cot-detalles" className={LABEL}>
@@ -599,10 +849,39 @@ export default function QuoteWizard({
               </div>
             </div>
 
-            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
-              ¡Atención! Este formulario es de cotizaciones. Para proveedores o
-              vacantes, usa el espacio correspondiente.
-            </p>
+            {/* Opcional: no bloquea el envío si queda sin elegir. El aviso
+                "Este formulario es de cotizaciones..." que vivía aquí se quitó
+                por completo — la desviación a proveedores/vacantes ahora
+                ocurre ANTES, en los pasos 1 y 2 (ver <ProveedorVacantesLink> y
+                los dos botones de la rama "Otros"), que es donde de verdad
+                sirve de algo: aquí, en el paso 4, el usuario ya recorrió todo
+                el formulario. */}
+            <div className="mt-4">
+              <span className={LABEL}>
+                ¿Cómo prefiere que lo contactemos?{" "}
+                <span className="font-normal text-slate-500">(opcional)</span>
+              </span>
+              <div
+                role="group"
+                aria-label="Medio de contacto preferido"
+                className="flex flex-wrap gap-3"
+              >
+                {CONTACT_PREFERENCES.map((medio) => (
+                  <Chip
+                    key={medio}
+                    selected={contactoPreferido === medio}
+                    onClick={() =>
+                      setContactoPreferido((actual) =>
+                        actual === medio ? "" : medio,
+                      )
+                    }
+                    className="px-4 py-2"
+                  >
+                    {medio}
+                  </Chip>
+                ))}
+              </div>
+            </div>
           </>
         )}
 
@@ -620,8 +899,7 @@ export default function QuoteWizard({
             El paso 1 no la monta: no tiene "Continuar" (avanza al elegir) ni
             "Atrás" (no hay a dónde volver), así que la barra entera sobra. Eso
             le quita ~100px de alto justo al paso que se veía cortado.
-            "Atrás" a la izquierda y "Continuar" a la derecha, con el resumen de
-            la selección en medio. */}
+            "Atrás" a la izquierda y "Continuar" a la derecha. */}
         {step > 1 && (
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-6">
             <div className="flex flex-wrap items-center gap-3">
@@ -632,13 +910,6 @@ export default function QuoteWizard({
               >
                 Atrás
               </button>
-
-              {selectedType && (
-                <p className="text-sm text-slate-500">
-                  {selectedType.label}
-                  {sub ? ` · ${sub}` : ""}
-                </p>
-              )}
             </div>
 
             {step < STEPS.length ? (
