@@ -1,38 +1,41 @@
 import Image from "next/image";
+import Link from "next/link";
 import CookiePreferencesButton from "./CookiePreferencesButton";
 import { SALES_PHONE_DISPLAY } from "@/lib/site";
 
 /**
- * NINGUNO DE LOS 10 ENLACES DE ABAJO ES CLICABLE HOY (auditoría de enlaces
- * internos): las cuatro rutas de INFO_LINKS y las seis de SERVICE_LINKS
- * devuelven 404 — ninguna página existe todavía. Los `href` se quedan en los
- * datos porque son el destino real una vez que Alex confirme la arquitectura
- * de URLs de servicios y se construyan /nosotros, /vacantes y
- * /apartado-legal; reactivarlos es volver a envolver cada `label` en
- * `<Link href={link.href}>` en las dos listas de abajo.
+ * VARIOS ENLACES DE ABAJO NO SON CLICABLES (auditoría de enlaces internos): las
+ * seis rutas de SERVICE_LINKS y las dos de /apartado-legal devuelven 404 — esas
+ * páginas no existen todavía. Los `href` se quedan en los datos porque son el
+ * destino real una vez que Alex confirme la arquitectura de URLs de servicios y
+ * se construya /apartado-legal.
+ *
+ * `live: true` marca las rutas que YA existen y por tanto se renderizan como
+ * `<Link>`: hoy /proveedores y /vacantes. Activar otra es poner el flag cuando
+ * su página exista, no tocar el marcado.
  */
 const INFO_LINKS = [
-  { href: "/nosotros#contactanos", label: "Proveedores" },
-  { href: "/vacantes", label: "Trabaja con Nosotros" },
-  { href: "/apartado-legal#terminos", label: "Términos y Condiciones" },
-  { href: "/apartado-legal#privacidad", label: "Aviso de Privacidad" },
+  { href: "/proveedores", label: "Proveedores", live: true },
+  { href: "/vacantes", label: "Trabaja con nosotros", live: true },
+  { href: "/apartado-legal#terminos", label: "Términos y condiciones" },
+  { href: "/apartado-legal#privacidad", label: "Aviso de privacidad" },
 ];
 
 const SERVICE_LINKS = [
   {
     href: "/tipo-solucion/especializados-maritimo",
-    label: "Especializados Marítimo",
+    label: "Especializados marítimo",
   },
   {
     href: "/tipo-solucion/especializados-terrestre",
-    label: "Especializados Terrestre",
+    label: "Especializados terrestre",
   },
   { href: "/tipo-solucion/soluciones-360", label: "Soluciones 360" },
-  { href: "/tipo-solucion/transporte-aereo", label: "Transporte Aéreo" },
-  { href: "/tipo-solucion/transporte-maritimo", label: "Transporte Marítimo" },
+  { href: "/tipo-solucion/transporte-aereo", label: "Transporte aéreo" },
+  { href: "/tipo-solucion/transporte-maritimo", label: "Transporte marítimo" },
   {
     href: "/tipo-solucion/transporte-terrestre",
-    label: "Transporte Terrestre",
+    label: "Transporte terrestre",
   },
 ];
 
@@ -64,14 +67,26 @@ export default function Footer() {
             Información
           </h4>
           <ul className="space-y-2 text-sm">
-            {/* Texto plano, no `<Link>`: las cuatro rutas son 404 hoy (ver la
-                nota de INFO_LINKS). Sin subrayado ni hover que insinúe que se
-                puede hacer clic — eso sería peor que no tener el enlace. */}
-            {INFO_LINKS.map((link) => (
-              <li key={link.href} className="text-slate-400">
-                {link.label}
-              </li>
-            ))}
+            {/* Los que no están marcados `live` van en texto plano, sin
+                subrayado ni hover: su ruta es 404 hoy (ver la nota de
+                INFO_LINKS) e insinuar que se puede hacer clic sería peor que no
+                tener el enlace. */}
+            {INFO_LINKS.map((link) =>
+              link.live ? (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ) : (
+                <li key={link.href} className="text-slate-400">
+                  {link.label}
+                </li>
+              ),
+            )}
             {/* Retirar el consentimiento tiene que ser tan fácil como darlo
                 (GDPR art. 7.3), así que la puerta de vuelta al banner vive
                 aquí, junto al resto de lo legal. Éste SÍ es interactivo de
@@ -106,7 +121,7 @@ export default function Footer() {
             Benito Juárez, 03330 Ciudad de México, CDMX
           </p>
           <h4 className="mb-2 font-heading text-sm font-semibold text-white">
-            Ventas y Soporte
+            Ventas y soporte
           </h4>
           <p className="text-sm">
             <a

@@ -83,14 +83,14 @@ const OPCIONES_TERRESTRES: ServiceOption[] = [
   { slug: "ftl", name: "FTL", description: "Dedicado" },
   { slug: "lowboy", name: "Lowboy" },
   { slug: "plataformas", name: "Plataformas" },
-  { slug: "unidades-con-rampa", name: "Unidades con Rampa" },
+  { slug: "unidades-con-rampa", name: "Unidades con rampa" },
 ];
 
 /** Las dos ramas de alcance. */
 export const SCOPE_BRANCHES: ScopeBranch[] = [
   {
     slug: "servicio-internacional",
-    name: "Servicio Internacional",
+    name: "Servicio internacional",
     modes: [
       {
         slug: "maritimo",
@@ -100,12 +100,12 @@ export const SCOPE_BRANCHES: ScopeBranch[] = [
           {
             slug: "fcl",
             name: "FCL",
-            description: "Transporte Marítimo Completo",
+            description: "Transporte marítimo completo",
           },
           {
             slug: "lcl",
             name: "LCL",
-            description: "Transporte Marítimo Consolidado",
+            description: "Transporte marítimo consolidado",
           },
           { slug: "flat-rack", name: "Flat Rack" },
           { slug: "open-top", name: "Open Top" },
@@ -129,7 +129,7 @@ export const SCOPE_BRANCHES: ScopeBranch[] = [
   },
   {
     slug: "servicio-nacional",
-    name: "Servicio Nacional",
+    name: "Servicio nacional",
     modes: [
       {
         slug: "maritimo",
@@ -178,7 +178,7 @@ export const VALOR_AGREGADO: ServiceGroup = {
       // Antes eran dos nodos. Se fusionaron para que el árbol coincida con la
       // tarjeta ya fusionada del home.
       slug: "prioritario-expeditado",
-      name: "Servicio Prioritario / Expeditado",
+      name: "Servicio prioritario / expeditado",
       description:
         "Soluciones para urgencias y paros de línea, con la mejor opción en tiempos y rutas y cotización en menos de 3 horas.",
     },

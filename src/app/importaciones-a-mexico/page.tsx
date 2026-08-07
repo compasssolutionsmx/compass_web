@@ -5,12 +5,12 @@ import Certifications, {
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { QuoteModalProvider } from "@/components/QuoteModal";
+import QuoteSection from "@/components/QuoteSection";
 import SuccessStories from "@/components/SuccessStories";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import ImportControl from "@/components/importaciones/ImportControl";
 import ImportCtaBanner from "@/components/importaciones/ImportCtaBanner";
-import ImportFeatures from "@/components/importaciones/ImportFeatures";
 import ImportHero from "@/components/importaciones/ImportHero";
 import ImportSolutions from "@/components/importaciones/ImportSolutions";
 import ImportStats from "@/components/importaciones/ImportStats";
@@ -19,7 +19,7 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
 
 const PATH = "/importaciones-a-mexico";
 
-const TITLE = "Expertos en Importaciones a México - Compass Solutions";
+const TITLE = "Expertos en importaciones a México - Compass Solutions";
 const DESCRIPTION =
   "Optimice sus importaciones a México con Compass Solutions. Soluciones integrales de logística desde y hacia México.";
 
@@ -68,10 +68,10 @@ function buildJsonLd() {
     name: "Importaciones a México",
     description: DESCRIPTION,
     serviceType: [
-      "Transportación Aérea",
-      "Transportación Marítima",
-      "Transportación Terrestre",
-      "Servicios Adicionales",
+      "Transportación aérea",
+      "Transportación marítima",
+      "Transportación terrestre",
+      "Servicios adicionales",
     ],
     provider: {
       "@type": "Organization",
@@ -102,6 +102,14 @@ export default function ImportacionesAMexico() {
           {/* 🆕 exclusivo de esta landing */}
           <ImportHero />
 
+          {/* ♻️ EL MISMO cotizador inline del home, sin parametrizar. Va aquí,
+              entre el hero y las certificaciones, por dos razones que no son
+              intercambiables: se sobrepone al corte redondeado del hero con su
+              margen negativo —en cualquier otra posición mordería la sección
+              anterior— y su `pb` ES el hueco superior de <Certifications>, que
+              no trae `pt` propio. */}
+          <QuoteSection />
+
           {/* ♻️ mismo componente del home, con ALACAT en lugar de WCA */}
           <Certifications
             items={CERTIFICATIONS_IMPORTACIONES}
@@ -109,7 +117,6 @@ export default function ImportacionesAMexico() {
           />
 
           {/* 🆕 */}
-          <ImportFeatures />
           <ImportControl />
 
           {/* ♻️ mismo patrón que StatsSection, en 4 métricas — ver la nota del

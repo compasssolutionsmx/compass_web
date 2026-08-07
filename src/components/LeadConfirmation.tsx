@@ -84,6 +84,8 @@ export function LeadSuccess({
   onReset,
   resetLabel,
   onClose,
+  title,
+  description,
 }: {
   whatsappUrl: string | null;
   /** Vuelve al formulario vacío. En el cotizador inline es la salida principal. */
@@ -91,6 +93,14 @@ export function LeadSuccess({
   resetLabel?: string;
   /** Sólo cuando esto vive dentro de un modal, que es lo que se puede cerrar. */
   onClose?: () => void;
+  /**
+   * Textos del mensaje. Por defecto hablan de "solicitud", que es lo correcto
+   * para los dos formularios comerciales. El registro de proveedores los
+   * cambia: ahí no hay ninguna solicitud que atender y prometer que "nuestro
+   * equipo se pondrá en contacto" sería un compromiso que nadie confirmó.
+   */
+  title?: string;
+  description?: string;
 }) {
   const ref = useFocusOnMount();
 
@@ -110,13 +120,13 @@ export function LeadSuccess({
       </span>
 
       <h3 className="font-heading text-2xl font-bold text-brand-900 md:text-3xl">
-        Su solicitud quedó registrada
+        {title ?? "Su solicitud quedó registrada"}
       </h3>
       {/* Sin plazos concretos: prometer "24 horas" es una promesa que este
           equipo no ha confirmado que pueda cumplir. */}
       <p className="mx-auto mt-3 max-w-md text-slate-500">
-        Ya tenemos sus datos. Nuestro equipo revisará la solicitud y se pondrá
-        en contacto con usted.
+        {description ??
+          "Ya tenemos sus datos. Nuestro equipo revisará la solicitud y se pondrá en contacto con usted."}
       </p>
 
       {whatsappUrl && <WhatsAppCard url={whatsappUrl} texto={TEXTO_WHATSAPP} />}
@@ -175,9 +185,13 @@ export function LeadError({
       <h3 className="font-heading text-2xl font-bold text-brand-900 md:text-3xl">
         No pudimos registrar su solicitud
       </h3>
+      {/* El texto DEPENDE de si hay salida por WhatsApp. Sin ella —el registro
+          de proveedores— mencionarla sería mandar al usuario a un canal que
+          esta pantalla no le está ofreciendo. */}
       <p className="mx-auto mt-3 max-w-md text-slate-500">
-        Hubo un problema al enviarla. Puede intentarlo de nuevo o escribirnos
-        directamente por WhatsApp — sus datos ya están listos en el mensaje.
+        {whatsappUrl
+          ? "Hubo un problema al enviarla. Puede intentarlo de nuevo o escribirnos directamente por WhatsApp — sus datos ya están listos en el mensaje."
+          : "Hubo un problema al enviarla. Puede intentarlo de nuevo; sus datos siguen escritos en el formulario."}
       </p>
 
       <button

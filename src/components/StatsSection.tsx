@@ -42,7 +42,7 @@ export default function StatsSection() {
             </Eyebrow>
 
             <h2 className="font-heading text-3xl font-bold text-brand-900 md:text-4xl">
-              Nuestra Trayectoria
+              Nuestra trayectoria
             </h2>
 
             <p className="mt-5 text-slate-700">

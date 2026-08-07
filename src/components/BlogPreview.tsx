@@ -39,7 +39,7 @@ export default function BlogPreview() {
               separación de palabra. */}
           <h2 className="font-heading text-3xl font-bold leading-tight text-brand-900 md:text-4xl">
             Últimas <br />
-            Noticias
+            noticias
           </h2>
           <p className="mt-4 max-w-sm text-slate-600">
             Comercio exterior, transporte y operación aduanal explicados por
@@ -49,7 +49,7 @@ export default function BlogPreview() {
             href="/blog"
             className="group mt-6 inline-flex items-center gap-2 font-heading text-sm font-semibold text-brand-900"
           >
-            Ver Más
+            Ver más
             <ArrowRight
               aria-hidden="true"
               className="h-4 w-4 transition-transform duration-250 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:group-hover:translate-x-1"

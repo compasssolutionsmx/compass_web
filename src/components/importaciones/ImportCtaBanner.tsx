@@ -16,7 +16,7 @@ export default function ImportCtaBanner() {
     <section className="mx-auto max-w-7xl px-6 pb-20">
       <div className="brand-gradient flex flex-wrap items-center justify-between gap-8 rounded-3xl p-8 md:p-12">
         <h2 className="max-w-[20ch] font-heading text-2xl font-bold text-white md:text-3xl">
-          ¡Amplia tu Alcance Global con Compass Solutions!
+          ¡Amplia tu alcance global con Compass Solutions!
         </h2>
 
         {/* TODO(assets): buque recortado sobre fondo transparente. */}
@@ -26,7 +26,7 @@ export default function ImportCtaBanner() {
         />
 
         <QuoteButton className="rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-50">
-          Solicitar Cotización
+          Solicitar cotización
         </QuoteButton>
       </div>
     </section>

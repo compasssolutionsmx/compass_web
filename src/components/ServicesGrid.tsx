@@ -149,18 +149,17 @@ export default function ServicesGrid() {
             {/* `<div>` y no `<Link>`: sus páginas no existen todavía. Se quitó
                 también el "Ver servicios" con la flecha — prometía una
                 navegación que no ocurre, y dejarlo habría sido peor que no
-                tener nada. La pastilla "Próximamente" comunica el estado real
-                sin fingir que la tarjeta es clicable. */}
-            <div className="brand-gradient flex h-full flex-col rounded-3xl p-7 md:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="font-heading text-2xl font-bold text-white md:text-3xl">
-                  {branch.name}
-                </h3>
+                tener nada.
 
-                <span className="mt-1 inline-flex shrink-0 items-center rounded-full bg-white/15 px-3 py-1 font-heading text-xs font-semibold text-brand-100 backdrop-blur-sm">
-                  Próximamente
-                </span>
-              </div>
+                Ya no hay pastilla "Próximamente": la tarjeta no anuncia su
+                estado, sólo presenta la rama. Con ella se fue la fila flex que
+                la ponía al lado del <h3> —`justify-between` con un solo hijo no
+                hace nada—, así que el título va suelto. El aire de debajo no
+                cambia: lo pone el `mt-5` del párrafo, no el badge. */}
+            <div className="brand-gradient flex h-full cursor-default flex-col rounded-3xl p-7 md:p-8">
+              <h3 className="font-heading text-2xl font-bold text-white md:text-3xl">
+                {branch.name}
+              </h3>
 
               {/* `flex-1` vive ahora aquí y no en el copy: iguala la altura de
                   las dos tarjetas dejando que los chips queden al ras de abajo,
@@ -198,7 +197,7 @@ export default function ServicesGrid() {
                 (zoom de la foto, borde que se enciende) — con la tarjeta ya
                 inerte, ese hover prometía un clic que no lleva a ningún lado. */}
             <div
-              className={`relative flex aspect-square flex-col justify-end overflow-hidden rounded-2xl border border-white/15 ${
+              className={`relative flex aspect-square cursor-default flex-col justify-end overflow-hidden rounded-2xl border border-white/15 ${
                 card.image ? "" : "brand-gradient"
               }`}
             >
@@ -222,10 +221,10 @@ export default function ServicesGrid() {
                 <div className="absolute inset-0 bg-linear-to-t from-brand-950/95 via-brand-950/55 to-transparent" />
               )}
 
-              <span className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 font-heading text-[11px] font-semibold text-brand-100 backdrop-blur-sm">
-                Próximamente
-              </span>
-
+              {/* Aquí vivía la pastilla "Próximamente", en `absolute right-3
+                  top-3`. Al estar fuera del flujo, quitarla no deja hueco que
+                  recuperar: la esquina de la foto queda limpia y el bloque de
+                  texto de abajo no se mueve un píxel. */}
               <div className="relative p-5">
                 <card.icon
                   aria-hidden="true"

@@ -54,7 +54,7 @@ export default function IntegratedSolutions() {
             </Eyebrow>
 
             <h2 className="font-heading text-3xl font-bold text-white md:text-4xl">
-              Soluciones Logísticas Integrales
+              Soluciones logísticas integrales
             </h2>
 
             <p className="mt-5 text-brand-50">
@@ -65,7 +65,7 @@ export default function IntegratedSolutions() {
             </p>
 
             <QuoteButton className="mt-8 rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-50">
-              Solicite una Cotización
+              Solicite una cotización
             </QuoteButton>
           </div>
 

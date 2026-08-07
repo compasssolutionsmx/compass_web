@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Manrope } from "next/font/google";
+import { Archivo, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ConsentProvider from "@/components/ConsentProvider";
 import GoogleTagManagerGate from "@/components/GoogleTagManagerGate";
@@ -10,21 +10,30 @@ import { consentBootstrapScript } from "@/lib/consent";
 /**
  * Dos familias, self-hosted por next/font (no salen requests a Google):
  *  - DM Sans   -> cuerpo. Es el `font-sans` por defecto, aplicado en <body>.
- *  - Manrope   -> titulares. Se aplica con la utilidad `font-heading` en cada
+ *  - Archivo   -> titulares. Se aplica con la utilidad `font-heading` en cada
  *                 h1-h4. Ver los tokens --font-sans / --font-heading en
  *                 globals.css.
  * Ambas son variable fonts, así que no hace falta declarar `weight`: los
  * font-bold / font-semibold de Tailwind interpolan el eje de peso.
- * Sustituyen a Inter, que sale del proyecto.
+ * Sustituyen a Manrope (titulares) e Inter, que salen del proyecto.
  */
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
 });
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+/**
+ * `axes: ["wdth"]` NO es decorativo: next/font sólo incluye el eje de peso por
+ * defecto, y sin pedir el de ancho el archivo descargado no tendría con qué
+ * responder al `font-variation-settings: "wdth" 112.5` (semi expanded) que
+ * `--font-heading--font-variation-settings` aplica en globals.css — el texto
+ * saldría en ancho normal sin avisar. Archivo declara wdth 62–125 en el
+ * catálogo de next/font, así que 112.5 cae dentro del rango.
+ */
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  axes: ["wdth"],
 });
 
 /**
@@ -34,7 +43,7 @@ const manrope = Manrope({
  */
 export const SITE_URL = "https://compasssolutions.com.mx";
 
-const SITE_TITLE = "Freight Forwarder en México | Compass Solutions";
+const SITE_TITLE = "Freight forwarder en México | Compass Solutions";
 const SITE_DESCRIPTION =
   "Coordinamos tu logística internacional: transporte aéreo, marítimo y terrestre, despacho aduanal y gestión documental, bajo un solo punto de contacto.";
 
@@ -82,7 +91,7 @@ export default function RootLayout({
   return (
     <html
       lang="es-MX"
-      className={`${dmSans.variable} ${manrope.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${archivo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         {/* Estado por defecto de Google Consent Mode v2 (todo denegado) más la

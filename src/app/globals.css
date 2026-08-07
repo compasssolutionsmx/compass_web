@@ -34,12 +34,31 @@
   --color-brand-900: #012a3a;
   --color-brand-950: #011b26;
 
+  /* Rojo de acento. La marca NO tiene rojo, así que éste no pretende serlo:
+     es un color de SEÑAL, reservado para sacar del flujo principal a quien no
+     viene a cotizar (hoy, el botón "¿Eres Proveedor?" del cotizador). Es un
+     ladrillo apagado, no un rojo saturado: junto al navy de marca un rojo puro
+     se lee como error o alerta, que es justo lo que no es.
+     Contraste medido: texto blanco encima 7.45:1 (AA y AAA en texto normal);
+     como texto sobre el blanco de página, 7.45:1; sobre brand-100, 6.34:1. */
+  --color-accent-red: #9e2a2b;
+
   /* TIPOGRAFÍA — dos familias, cargadas con next/font en layout.tsx.
      `--font-sans` es el default del <body>; `--font-heading` genera la utilidad
      `font-heading`, que se aplica a mano en cada h1-h4.
-     Inter ya no se usa en el proyecto. */
+     Manrope e Inter ya no se usan en el proyecto.
+
+     El `--font-heading--font-variation-settings` es la variable acompañante que
+     Tailwind v4 reconoce para un token `--font-*`: hace que la MISMA utilidad
+     `font-heading` emita también el font-variation-settings. Por eso el ancho
+     semi expanded (wdth 112.5, equivalente a `font-stretch: 112.5%`) llega a
+     los 13+ titulares sin tocar ninguno.
+
+     Sólo se fija el eje wdth a propósito: el de peso se deja libre para que lo
+     sigan gobernando los font-bold / font-semibold de cada titular. */
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
-  --font-heading: var(--font-manrope), system-ui, sans-serif;
+  --font-heading: var(--font-archivo), system-ui, sans-serif;
+  --font-heading--font-variation-settings: "wdth" 112.5;
 
   /* Animaciones del panel deslizante del menú móvil. */
   --animate-slide-in-right: slide-in-right 0.25s ease-out;

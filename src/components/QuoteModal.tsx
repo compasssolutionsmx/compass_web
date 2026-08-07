@@ -184,7 +184,7 @@ function QuoteDialog() {
             id={titleId}
             className="font-heading text-3xl font-bold text-white md:text-4xl"
           >
-            El Freight Forwarder Que Su Carga Necesita
+            El freight forwarder que su carga necesita
           </h2>
           <p className="mt-4 text-lg text-brand-50">
             Solicite una cotización y descubra cómo nuestras soluciones

@@ -1,79 +1,89 @@
 import Image from "next/image";
-import { QuoteButton } from "../QuoteModal";
+import Eyebrow from "../Eyebrow";
 
 /**
- * Hero de /importaciones-a-mexico. Exclusivo de esta landing (🆕 en el mockup).
+ * Hero de /importaciones-a-mexico. Alineado con el del home: mismo esqueleto,
+ * misma tipografía y mismo tratamiento de fondo, cambiando sólo el medio (foto
+ * en vez de video, porque esta página es destino de campañas pagadas y el peso
+ * importa más).
  *
- * Sin video, a diferencia del hero del home: aquí manda una imagen fija y el
- * peso de la página importa más, porque es destino de campañas pagadas.
+ * JERARQUÍA CORREGIDA. Antes venía invertida del mockup: el texto grande era un
+ * <p> decorativo y el <h1> era una línea pequeña subrayada con la keyword. Ahora
+ * el titular grande ES el <h1> y esa línea pequeña pasó a <Eyebrow tone="dark">,
+ * que es el rol que de verdad cumplía —etiqueta de posicionamiento— y el mismo
+ * patrón que el home. Con eso desaparece también el resaltado `bg-brand-100/15`
+ * hecho a mano: la pastilla del eyebrow ya trae el suyo.
  *
- * JERARQUÍA, que es contraintuitiva y viene así del mockup: el texto GRANDE
- * ("Traemos lo que sea, de donde sea") es un reclamo visual, no el encabezado;
- * el <h1> real es la línea más pequeña y subrayada de debajo, que es la que
- * lleva la keyword. Se respeta tal cual — un <h1> por página, y es ése.
- *
- * HIGHLIGHT del h1: brand-100 al 16% sobre el degradado oscuro. El sitio en
- * vivo usa un cian tipo marcador que está fuera de la paleta; el mockup ya lo
- * normaliza a brand-100 y esa es la decisión que se aplica aquí.
+ * El botón "Contacte a un experto" salió del hero. Los <QuoteButton> del resto
+ * de la página siguen ahí.
  */
 export default function ImportHero() {
   return (
-    <section className="brand-gradient relative overflow-hidden rounded-b-[2rem] pb-16 pt-32 md:pb-24 md:pt-40">
-      <div className="mx-auto grid max-w-7xl items-center gap-10 px-6 lg:grid-cols-2 lg:gap-12">
-        <div>
-          <p className="font-heading text-4xl font-extrabold leading-[1.1] text-white md:text-5xl xl:text-6xl">
-            Traemos
-            <br />
-            lo que sea,
-            <br />
-            de donde sea
-          </p>
+    // MISMA GEOMETRÍA QUE EL HERO DEL HOME —alto de viewport, `items-start` y
+    // `pb-16 md:pb-32`— y no por simetría estética: es lo que permite que
+    // <QuoteSection> se sobreponga aquí con el MISMO `-mt-40` que allá, sin
+    // parametrizar el componente por página. Ese `pb` es el sitio que la
+    // tarjeta ocupa al subir; con el `md:pb-24` de antes, y un hero de alto por
+    // contenido, la tarjeta se montaba 64px sobre el párrafo.
+    //
+    // El `pt` NO se copia del home (allá es `pt-24 md:pt-36`): se queda el
+    // `pt-32 md:pt-40` que ya tenía esta página, que es la separación estándar
+    // del header flotante en el resto del sitio. Sólo desplaza el contenido
+    // 16px, no afecta a la superposición.
+    <section className="relative flex h-[75vh] min-h-[560px] items-start overflow-hidden rounded-b-[2rem] pb-16 pt-32 md:pb-32 md:pt-40">
+      {/* MISMA PILA DE TRES CAPAS QUE EL HOME —brand-950 de base, el medio al
+          60% de opacidad y el `hero-overlay` encima—, y las tres hacen falta.
+          Medido sobre el archivo real compuesto con la fórmula de los dos
+          radiales del velo: con la foto al 100% y sólo el overlay, el peor
+          punto de la banda de texto deja el blanco en 3.09:1 y el eyebrow en
+          2.48:1, o sea que no pasa AA. El 60% es lo que cierra esa brecha.
+          No es un ajuste inventado: es exactamente lo que <HeroVideo> aplica a
+          su <video> en el home (`opacity-60` sobre `bg-brand-950`).
 
-          {/* `inline-block` + el pseudo-fondo por detrás: el resaltado tiene que
-              medir lo que mide el texto, no lo que mide la columna. */}
-          <div className="relative mt-6 inline-block rounded px-2 py-1">
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 rounded bg-brand-100/15"
-            />
-            <h1 className="relative font-heading text-lg font-bold text-white underline decoration-1 underline-offset-[6px] md:text-xl">
-              Expertos en Importaciones en México
-            </h1>
-          </div>
+          La foto es la misma que usa <YearsBanner>. Su documentación avisa de
+          que tiene un rango enorme, con una zona casi blanca donde el texto sin
+          velo cae a 1.03:1 — de ahí que aquí no se pueda servir cruda.
 
-          <p className="mt-6 max-w-[44ch] text-lg text-slate-200">
-            Simplificamos sus importaciones logísticas a México mediante
-            soluciones integrales 360° que garantizan la eficiencia operativa
-            que su compañía necesita.
-          </p>
-
-          <QuoteButton className="mt-8 rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-50">
-            Contacte a un Experto
-          </QuoteButton>
-        </div>
-
-        {/* RECORTE SOBRE FONDO TRANSPARENTE, no una foto rectangular: el
-            archivo es 1100x1100 con las cuatro esquinas en alfa 0 y algo más de
-            la mitad del lienzo vacío. Por eso NO lleva caja, ni fondo, ni
-            esquinas redondeadas — la figura flota directamente sobre el
-            degradado del hero, que es como está pensada.
-
-            `priority` porque es la imagen grande sobre el pliegue y la
-            candidata a LCP de esta página; sin él, Next la carga en diferido y
-            el hero se pinta con un hueco.
-
-            `sizes` declara el ancho real que ocupa: media columna a partir de
-            `lg`, todo el ancho por debajo. Sin esto Next serviría el archivo a
-            tamaño completo también en móvil. */}
+          `alt=""`: es fondo decorativo y el mensaje lo lleva el <h1>, igual que
+          el video del home va `aria-hidden`. `priority` porque al haberse ido
+          el tiranosaurio a <ImportControl>, ésta es la imagen sobre el pliegue
+          y la candidata a LCP de la página. */}
+      <div className="absolute inset-0 bg-brand-950">
         <Image
-          src="/importaciones/importaciones-hero.webp"
-          alt="Un tiranosaurio rugiendo mientras sale de un contenedor marítimo abierto"
-          width={1100}
-          height={1100}
+          src="/home/back-compass-all.webp"
+          alt=""
+          width={1728}
+          height={608}
           priority
-          sizes="(min-width: 1024px) 45vw, 100vw"
-          className="h-auto w-full"
+          sizes="100vw"
+          className="h-full w-full object-cover opacity-60"
         />
+        <div className="hero-overlay absolute inset-0" />
+      </div>
+
+      {/* Mismo contenedor que el home, clase por clase: `relative` para quedar
+          por encima del fondo, `w-full`, `max-w-7xl`, `px-6` y `text-center`.
+          Los bloques con `max-w-*` llevan su propio `mx-auto`, porque si no sus
+          cajas quedarían a la izquierda con el texto centrado dentro. */}
+      <div className="relative mx-auto w-full max-w-7xl px-6 text-center">
+        <Eyebrow tone="dark" className="mb-4">
+          Expertos en importaciones en México
+        </Eyebrow>
+
+        {/* Clases del <h1> del home. SIN `whitespace-nowrap`: aquel es un
+            arreglo para el titular corto del home, y aquí la frase es más larga
+            —877px a text-5xl— así que forzarla a una línea la desbordaría por
+            debajo de 944px de viewport. Con `max-w-4xl` (896px) cabe en una
+            línea en desktop y parte sola por debajo. */}
+        <h1 className="mx-auto max-w-4xl font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
+          Traemos lo que sea, de donde sea
+        </h1>
+
+        <p className="mx-auto mt-6 max-w-3xl text-lg text-slate-200">
+          Simplificamos sus importaciones logísticas a México mediante
+          soluciones integrales 360° que garantizan la eficiencia operativa que
+          su compañía necesita.
+        </p>
       </div>
     </section>
   );

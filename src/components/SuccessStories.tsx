@@ -1,3 +1,4 @@
+import Eyebrow from "./Eyebrow";
 import { QuoteButton } from "./QuoteModal";
 import SuccessStoriesCarousel, {
   type SuccessStory,
@@ -55,24 +56,24 @@ const STORIES: SuccessStory[] = [
       width: 900,
       height: 366,
     },
-    headline: "Rentabilidad Maximizada",
-    subtitle: "Optimización de Costos en Fletes.",
+    headline: "Rentabilidad maximizada",
+    subtitle: "Optimización de costos en fletes.",
     description:
       "Gracias a nuestras alianzas globales, ofrecemos tarifas competitivas en transporte multimodal, permitiendo a nuestros clientes expandir su alcance sin incrementar su presupuesto logístico.",
   },
   {
     client: "CEMEX",
     logo: { src: "/logo-clients/cemex.webp", width: 874, height: 167 },
-    headline: "+19% Rendimiento Energético",
-    subtitle: "Conectividad Global Estratégica.",
+    headline: "+19% rendimiento energético",
+    subtitle: "Conectividad global estratégica.",
     description:
       "Rediseñamos sus flujos de importación desde Asia, Europa y América, logrando reducir los tiempos de tránsito a la mitad mediante la consolidación inteligente de carga.",
   },
   {
     client: "Nestlé",
     logo: { src: "/logo-clients/nestle.webp", width: 824, height: 236 },
-    headline: "Eficiencia Logística +2X",
-    subtitle: "Conectividad Global Estratégica.",
+    headline: "Eficiencia logística +2X",
+    subtitle: "Conectividad global estratégica.",
     description:
       "Rediseñamos sus flujos de importación desde Asia, Europa y América, logrando reducir los tiempos de tránsito a la mitad mediante la consolidación inteligente de carga.",
   },
@@ -82,15 +83,22 @@ export default function SuccessStories() {
   return (
     // `py-20` como <ServicesGrid> encima y <IntegratedSolutions> debajo: es el
     // ritmo de esta zona del home, así que esta sección no introduce saltos.
+    // Con la franja ya tintada, esos 80px son además lo que separa el borde del
+    // color del contenido de las secciones vecinas, a los dos lados por igual.
     //
-    // Sección sobre el blanco de página: el tinte brand-100 vive ahora en las
-    // TARJETAS, no en la franja. Si fueran los dos, las tarjetas se perderían
-    // contra su propio fondo.
-    <section
-      aria-labelledby="casos-titulo"
-      className="mx-auto max-w-7xl px-6 py-20"
-    >
-      <div>
+    // FRANJA TINTADA: el fondo va en el <section>, a sangre, y el contenedor de
+    // ancho baja a un <div> interior. Tiene que ser en ese orden — si el color
+    // fuera sobre `max-w-7xl` sería una caja tintada, no una banda.
+    // Ese <div> conserva `mx-auto max-w-7xl px-6` exacto porque de ahí saca sus
+    // constantes el `bleed-right` del carrusel (ver globals.css).
+    //
+    // PENDIENTE, y es visible: las tarjetas del carrusel también son brand-100,
+    // así que contra esta franja quedan en 1.00:1 y se funden. Antes el tinte
+    // vivía sólo en ellas, sobre el blanco de página. Está a la espera de que el
+    // cliente decida el color de la tarjeta; medido, pasarlas a blanco las
+    // devuelve a la misma relación de 1.18:1 que tenían, sólo que invertida.
+    <section aria-labelledby="casos-titulo" className="bg-brand-100 py-20">
+      <div className="mx-auto max-w-7xl px-6">
         {/* DOS COLUMNAS, 2fr/3fr — o sea 40/60, que es lo que pedía el diseño.
             Es el mismo esquema de <BlogPreview> (bloque fijo de texto a un
             lado, pieza que se mueve al otro), sólo que allí la izquierda es de
@@ -111,13 +119,21 @@ export default function SuccessStories() {
             el mismo motivo por el que la fila de `lg` usa `minmax(0,...)`. */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center lg:gap-12">
           <div>
-            {/* Sin eyebrow: el mockup de la landing abre directo en el H2, y
-                este bloque es el mismo en las dos páginas. */}
+            {/* `tone="tint"` y NO el `light` por defecto: el pill claro es
+                brand-100, exactamente el color de esta franja, y saldría en
+                1.00:1 — invisible. El `tint` lo invierte a blanco (1.18:1
+                contra el fondo, con el texto brand-900 dentro a 15.07:1). Es el
+                mismo motivo por el que <StatsSection> usa `tint` en su caja
+                clara; el componente lo documenta en su propia cabecera. */}
+            <Eyebrow tone="tint" className="mb-4">
+              Nuestros clientes
+            </Eyebrow>
+
             <h2
               id="casos-titulo"
               className="font-heading text-3xl font-bold text-brand-900 md:text-4xl"
             >
-              Impacto Real en la Cadena de Suministro
+              Impacto real en la cadena de suministro
             </h2>
             <p className="mt-4 text-slate-600">
               No solo gestionamos logística, entregamos resultados tangibles.
@@ -130,7 +146,7 @@ export default function SuccessStories() {
                 sólo la piel, porque allá va sobre la caja oscura y aquí sobre
                 el blanco de la página. */}
             <QuoteButton className="mt-8 rounded-full bg-brand-900 px-8 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90">
-              Solicite una Cotización
+              Solicite una cotización
             </QuoteButton>
           </div>
 

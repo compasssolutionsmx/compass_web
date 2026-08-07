@@ -1,7 +1,9 @@
 "use client";
 
 /**
- * Cotizador de 4 pasos con ramificación condicional en el paso 2.
+ * Cotizador por pasos con ramificación condicional en el paso 2. Son 4 pasos
+ * en casi todas las ramas y 5 en Terrestre, que separa la modalidad del
+ * origen-destino; el conteo sale de `stepsFor`, no de un número fijo.
  *
  * Es SÓLO la tarjeta: no trae contenedor de ancho ni posicionamiento. De eso se
  * encarga quien lo monta, que hoy son dos sitios con el mismo código:
@@ -54,20 +56,76 @@ const TYPE_ICONS: Record<TypeValue, typeof Ship> = {
 };
 
 /**
- * `label` es el nombre corto del indicador de pasos; `prompt` es lo que se le
+ * Pasos del cotizador.
+ *
+ * `key` es lo que decide QUÉ se renderiza (antes era la posición numérica);
+ * `label` es el nombre corto del indicador de pasos, y `prompt` lo que se le
  * pide al usuario dentro del paso. Antes el encabezado del paso repetía la
  * etiqueta seca ("Servicio"), que no pedía nada.
+ *
+ * El total NO es fijo: Terrestre separa la modalidad (LTL/FTL/Otro) de su
+ * origen-destino en dos pantallas, así que tiene 5 pasos donde las demás ramas
+ * tienen 4 — ver `stepsFor`. Por eso la posición numérica dejó de servir para
+ * decidir el contenido: el paso 3 es "Trayecto" en Terrestre y "Embarque" en
+ * todo lo demás.
  */
-const STEPS = [
-  {
-    id: 1,
-    label: "Servicio",
-    prompt: "Seleccione el tipo de transporte que está buscando",
-  },
-  { id: 2, label: "Ruta", prompt: "¿Cuál es la ruta de su carga?" },
-  { id: 3, label: "Embarque", prompt: "¿Qué va a mover y cuándo?" },
-  { id: 4, label: "Contacto", prompt: "¿Cómo lo contactamos?" },
-] as const;
+type StepKey = "servicio" | "ruta" | "trayecto" | "embarque" | "contacto";
+
+type Step = { key: StepKey; label: string; prompt: string };
+
+const PASO_SERVICIO: Step = {
+  key: "servicio",
+  label: "Servicio",
+  prompt: "Seleccione el tipo de transporte que está buscando",
+};
+/** Paso 2 de las ramas que eligen puerto/aeropuerto o describen su necesidad. */
+const PASO_RUTA: Step = {
+  key: "ruta",
+  label: "Ruta",
+  prompt: "¿Cuál es la ruta de su carga?",
+};
+/** Mismo `key` que PASO_RUTA —es el mismo selector de rama— con la pregunta
+ *  específica de Terrestre, que aquí ya sólo elige modalidad. */
+const PASO_MODALIDAD: Step = {
+  key: "ruta",
+  label: "Modalidad",
+  prompt: "¿Qué modalidad de transporte terrestre necesita?",
+};
+/** Exclusivo de Terrestre: el origen-destino que antes compartía pantalla con
+ *  la modalidad, ahora con su propia pregunta. */
+const PASO_TRAYECTO: Step = {
+  key: "trayecto",
+  label: "Ruta",
+  prompt: "¿De dónde a dónde va su carga?",
+};
+const PASO_EMBARQUE: Step = {
+  key: "embarque",
+  label: "Embarque",
+  prompt: "¿Qué va a mover y cuándo?",
+};
+const PASO_CONTACTO: Step = {
+  key: "contacto",
+  label: "Contacto",
+  prompt: "¿Cómo lo contactamos?",
+};
+
+/**
+ * Pasos reales de la rama elegida. Sin tipo todavía (paso 1) se usa la forma
+ * de 4 pasos, que es la de la mayoría: es lo que el indicador muestra antes de
+ * saber a dónde va el usuario.
+ */
+function stepsFor(tipo: TypeValue | ""): Step[] {
+  if (tipo === "terrestre") {
+    return [
+      PASO_SERVICIO,
+      PASO_MODALIDAD,
+      PASO_TRAYECTO,
+      PASO_EMBARQUE,
+      PASO_CONTACTO,
+    ];
+  }
+  return [PASO_SERVICIO, PASO_RUTA, PASO_EMBARQUE, PASO_CONTACTO];
+}
 
 /**
  * El paso 1 avanza solo al elegir servicio. El retraso deja ver la tarjeta ya
@@ -76,44 +134,85 @@ const STEPS = [
 const AUTO_ADVANCE_MS = 250;
 
 /**
+ * Valor del chip que abre el campo de texto libre en las ramas de tipo
+ * "options". Vive en una constante porque la comparación contra él decide tres
+ * cosas: si se revela el input, si se suprime el auto-avance y qué se manda en
+ * el correo.
+ */
+const OTRA_OPCION = "Otro";
+
+/**
  * Configuración del paso 2, que ramifica según lo elegido en el paso 1.
  *
- * TODO(cliente): los listados de puertos y aeropuertos están PENDIENTES DE
- * VALIDAR. Son los de mayor movimiento en México, puestos como punto de
- * partida, no una lista confirmada por Compass. Confirmar antes del cutover:
- *   - ¿opera en los 5 puertos / 5 aeropuertos listados?
- *   - ¿falta alguno (p. ej. Progreso, Tampico, Tijuana)?
+ * `legend` es el nombre accesible del fieldset del paso. Se VE sólo en las
+ * ramas `text`, donde es la instrucción de qué escribir; en las de chips va
+ * sr-only, porque ahí repetía la pregunta del paso (ver el <legend> del
+ * render).
+ *
+ * Las ramas de tipo "options" listan sólo las plazas principales de Compass;
+ * `otherLabel`/`otherPlaceholder` describen el campo que se revela al elegir
+ * "Otro", y `otherSuggestions` son plazas que sí se operan pero no lo bastante
+ * como para gastar espacio en la vista principal: se ofrecen ahí dentro como
+ * atajos de un clic, para no obligar a escribirlas.
+ *
+ * TODO(cliente): el listado de aeropuertos sigue PENDIENTE DE VALIDAR. Son los
+ * de mayor movimiento en México, puestos como punto de partida, no una lista
+ * confirmada por Compass. Confirmar antes del cutover:
+ *   - ¿falta alguno (p. ej. Tijuana)?
  *   - ¿el orden debe reflejar el volumen real de operación?
  */
 const ROUTE_STEP = {
   maritimo: {
     kind: "options" as const,
     legend: "Puerto de operación",
-    options: [
-      "Manzanillo",
-      "Lázaro Cárdenas",
-      "Veracruz",
-      "Altamira",
-      "Ensenada",
-      "Otro",
-    ],
+    options: ["Manzanillo", "Lázaro Cárdenas", "Veracruz", OTRA_OPCION],
+    otherLabel: "Nombre del puerto",
+    otherPlaceholder: "Escriba el puerto de operación",
+    otherSuggestions: ["Altamira", "Ensenada"],
   },
   aereo: {
     kind: "options" as const,
     legend: "Aeropuerto de operación",
-    options: [
-      "AIFA / CDMX",
-      "Guadalajara",
-      "Monterrey",
-      "Bajío",
-      "Cancún",
-      "Otro",
-    ],
+    options: ["AIFA / CDMX", "Guadalajara", "Monterrey", OTRA_OPCION],
+    otherLabel: "Nombre del aeropuerto",
+    otherPlaceholder: "Escriba el aeropuerto de operación",
+    otherSuggestions: ["Bajío", "Cancún"],
   },
+  /**
+   * Terrestre es la única rama que explica sus opciones: "LTL" y "FTL" son
+   * jerga del gremio y quien cotiza por primera vez no tiene por qué saberla.
+   * Por eso sus opciones son objetos con `hint` y no cadenas sueltas como las
+   * de puertos/aeropuertos, cuyos nombres ya se explican solos.
+   *
+   * `value` es lo que viaja en el correo —ahí sí conviene el nombre largo— y
+   * `label` lo que se ve en el chip.
+   */
   terrestre: {
     kind: "terrestre" as const,
-    legend: "Tipo de servicio terrestre",
-    options: ["LTL consolidado", "FTL dedicado"],
+    // Ya no se ve (va sr-only, ver el <legend> del render), así que puede ser
+    // explícita en vez de corta: es lo que oye quien no ve la pantalla.
+    legend: "Modalidad de transporte terrestre",
+    options: [
+      {
+        value: "LTL consolidado",
+        label: "LTL",
+        hint: "Carga consolidada: su mercancía comparte camión con otros envíos. Ideal para volúmenes menores.",
+      },
+      {
+        value: "FTL dedicado",
+        label: "FTL",
+        hint: "Camión dedicado: la unidad completa es para su carga. Ideal para volúmenes grandes o carga sensible.",
+      },
+      {
+        value: OTRA_OPCION,
+        label: OTRA_OPCION,
+        hint: "Su caso no encaja en ninguna de las dos: descríbalo y le proponemos una solución.",
+      },
+    ],
+    otherLabel: "¿Qué necesita mover?",
+    otherPlaceholder:
+      "Ej. mudanza de planta, última milla, cruce fronterizo, carga que no cabe en un camión estándar…",
+    otherSuggestions: [] as string[],
   },
   /**
    * "Integral" combina modos (aéreo+terrestre, marítimo+terrestre, etc.), así
@@ -176,41 +275,75 @@ function Chip({
 }
 
 /**
- * Enlace discreto para desviar a quien en realidad busca ser proveedor de
- * Compass o trabajar ahí — antes de que llene el formulario de cotización.
- * Texto secundario a propósito: no debe competir visualmente con los chips de
- * servicio, sólo estar disponible para quien de verdad busca otra cosa.
+ * Campo de texto libre que revela el chip "Otro", con sus atajos opcionales.
  *
- * No se monta en la rama "Otros": ahí ya están los dos botones grandes
- * dedicados (ver el bloque de texto libre del paso 2), y repetir el mismo par
- * de destinos sería redundante.
+ * Lo comparten las tres ramas que ofrecen "Otro" (Marítimo, Aéreo y Terrestre),
+ * que sólo se diferencian en el texto de la etiqueta, el placeholder y las
+ * sugerencias — todo eso vive en `ROUTE_STEP`. Cuando esto estaba escrito a
+ * mano dentro de una sola rama, las demás se quedaron sin el campo y el dato
+ * se perdía en silencio.
+ *
+ * Escribir aquí NO auto-avanza (lo evita `pickSub`): el "Continuar" de la barra
+ * de abajo es la salida. Los atajos sí avanzan, porque un clic ya es una
+ * selección completa.
  */
-function ProveedorVacantesLink({
-  onProveedor,
-  onVacantes,
+function OtroTextoLibre({
+  label,
+  placeholder,
+  value,
+  onChange,
+  suggestions,
+  onPickSuggestion,
 }: {
-  onProveedor: () => void;
-  onVacantes: () => void;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  suggestions: string[];
+  onPickSuggestion: (value: string) => void;
 }) {
+  // `useId` y no un id fijo: <QuoteWizard> se monta DOS VECES a la vez en las
+  // páginas que llevan el cotizador inline y además el modal del header. Con
+  // ids literales, los `htmlFor` apuntaban al primero que encontrara el
+  // navegador y el segundo formulario se quedaba sin etiquetas asociadas.
+  const inputId = useId();
+
   return (
-    <p className="mt-3 text-xs text-slate-400">
-      ¿Busca ser proveedor o trabajar con nosotros?{" "}
-      <button
-        type="button"
-        onClick={onProveedor}
-        className="underline underline-offset-2 hover:text-slate-600"
-      >
-        Proveedores
-      </button>
-      {" · "}
-      <button
-        type="button"
-        onClick={onVacantes}
-        className="underline underline-offset-2 hover:text-slate-600"
-      >
-        Vacantes
-      </button>
-    </p>
+    <div className="mt-3">
+      <label htmlFor={inputId} className={LABEL}>
+        {label}
+      </label>
+      <input
+        id={inputId}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoFocus
+        className={FIELD}
+      />
+
+      {/* Atajos a las plazas que Compass opera sin ser principales: escriben el
+          nombre en el mismo campo de arriba, así que el resto del flujo
+          (validación y `subResuelto` en el envío) no distingue si se eligió con
+          clic o se tecleó. Hoy sólo Marítimo trae sugerencias; donde la lista
+          está vacía el bloque simplemente no se monta. */}
+      {suggestions.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">O elija uno de estos:</span>
+          {suggestions.map((sugerencia) => (
+            <Chip
+              key={sugerencia}
+              selected={value.trim() === sugerencia}
+              onClick={() => onPickSuggestion(sugerencia)}
+              className="px-3 py-1.5"
+            >
+              {sugerencia}
+            </Chip>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -230,6 +363,16 @@ export default function QuoteWizard({
   onClose?: () => void;
 }) {
   const errorId = useId();
+  /**
+   * Prefijo de los ids de campo, ÚNICO POR INSTANCIA. Antes eran literales
+   * ("cot-nombre", "cot-correo"...), y eso rompía las páginas donde conviven el
+   * cotizador inline y el del modal: al abrir el modal había dos formularios
+   * montados con los mismos ids, así que cada `label` quedaba asociado al campo
+   * de la otra instancia. Pasa en el home desde siempre y volvería a pasar en
+   * /importaciones-a-mexico.
+   */
+  const campoId = useId();
+  const idDe = (campo: string) => `${campoId}-${campo}`;
   const {
     status,
     isSubmitting,
@@ -249,7 +392,7 @@ export default function QuoteWizard({
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [otroPuerto, setOtroPuerto] = useState("");
+  const [otroLugar, setOtroLugar] = useState("");
   const [fecha, setFecha] = useState("");
   const [detalles, setDetalles] = useState("");
   const [nombre, setNombre] = useState("");
@@ -319,6 +462,30 @@ export default function QuoteWizard({
   const selectedType = REQUEST_TYPES.find((t) => t.value === tipo);
   const route = tipo ? ROUTE_STEP[tipo] : null;
 
+  // Los pasos dependen de la rama (Terrestre tiene uno más), así que el total
+  // y el contenido salen de aquí y no de una constante global. El `?? [0]` no
+  // debería hacer falta —`step` nunca supera el largo de su propia rama, que
+  // sólo cambia en el paso 1—, pero deja el render a salvo de un desfase.
+  const steps = stepsFor(tipo);
+  const currentStep = steps[step - 1] ?? steps[0];
+  const stepKey = currentStep.key;
+
+  /**
+   * ¿Esta opción es el "Otro" que abre el campo de texto libre?
+   *
+   * Se decide por la CONFIGURACIÓN de la rama —tener `otherLabel`— y no por el
+   * tipo concreto: así, cualquier rama que declare ese campo hereda el patrón
+   * completo (revelar el input, no auto-avanzar y mandar lo escrito en vez del
+   * literal "Otro"). Cuando esto preguntaba por `tipo === "maritimo"`, Aéreo
+   * quedó sin campo y su auto-avance se comía el dato.
+   *
+   * Las ramas "text" (Integral, Especializado, Otros) no lo declaran: ya son
+   * texto libre completo, ahí no hay nada que revelar.
+   */
+  function esperaTextoDeOtro(option: string) {
+    return option === OTRA_OPCION && !!route && "otherLabel" in route;
+  }
+
   function pickTipo(value: TypeValue) {
     setTipo(value);
     // El sub-dato pertenece al tipo anterior: si se cambia de servicio, la rama
@@ -327,7 +494,7 @@ export default function QuoteWizard({
     setOrigen("");
     setDestino("");
     setDescripcion("");
-    setOtroPuerto("");
+    setOtroLugar("");
     setError(null);
 
     // El paso 1 no tiene botón "Continuar": elegir servicio ES avanzar. Como
@@ -350,34 +517,55 @@ export default function QuoteWizard({
   /**
    * Selección de puerto/aeropuerto (paso 2, ramas Marítimo y Aéreo).
    *
-   * Auto-avanza igual que el paso 1, EXCEPTO cuando es Marítimo + "Otro": ahí
-   * se revela un campo de texto para el nombre del puerto, y hay que esperar a
-   * que el usuario termine de escribir. El botón "Continuar" de la barra de
-   * abajo —que ya existe para este paso— es el que cubre esa espera; no hace
-   * falta un botón nuevo.
+   * Auto-avanza igual que el paso 1, EXCEPTO en "Otro": ahí se revela un campo
+   * de texto para el nombre de la plaza, y hay que esperar a que el usuario
+   * termine de escribir. El botón "Continuar" de la barra de abajo —que ya
+   * existe para este paso— es el que cubre esa espera; no hace falta un botón
+   * nuevo.
+   *
+   * La espera depende de la RAMA, no del tipo concreto: cualquier rama de tipo
+   * "options" con "Otro" abre el mismo campo. Cuando esto preguntaba por
+   * `tipo === "maritimo"`, Aéreo + "Otro" auto-avanzaba sin dejar escribir el
+   * aeropuerto y el dato se perdía.
    */
   function pickSub(option: string) {
     setSub(option);
     setError(null);
 
-    const esperaTextoLibre = tipo === "maritimo" && option === "Otro";
-    if (esperaTextoLibre) return;
+    if (esperaTextoDeOtro(option)) return;
 
+    advanceToNextStep();
+  }
+
+  /**
+   * Atajo a una plaza de `otherSuggestions` desde dentro de "Otro". Un clic
+   * aquí es una selección completa —el nombre ya quedó escrito por el usuario
+   * en la práctica—, así que auto-avanza igual que un chip principal. Lo que no
+   * auto-avanza sigue siendo el texto libre: escribir a mano no dispara nada, y
+   * de eso se encarga el "Continuar" de la barra de abajo.
+   */
+  function pickSugerencia(valor: string) {
+    setOtroLugar(valor);
+    setError(null);
+    advanceToNextStep();
+  }
+
+  function advanceToNextStep() {
     if (advanceTimer.current !== null) {
       window.clearTimeout(advanceTimer.current);
     }
     advanceTimer.current = window.setTimeout(() => {
-      setStep(3);
+      setStep((s) => Math.min(s + 1, steps.length));
     }, AUTO_ADVANCE_MS);
   }
 
   function goNext() {
-    if (step === 1 && !selectedType) {
+    if (stepKey === "servicio" && !selectedType) {
       setError("Seleccione un tipo de servicio para continuar.");
       return;
     }
     setError(null);
-    setStep((s) => Math.min(s + 1, STEPS.length));
+    setStep((s) => Math.min(s + 1, steps.length));
   }
 
   function goBack() {
@@ -397,7 +585,7 @@ export default function QuoteWizard({
     setOrigen("");
     setDestino("");
     setDescripcion("");
-    setOtroPuerto("");
+    setOtroLugar("");
     setFecha("");
     setDetalles("");
     setNombre("");
@@ -427,13 +615,12 @@ export default function QuoteWizard({
       return;
     }
 
-    // El puerto escrito a mano reemplaza al literal "Otro" en el payload y en
-    // el correo; si el usuario no llegó a escribir nada, se manda "Otro" tal
-    // cual en vez de perder el dato.
-    const subResuelto =
-      tipo === "maritimo" && sub === "Otro"
-        ? otroPuerto.trim() || "Otro"
-        : sub;
+    // La plaza escrita a mano (puerto o aeropuerto) reemplaza al literal "Otro"
+    // en el payload y en el correo; si el usuario no llegó a escribir nada, se
+    // manda "Otro" tal cual en vez de perder el dato.
+    const subResuelto = esperaTextoDeOtro(sub)
+      ? otroLugar.trim() || OTRA_OPCION
+      : sub;
 
     void submitQuote(
       {
@@ -488,27 +675,37 @@ export default function QuoteWizard({
         {showHeading ? (
           <h2
             id={headingId}
-            className="font-heading text-2xl font-bold text-brand-900 md:text-3xl"
+            /* Un escalón por debajo de lo que era (text-2xl/3xl). Sigue
+               mandando en la tarjeta: 24px bold contra los 18px semibold de la
+               pregunta del paso, que es el siguiente nivel. */
+            className="font-heading text-xl font-bold text-brand-900 md:text-2xl"
           >
-            Solicite una Cotización
+            Solicite una cotización
           </h2>
         ) : (
           <span />
         )}
-        {/* Indicador combinado: los 4 pasos como guiones (el actual más ancho
-            y en color) más el conteo. Sustituye a la fila de círculos
-            numerados, que ocupaba un renglón entero. El nombre de cada paso
-            sigue disponible en `sr-only`, así que un lector de pantalla no
-            pierde orientación aunque en pantalla sólo se vean guiones. */}
+        {/* Indicador combinado: un guión por paso (el actual más ancho y en
+            color) más el conteo. Sustituye a la fila de círculos numerados, que
+            ocupaba un renglón entero. El nombre de cada paso sigue disponible
+            en `sr-only`, así que un lector de pantalla no pierde orientación
+            aunque en pantalla sólo se vean guiones.
+
+            El total sale de `steps`, no de una constante: Terrestre son 5 pasos
+            y el resto 4. Antes decía "de 4" siempre, así que al separar la
+            modalidad del origen-destino habría mentido en esa rama. */}
         <div className="flex items-center gap-3">
           <ol className="flex items-center gap-1.5" aria-label="Progreso">
-            {STEPS.map((s) => (
-              <li key={s.id} aria-current={s.id === step ? "step" : undefined}>
+            {steps.map((s, i) => (
+              <li
+                key={s.key}
+                aria-current={i + 1 === step ? "step" : undefined}
+              >
                 <span
                   className={`block h-1.5 rounded-full transition-all duration-300 ${
-                    s.id === step
+                    i + 1 === step
                       ? "w-5 bg-brand-900"
-                      : s.id < step
+                      : i + 1 < step
                         ? "w-1.5 bg-brand-900/40"
                         : "w-1.5 bg-slate-200"
                   }`}
@@ -518,7 +715,7 @@ export default function QuoteWizard({
             ))}
           </ol>
           <p className="text-sm text-slate-500">
-            Paso {step} de {STEPS.length}
+            Paso {step} de {steps.length}
           </p>
         </div>
       </div>
@@ -532,19 +729,49 @@ export default function QuoteWizard({
         >
           <div
             className="h-full rounded-full bg-brand-900 transition-[width] duration-300"
-            style={{ width: `${(step / STEPS.length) * 100}%` }}
+            style={{ width: `${(step / steps.length) * 100}%` }}
           />
         </div>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        <p
-          ref={stepHeadingRef}
-          tabIndex={-1}
-          className="mb-4 font-heading text-lg font-semibold text-brand-900 outline-none"
-        >
-          {STEPS[step - 1].prompt}
-        </p>
+        {/* La pregunta del paso y, sólo en el paso 1, la salida a proveedores
+            en el extremo opuesto de la misma fila. Sustituye al enlace de texto
+            "¿Busca ser proveedor o trabajar con nosotros?" que iba al pie de
+            los pasos 1 y 2: era tan discreto que no cumplía su función de
+            desvío. Va únicamente en el paso 1 —antes de que nadie invierta
+            tiempo en el formulario— y no se repite en los siguientes.
+
+            `flex-wrap`: en pantallas angostas el botón cae bajo la pregunta en
+            vez de estrujarla. */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p
+            ref={stepHeadingRef}
+            tabIndex={-1}
+            className="font-heading text-lg font-semibold text-brand-900 outline-none"
+          >
+            {currentStep.prompt}
+          </p>
+
+          {stepKey === "servicio" && (
+            /* DELIBERADAMENTE PEQUEÑO: es una salida secundaria, no una acción
+               del formulario. El rojo ya lo hace visible de sobra; con el
+               tamaño de antes (text-sm, px-5 py-2.5) competía con la pregunta
+               del paso y con los chips de servicio.
+               Mide 28px de alto en pantalla, por debajo del mínimo táctil, así
+               que el `after` estira el ÁREA CLICABLE 8px arriba y abajo hasta
+               los 44px sin ocupar más espacio en el layout: el pseudo-elemento
+               es hijo del botón y recibe los eventos, pero al ser `absolute` no
+               empuja nada de la fila. */
+            <button
+              type="button"
+              onClick={() => exitTo("/proveedores")}
+              className="relative shrink-0 rounded-full bg-accent-red px-3.5 py-1.5 font-heading text-xs font-semibold text-white transition-opacity after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:opacity-90"
+            >
+              ¿Eres proveedor?
+            </button>
+          )}
+        </div>
 
         {/* ---------- PASO 1 · Servicio ----------
             Tarjetas horizontales (ícono a la izquierda) y no apiladas: en
@@ -556,45 +783,71 @@ export default function QuoteWizard({
             fila. 3 columnas da dos filas parejas de tres, con de sobra ancho
             por columna incluso para "Especializado" —la etiqueta más larga—
             dentro del modal (max-w-4xl, el contexto más estrecho). */}
-        {step === 1 && (
-          <>
-            <div
-              role="group"
-              aria-label="Tipo de servicio"
-              className="grid grid-cols-2 gap-3 sm:grid-cols-3"
-            >
-              {REQUEST_TYPES.map((type) => {
-                const Icon = TYPE_ICONS[type.value];
-                return (
-                  <Chip
-                    key={type.value}
-                    selected={tipo === type.value}
-                    onClick={() => pickTipo(type.value)}
-                    className="flex items-center justify-center gap-2 px-3 py-3"
-                  >
-                    <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
-                    {type.label}
-                  </Chip>
-                );
-              })}
-            </div>
-            <ProveedorVacantesLink
-              onProveedor={() => exitTo("/nosotros#contactanos")}
-              onVacantes={() => exitTo("/vacantes")}
-            />
-          </>
+        {stepKey === "servicio" && (
+          /* Sin encabezado propio: la pregunta de arriba ya dice qué elegir, y
+             el nombre del grupo para lectores de pantalla lo pone `aria-label`
+             —invisible, sin repetir nada en pantalla. */
+          <div
+            role="group"
+            aria-label="Tipo de servicio"
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+          >
+            {REQUEST_TYPES.map((type) => {
+              const Icon = TYPE_ICONS[type.value];
+              return (
+                <Chip
+                  key={type.value}
+                  selected={tipo === type.value}
+                  onClick={() => pickTipo(type.value)}
+                  className="flex items-center justify-center gap-2 px-3 py-3"
+                >
+                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
+                  {type.label}
+                </Chip>
+              );
+            })}
+          </div>
         )}
 
-        {/* ---------- PASO 2 · Ruta (condicional) ---------- */}
-        {step === 2 && route && (
+        {/* ---------- PASO 2 · Ruta / Modalidad (condicional) ---------- */}
+        {stepKey === "ruta" && route && (
           <fieldset>
-            <legend className="mb-3 text-sm font-medium text-slate-700">
+            {/* La leyenda NO SE BORRA: es el nombre accesible del fieldset, y
+                sin ella el grupo de chips se anunciaría suelto. Lo que cambia
+                es si se VE.
+
+                En las ramas de chips (`options` y `terrestre`) se va a
+                `sr-only`: ahí sólo repetía la pregunta de arriba —"¿Qué
+                modalidad de transporte terrestre necesita?" seguido de un
+                "Modalidad"— y las propias opciones dicen ya qué se está
+                eligiendo.
+
+                En las ramas `text` se queda VISIBLE, y no por inercia: ahí la
+                leyenda ("Describa su carga especializada", "Describa su
+                necesidad de transporte combinado") es lo único que dice qué
+                escribir. La pregunta del paso, genérica, no lo cubre. */}
+            <legend
+              className={
+                route.kind === "text"
+                  ? "mb-3 text-sm font-medium text-slate-700"
+                  : "sr-only"
+              }
+            >
               {route.legend}
             </legend>
 
             {route.kind === "options" && (
               <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {/* La rejilla se ajusta al número de chips: con 4 caben en una
+                    fila a partir de `sm` sin dejar huecos, y una lista más
+                    larga vuelve a repartirse en 3 y 6 columnas. */}
+                <div
+                  className={`grid grid-cols-2 gap-3 ${
+                    route.options.length <= 4
+                      ? "sm:grid-cols-4"
+                      : "sm:grid-cols-3 lg:grid-cols-6"
+                  }`}
+                >
                   {route.options.map((option) => (
                     <Chip
                       key={option}
@@ -607,87 +860,66 @@ export default function QuoteWizard({
                   ))}
                 </div>
 
-                {/* Sólo Marítimo + "Otro": el aeropuerto no lo pide el
-                    encargo, y para el resto de las opciones el nombre ya está
-                    completo con el chip. Sin auto-avance mientras se escribe
-                    —lo evita `pickSub`—, así que la barra de abajo con
-                    "Continuar" es la salida natural una vez que se termina. */}
-                {tipo === "maritimo" && sub === "Otro" && (
-                  <div className="mt-3">
-                    <label htmlFor="cot-otro-puerto" className={LABEL}>
-                      Nombre del puerto
-                    </label>
-                    <input
-                      id="cot-otro-puerto"
-                      type="text"
-                      value={otroPuerto}
-                      onChange={(e) => setOtroPuerto(e.target.value)}
-                      placeholder="Escriba el puerto de operación"
-                      autoFocus
-                      className={FIELD}
-                    />
-                  </div>
+                {sub === OTRA_OPCION && (
+                  <OtroTextoLibre
+                    label={route.otherLabel}
+                    placeholder={route.otherPlaceholder}
+                    value={otroLugar}
+                    onChange={setOtroLugar}
+                    suggestions={route.otherSuggestions}
+                    onPickSuggestion={pickSugerencia}
+                  />
                 )}
               </>
             )}
 
+            {/* Terrestre: SÓLO la modalidad. El origen-destino se mudó a su
+                propio paso ("trayecto"): tenerlos juntos mezclaba dos preguntas
+                distintas en una pantalla y no se entendía qué se estaba
+                eligiendo.
+
+                Chips en columna con la explicación debajo del nombre, porque
+                LTL/FTL son siglas del gremio: sin el texto de apoyo, quien
+                cotiza por primera vez elige a ciegas. */}
             {route.kind === "terrestre" && (
-              <div className="grid gap-4 md:grid-cols-4">
-                {/* El <span> de "Modalidad" no es decorativo: iguala la
-                    altura de los labels de Origen/Destino para que los
-                    chips queden alineados con los inputs en la misma fila. */}
-                <div className="md:col-span-2">
-                  <span className={LABEL}>Modalidad</span>
-                  <div
-                    role="group"
-                    aria-label="Modalidad terrestre"
-                    className="grid grid-cols-2 gap-3"
-                  >
-                    {route.options.map((option) => (
-                      <Chip
-                        key={option}
-                        selected={sub === option}
-                        onClick={() => setSub(option)}
-                        className="px-3 py-2.5"
-                      >
-                        {option}
-                      </Chip>
-                    ))}
-                  </div>
+              <>
+                {/* Sin `role="group"` propio: el <fieldset> con su leyenda
+                    sr-only ya agrupa y nombra estos chips. Anidar un segundo
+                    grupo con casi el mismo nombre los haría anunciarse dos
+                    veces. */}
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {route.options.map((option) => (
+                    <Chip
+                      key={option.value}
+                      selected={sub === option.value}
+                      onClick={() => pickSub(option.value)}
+                      className="flex h-full flex-col items-start gap-1 px-4 py-3 text-left"
+                    >
+                      <span className="font-semibold">{option.label}</span>
+                      <span className="text-xs font-normal leading-snug text-slate-500">
+                        {option.hint}
+                      </span>
+                    </Chip>
+                  ))}
                 </div>
-                <div>
-                  <label htmlFor="cot-origen" className={LABEL}>
-                    Origen
-                  </label>
-                  <input
-                    id="cot-origen"
-                    type="text"
-                    value={origen}
-                    onChange={(e) => setOrigen(e.target.value)}
-                    placeholder="Ciudad o planta"
-                    className={FIELD}
+
+                {sub === OTRA_OPCION && (
+                  <OtroTextoLibre
+                    label={route.otherLabel}
+                    placeholder={route.otherPlaceholder}
+                    value={otroLugar}
+                    onChange={setOtroLugar}
+                    suggestions={route.otherSuggestions}
+                    onPickSuggestion={pickSugerencia}
                   />
-                </div>
-                <div>
-                  <label htmlFor="cot-destino" className={LABEL}>
-                    Destino
-                  </label>
-                  <input
-                    id="cot-destino"
-                    type="text"
-                    value={destino}
-                    onChange={(e) => setDestino(e.target.value)}
-                    placeholder="Ciudad o planta"
-                    className={FIELD}
-                  />
-                </div>
-              </div>
+                )}
+              </>
             )}
 
             {route.kind === "text" && (
               <>
                 <textarea
-                  id="cot-descripcion"
+                  id={idDe("descripcion")}
                   aria-label={route.legend}
                   rows={3}
                   value={descripcion}
@@ -710,9 +942,14 @@ export default function QuoteWizard({
                       ¿Busca algo distinto?
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
+                      {/* Los dos destinos ya EXISTEN: /proveedores y /vacantes.
+                          El primero apuntaba a /nosotros#contactanos, que sigue
+                          siendo 404; el segundo llevaba a /vacantes desde antes
+                          de que la página se construyera. Hoy los dos llegan a
+                          algo. */}
                       <button
                         type="button"
-                        onClick={() => exitTo("/nosotros#contactanos")}
+                        onClick={() => exitTo("/proveedores")}
                         className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-brand-900 hover:text-brand-900"
                       >
                         Quiero ser proveedor de Compass Solutions
@@ -732,28 +969,55 @@ export default function QuoteWizard({
           </fieldset>
         )}
 
-        {/* Enlace discreto a proveedores/vacantes, en TODAS las ramas del
-            paso 2 salvo "Otros" (que ya tiene los dos botones de arriba). */}
-        {step === 2 && route && tipo !== "otros" && (
-          <ProveedorVacantesLink
-            onProveedor={() => exitTo("/nosotros#contactanos")}
-            onVacantes={() => exitTo("/vacantes")}
-          />
-        )}
-
-        {/* ---------- PASO 3 · Embarque ---------- */}
-        {step === 3 && (
+        {/* ---------- Trayecto · sólo Terrestre ----------
+            Origen y destino en su propia pantalla. Antes vivían pegados a los
+            chips de modalidad, en una rejilla de 4 columnas donde la pregunta
+            del paso ("¿Cuál es la ruta de su carga?") no correspondía a la
+            mitad de los campos. */}
+        {stepKey === "trayecto" && (
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="cot-fecha" className={LABEL}>
+              <label htmlFor={idDe("origen")} className={LABEL}>
+                Origen
+              </label>
+              <input
+                id={idDe("origen")}
+                type="text"
+                value={origen}
+                onChange={(e) => setOrigen(e.target.value)}
+                placeholder="Ciudad o planta"
+                className={FIELD}
+              />
+            </div>
+            <div>
+              <label htmlFor={idDe("destino")} className={LABEL}>
+                Destino
+              </label>
+              <input
+                id={idDe("destino")}
+                type="text"
+                value={destino}
+                onChange={(e) => setDestino(e.target.value)}
+                placeholder="Ciudad o planta"
+                className={FIELD}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ---------- Embarque ---------- */}
+        {stepKey === "embarque" && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor={idDe("fecha")} className={LABEL}>
                 Fecha tentativa de embarque
               </label>
               <input
-                id="cot-fecha"
+                id={idDe("fecha")}
                 type="date"
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
-                aria-describedby="cot-fecha-ayuda"
+                aria-describedby={idDe("fecha-ayuda")}
                 /* En un `input[type=date]` el navegador sólo abre el calendario
                    al pulsar su ícono; el resto del campo —que es la mayor parte
                    de su superficie— no hace nada. `showPicker()` lo abre desde
@@ -773,16 +1037,19 @@ export default function QuoteWizard({
                 }}
                 className={FIELD}
               />
-              <p id="cot-fecha-ayuda" className="mt-1.5 text-xs text-slate-500">
+              <p
+                id={idDe("fecha-ayuda")}
+                className="mt-1.5 text-xs text-slate-500"
+              >
                 Si no tiene fecha definida, puede dejarlo en blanco.
               </p>
             </div>
             <div>
-              <label htmlFor="cot-detalles" className={LABEL}>
+              <label htmlFor={idDe("detalles")} className={LABEL}>
                 Detalles de la carga
               </label>
               <textarea
-                id="cot-detalles"
+                id={idDe("detalles")}
                 rows={3}
                 value={detalles}
                 onChange={(e) => setDetalles(e.target.value)}
@@ -793,16 +1060,16 @@ export default function QuoteWizard({
           </div>
         )}
 
-        {/* ---------- PASO 4 · Contacto ---------- */}
-        {step === 4 && (
+        {/* ---------- Contacto ---------- */}
+        {stepKey === "contacto" && (
           <>
             <div className="grid gap-4 md:grid-cols-4">
               <div>
-                <label htmlFor="cot-nombre" className={LABEL}>
+                <label htmlFor={idDe("nombre")} className={LABEL}>
                   Nombre <span aria-hidden="true">*</span>
                 </label>
                 <input
-                  id="cot-nombre"
+                  id={idDe("nombre")}
                   type="text"
                   required
                   value={nombre}
@@ -811,11 +1078,11 @@ export default function QuoteWizard({
                 />
               </div>
               <div>
-                <label htmlFor="cot-empresa" className={LABEL}>
+                <label htmlFor={idDe("empresa")} className={LABEL}>
                   Empresa
                 </label>
                 <input
-                  id="cot-empresa"
+                  id={idDe("empresa")}
                   type="text"
                   value={empresa}
                   onChange={(e) => setEmpresa(e.target.value)}
@@ -823,11 +1090,11 @@ export default function QuoteWizard({
                 />
               </div>
               <div>
-                <label htmlFor="cot-correo" className={LABEL}>
+                <label htmlFor={idDe("correo")} className={LABEL}>
                   Correo <span aria-hidden="true">*</span>
                 </label>
                 <input
-                  id="cot-correo"
+                  id={idDe("correo")}
                   type="email"
                   required
                   value={correo}
@@ -836,11 +1103,11 @@ export default function QuoteWizard({
                 />
               </div>
               <div>
-                <label htmlFor="cot-telefono" className={LABEL}>
+                <label htmlFor={idDe("telefono")} className={LABEL}>
                   Teléfono
                 </label>
                 <input
-                  id="cot-telefono"
+                  id={idDe("telefono")}
                   type="tel"
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
@@ -851,11 +1118,11 @@ export default function QuoteWizard({
 
             {/* Opcional: no bloquea el envío si queda sin elegir. El aviso
                 "Este formulario es de cotizaciones..." que vivía aquí se quitó
-                por completo — la desviación a proveedores/vacantes ahora
-                ocurre ANTES, en los pasos 1 y 2 (ver <ProveedorVacantesLink> y
-                los dos botones de la rama "Otros"), que es donde de verdad
-                sirve de algo: aquí, en el paso 4, el usuario ya recorrió todo
-                el formulario. */}
+                por completo — la desviación a proveedores ahora ocurre ANTES,
+                en el paso 1 (el botón "¿Eres proveedor?" junto a la pregunta) y
+                en los dos botones de la rama "Otros", que es donde de verdad
+                sirve de algo: aquí, en el último paso, el usuario ya recorrió
+                todo el formulario. */}
             <div className="mt-4">
               <span className={LABEL}>
                 ¿Cómo prefiere que lo contactemos?{" "}
@@ -912,7 +1179,7 @@ export default function QuoteWizard({
               </button>
             </div>
 
-            {step < STEPS.length ? (
+            {step < steps.length ? (
               <button
                 type="button"
                 onClick={goNext}
@@ -928,7 +1195,7 @@ export default function QuoteWizard({
                 aria-describedby={error ? errorId : undefined}
                 className="rounded-full bg-brand-900 px-12 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                {isSubmitting ? "Enviando…" : "Solicitar Cotización"}
+                {isSubmitting ? "Enviando…" : "Solicitar cotización"}
               </button>
             )}
           </div>

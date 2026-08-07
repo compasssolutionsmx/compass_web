@@ -8,11 +8,16 @@ import "server-only";
  * filtrar la configuración —y, por arrastre, la clave de Resend— al bundle del
  * navegador.
  *
- * QUÉ ES ESTE CORREO DEPENDE DEL FORMULARIO, desde que ninguno de los dos
- * redirige ya a WhatsApp:
+ * QUÉ ES ESTE CORREO DEPENDE DEL FORMULARIO, desde que ninguno redirige ya a
+ * WhatsApp:
  *   - cotizador  es el REGISTRO PRINCIPAL del lead
  *   - whatsapp   sigue siendo un RESPALDO por si el prospecto nunca abre la
  *                conversación que se le ofrece al final
+ *   - proveedor  NO ES UN LEAD DE VENTA: es una empresa ofreciéndose como
+ *                proveedora desde /proveedores, y el correo lo dice en el
+ *                asunto y en el pie para que no acabe en el flujo comercial
+ *   - vacante    TAMPOCO ES UN LEAD: es una persona postulándose desde
+ *                /vacantes, con el mismo tratamiento de asunto y pie
  * Esa diferencia se refleja en el pie de cada correo (ver SOURCE_FOOTNOTES).
  *
  * VARIABLES DE ENTORNO:
@@ -102,7 +107,7 @@ export function leadFrom(): string {
 
 /* ─────────────────────────── Contrato del payload ───────────────────────── */
 
-export type LeadSource = "cotizador" | "whatsapp";
+export type LeadSource = "cotizador" | "whatsapp" | "proveedor" | "vacante";
 
 export type Lead = {
   formulario: LeadSource;
@@ -144,11 +149,47 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     ["tipo", "Tipo de servicio"],
     ["mensaje", "Mensaje"],
   ],
+  /**
+   * La empresa va PRIMERO, al revés que en los otros dos: aquí quien se
+   * registra es un proveedor, y lo que identifica el registro es la compañía,
+   * no la persona que llenó el formulario.
+   *
+   * `servicio` es texto libre del selector de la página, NO un slug de
+   * `request-types`: son categorías de lo que el proveedor OFRECE, que no
+   * coinciden con los tipos de solicitud del cotizador. Por eso la clave no es
+   * `tipo` — si lo fuera, `orderedFields` intentaría traducirla con
+   * `requestTypeLabel` y no encontraría nada.
+   */
+  proveedor: [
+    ["empresa", "Empresa"],
+    ["nombre", "Contacto"],
+    ["correo", "Correo"],
+    ["telefono", "Teléfono"],
+    ["servicio", "Servicio que ofrece"],
+    ["mensaje", "Mensaje"],
+  ],
+  /**
+   * Aquí manda la PERSONA, así que su nombre va primero —al revés que en
+   * `proveedor`, donde identifica la empresa.
+   *
+   * `puesto` y no `tipo`, por el mismo motivo que `servicio` en proveedores:
+   * `orderedFields` traduce la clave `tipo` con `requestTypeLabel`, que sólo
+   * conoce los slugs del cotizador y no encontraría nada.
+   */
+  vacante: [
+    ["nombre", "Nombre"],
+    ["puesto", "Puesto de interés"],
+    ["correo", "Correo"],
+    ["telefono", "Teléfono"],
+    ["mensaje", "Mensaje"],
+  ],
 };
 
 const SOURCE_LABELS: Record<LeadSource, string> = {
   cotizador: "Cotizador (formulario de 4 pasos)",
   whatsapp: "Modal rápido de WhatsApp",
+  proveedor: "Registro de proveedores (/proveedores)",
+  vacante: "Vacante",
 };
 
 /**
@@ -173,6 +214,15 @@ const SOURCE_FOOTNOTES: Record<LeadSource, string> = {
     "Nueva solicitud de cotización recibida desde compasssolutions.com.mx.",
   whatsapp:
     "Aviso automático del sitio compasssolutions.com.mx. Es un respaldo: al prospecto se le ofreció continuar por WhatsApp al terminar el formulario, pero puede que nunca haya mandado el mensaje.",
+  /**
+   * Lo importante de este pie es la ADVERTENCIA: no es un lead de venta. Sin
+   * ella, un correo con nombre, empresa y teléfono se lee igual que una
+   * cotización y acaba en el mismo flujo comercial.
+   */
+  proveedor:
+    "NO ES UNA COTIZACIÓN: es una empresa que se ofrece como proveedora de Compass Solutions, registrada desde la página /proveedores del sitio.",
+  vacante:
+    "NO ES UNA COTIZACIÓN: es una persona postulándose a una vacante de Compass Solutions, registrada desde la página /vacantes del sitio.",
 };
 
 /**
@@ -200,7 +250,12 @@ export function parseLead(
   }
 
   const formulario = raw.formulario;
-  if (formulario !== "cotizador" && formulario !== "whatsapp") {
+  if (
+    formulario !== "cotizador" &&
+    formulario !== "whatsapp" &&
+    formulario !== "proveedor" &&
+    formulario !== "vacante"
+  ) {
     return { ok: false, error: "Formulario desconocido." };
   }
 
@@ -277,10 +332,28 @@ function orderedFields(lead: Lead): [string, string][] {
   return rows;
 }
 
+/**
+ * Asunto. Cada origen tiene el suyo y empieza por una palabra distinta
+ * ("cotización" / "contacto" / "proveedor"), que es lo único que se ve en la
+ * bandeja antes de abrir: por ahí se distingue un registro de proveedor de un
+ * lead comercial sin tener que leer el cuerpo.
+ */
 export function buildSubject(lead: Lead): string {
   if (lead.formulario === "cotizador") {
     const tipo = requestTypeLabel(lead.datos.tipo) ?? "Sin tipo";
     return `Nueva cotización — ${tipo}`;
+  }
+  if (lead.formulario === "vacante") {
+    const puesto = lead.datos.puesto || "puesto sin especificar";
+    const nombre = lead.datos.nombre || "sin nombre";
+    return `Nueva postulación a vacante: ${puesto} (candidato: ${nombre})`;
+  }
+  if (lead.formulario === "proveedor") {
+    // La empresa es lo que identifica al proveedor; el nombre de la persona
+    // sólo entra si no la mandaron.
+    const quien =
+      lead.datos.empresa || lead.datos.nombre || "empresa sin nombre";
+    return `Nuevo proveedor interesado — ${quien}`;
   }
   return `Nuevo contacto WhatsApp — ${lead.datos.nombre || "sin nombre"}`;
 }

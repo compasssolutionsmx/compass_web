@@ -15,6 +15,7 @@
  */
 
 import Lenis from "lenis";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
@@ -77,6 +78,7 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
   );
 
   const lenisRef = useRef<Lenis | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (prefersReducedMotion) return;
@@ -112,6 +114,32 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
       lenisRef.current = null;
     };
   }, [prefersReducedMotion]);
+
+  /**
+   * Remide el documento en cada cambio de ruta.
+   *
+   * POR QUÉ HACE FALTA: Lenis mantiene su propio límite de scroll
+   * (`scrollHeight - height`) y lo refresca con un ResizeObserver sobre
+   * <html>. Un ResizeObserver dispara por cambios del BORDER-BOX del elemento
+   * observado, no de su `scrollHeight`; y <html> lleva `h-full`, así que su
+   * border-box mide siempre el viewport, sea la página larga o corta. Resultado:
+   * al navegar entre páginas de distinto alto el observer nunca se entera y
+   * Lenis se queda con el límite de la página anterior — de más si venías de una
+   * larga (scroll muerto al final) o de menos si venías de una corta.
+   *
+   * `resize()` no depende del observer: relee `scrollHeight` a mano
+   * (lenis.mjs -> Dimensions.onContentResize), que sí refleja el contenido real
+   * aunque el border-box esté clavado. Por eso el arreglo va aquí y no en el
+   * `h-full` del layout, que sostiene el sticky footer.
+   *
+   * Corre después del commit del DOM nuevo, así que mide la página ya montada.
+   * Si una ruta creciera DESPUÉS (una imagen sin dimensiones reservadas, un
+   * bloque que se hidrata tarde), esa altura extra volvería a quedar fuera:
+   * ahí haría falta remedir en el load de ese recurso, no en la navegación.
+   */
+  useEffect(() => {
+    lenisRef.current?.resize();
+  }, [pathname]);
 
   const api = useMemo<SmoothScrollApi>(
     () => ({

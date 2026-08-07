@@ -10,7 +10,7 @@ import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import { formatPostDate, getAllPosts, postHref } from "@/lib/blog";
 
-const TITLE = "Blog de Logística";
+const TITLE = "Blog de logística";
 const DESCRIPTION =
   "Comercio exterior, transporte y operación aduanal explicados por el equipo de Compass Solutions.";
 

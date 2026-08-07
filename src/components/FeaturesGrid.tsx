@@ -73,7 +73,7 @@ export default function FeaturesGrid() {
     >
       <Eyebrow className="mb-3 text-center">Por qué Compass Solutions</Eyebrow>
       <h2 className="mx-auto mb-4 max-w-3xl text-center font-heading text-3xl font-bold text-brand-900 md:text-4xl">
-        Movemos Tu Carga Con Precisión, Seguridad Y Compromiso
+        Movemos tu carga con precisión, seguridad y compromiso
       </h2>
       <p className="mx-auto mb-14 max-w-2xl text-center text-slate-500">
         Movemos importaciones y exportaciones por vía aérea, marítima y

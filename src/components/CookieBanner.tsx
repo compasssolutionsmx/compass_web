@@ -27,7 +27,7 @@
  *     abre desde aquí.
  *   - PANEL (sólo cuando `isPanelOpen`): la lista de categorías con sus
  *     interruptores, "Guardar mi selección" y "Cancelar". Se llega a esta
- *     vista ÚNICAMENTE desde "Preferencias de Cookies" en el footer
+ *     vista ÚNICAMENTE desde "Preferencias de cookies" en el footer
  *     (`reopenSettings()`), nunca desde un botón de este banner — por eso no
  *     hace falta un toggle interno para entrar y salir del panel.
  */
@@ -220,7 +220,7 @@ export default function CookieBanner() {
         </h2>
 
         <p className="text-xs leading-relaxed text-slate-600">
-          {/* TODO(compliance): "Aviso de Privacidad" va como texto, NO como
+          {/* TODO(compliance): "Aviso de privacidad" va como texto, NO como
               enlace. La página /apartado-legal no existe todavía —confirmado
               al auditar enlaces internos del sitio, misma ruta que el Footer
               también dejó de enlazar en esa auditoría—, así que un
@@ -229,7 +229,7 @@ export default function CookieBanner() {
               página, se envuelve este span en <Link> y ya. */}
           Usamos cookies para mejorar su experiencia.{" "}
           <span className="font-semibold text-brand-900">
-            Aviso de Privacidad
+            Aviso de privacidad
           </span>
           .
         </p>
@@ -298,7 +298,7 @@ export default function CookieBanner() {
             en brand-900 sobre el vidrio da 10.75:1 (medido, ver el comentario
             de la tarjeta), muy por encima de AA.
             Ya no hay botón "Personalizar" aquí: el panel de categorías sólo
-            se abre desde "Preferencias de Cookies" en el footer. */}
+            se abre desde "Preferencias de cookies" en el footer. */}
         <div className="mt-3 flex gap-2">
           <button
             type="button"

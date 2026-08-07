@@ -17,14 +17,22 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
  * en el <nav> de abajo antes de alargar una etiqueta o añadir un enlace.
  */
 /**
- * "Nuestra Compañía" (-> /nosotros) se quitó: esa ruta no existe todavía
- * (auditoría de enlaces internos), y un nav con un 404 es peor que un nav más
- * corto. Vuelve a añadirse en cuanto exista la página.
+ * "Nuestra Compañía" vuelve al nav: /nosotros ya existe. Se había quitado
+ * porque esa ruta era un 404 (auditoría de enlaces internos) y un nav con un
+ * 404 es peor que un nav más corto. La página está VACÍA por ahora —sólo el
+ * chasis— pero ya no rompe la navegación.
+ *
+ * PENDIENTE, anterior a este cambio: los dos anclas van sin barra
+ * (`#soluciones`, `#oferta`), así que apuntan a la PÁGINA ACTUAL. Desde el home
+ * funcionan; desde /blog, /vacantes, /proveedores o /nosotros no hay tales
+ * secciones y el clic no hace nada. El arreglo es `/#soluciones`, pero se deja
+ * aparte para no mezclarlo aquí.
  */
 const NAV_LINKS = [
   { href: "#soluciones", label: "Soluciones" },
   { href: "#oferta", label: "Oferta" },
   { href: "/blog", label: "Blog" },
+  { href: "/nosotros", label: "Nuestra Compañía" },
 ];
 
 const MOBILE_PANEL_ID = "menu-movil";
@@ -209,14 +217,18 @@ export default function Header({
               brand-900 en los dos estados (sobre vidrio claro en ambos).
 
               APARECE EN `lg` (1024px), NO EN `md` (768px). El estado suelto es
-              el que manda, porque es el más ancho: logo a h-10 (179px) + nav
-              (428px con las etiquetas actuales) + CTA (184px) + los dos gap-4
-              suman 823px, y a 768px sólo hay 736 disponibles descontando el
-              px-4 del header. El nav es el único hijo sin `shrink-0`, así que
-              al no caber se encoge y los enlaces envuelven a dos líneas: el
-              header entero cambia de alto. Medido con las fuentes reales del
-              build (DM Sans 500 a 14px), el estado suelto necesita 855px de
-              viewport; en `lg` sobran 169px.
+              el que manda, porque es el más ancho. El nav es el único hijo sin
+              `shrink-0`, así que al no caber se encoge y los enlaces envuelven
+              a dos líneas: el header entero cambia de alto.
+
+              Remedido sobre los woff2 del build al devolver "Nuestra Compañía"
+              al nav (DM Sans 500 a 14px en los enlaces; el CTA va en Archivo
+              600, que es más ancha que la Manrope con la que se midió antes):
+              logo a h-10 179px + nav 428px + CTA 191px + los dos gap-4 + el
+              px-4 del header = 861px. En `lg` sobran 163px; a 768px faltarían
+              93. Con tres etiquetas eran 707px, así que esta cuarta consume
+              155px de la holgura — la que queda alcanza, pero una quinta
+              etiqueta o una más larga hay que volver a medirla.
 
               Antes estaba en `md` y ya se pasaba 24px entre 768 y 792px —el
               defecto existía con la etiqueta corta, sólo que en una franja

@@ -24,6 +24,9 @@
  * logotipos del mínimo de contraste, y la silueta de WCA la dibujan el guinda y
  * el gris, que pasan de sobra; el naranja es relleno.
  *
+ * ALACAT es el caso que este fondo NO favorece: casi la mitad de su tinta es
+ * blanca y se pierde contra la página. Ver la nota de su constante.
+ *
  * Además, un fondo brand-100 aquí dejaría dos cajas tintadas pegadas, porque
  * <StatsSection> abre justo debajo con la suya.
  */
@@ -39,24 +42,62 @@ type Certification = {
   placeholder?: boolean;
 };
 
+/* Cada logo se declara UNA VEZ y los dos juegos se componen abajo. Antes el de
+   la landing se derivaba del de home con un `.filter()`, y eso ató los dos:
+   tocar la fila del home cambiaba la de la landing sin querer. */
+
+const AMACARGA: Certification = {
+  src: "/logo-certs/amacarga-trim.png",
+  alt: "AMACARGA",
+};
+const CANACAR: Certification = {
+  src: "/logo-certs/canacar-trim.png",
+  alt: "CANACAR",
+};
+const ISO: Certification = {
+  src: "/logo-certs/isoeeee-trim.png",
+  alt: "ISO",
+};
+const WCA: Certification = {
+  src: "/logo-certs/WCA-LOGO.svg",
+  alt: "WCA World Cargo Alliance",
+  color: true,
+};
+
 /**
- * TODO(cliente): falta ALACAT. Está fuera a propósito, no por olvido: el único
- * ejemplar que existe se sirve del WordPress, que responde con un challenge
- * anti-bot y no deja verificar el archivo. Sin poder confirmar que es monocromo
- * sobre alfa como los otros tres, aplicarle el enmascarado es un riesgo — si
- * trae fondo opaco saldría como un rectángulo navy sólido.
- * Cuando llegue alacat.png a /public/logo-certs/, verificar que sea monocromo y
- * añadirlo aquí; la fila pasaría a cinco y habría que revisar el grid.
+ * ALACAT va con `color`, o sea SIN el enmascarado de sus vecinas, y no es una
+ * preferencia estética: el archivo no admite el otro tratamiento.
+ *
+ * Analizado alacat.webp (380x197, RGBA): su canal alfa NO es la silueta del
+ * logotipo sino una banda inclinada MACIZA —60.5% del lienzo opaco, contra
+ * 17-36% en las otras tres—, con la palabra "ALACAT" calada en oscuro sobre un
+ * campo casi blanco. `.cert-mark` tiñe justo lo que el alfa marca, así que
+ * aplicárselo daría un paralelogramo navy sólido con las letras tragadas. Es
+ * exactamente el riesgo que anticipaba la nota anterior de este bloque.
+ *
+ * PROBLEMA ABIERTO, que este flag no resuelve: el 46.8% de la tinta es casi
+ * blanca (luminancia >235 y sin saturación), y esta sección va sobre el blanco
+ * de la página. Esa parte del arte desaparece contra el fondo: en pantalla
+ * quedan las letras oscuras y el azul claro #3FB5EF (2.32:1 sobre blanco), sin
+ * la banda que los sostiene. El archivo parece pensado para fondo oscuro.
+ *
+ * TODO(cliente): pedir un ALACAT o bien monocromo sobre alfa —como AMACARGA,
+ * CANACAR e ISO, y entonces se le quita este `color` y entra al tratamiento
+ * común—, o bien a color recortado al bounding box de la tinta, sin el campo
+ * blanco. Con cualquiera de los dos, esta fila vuelve a leerse pareja.
  */
+const ALACAT: Certification = {
+  src: "/logo-certs/alacat.webp",
+  alt: "ALACAT",
+  color: true,
+};
+
+/** ALACAT ocupa el lugar que tenía ISO. */
 export const CERTIFICATIONS_HOME: Certification[] = [
-  { src: "/logo-certs/amacarga-trim.png", alt: "AMACARGA" },
-  { src: "/logo-certs/canacar-trim.png", alt: "CANACAR" },
-  { src: "/logo-certs/isoeeee-trim.png", alt: "ISO" },
-  {
-    src: "/logo-certs/WCA-LOGO.svg",
-    alt: "WCA World Cargo Alliance",
-    color: true,
-  },
+  AMACARGA,
+  CANACAR,
+  ALACAT,
+  WCA,
 ];
 
 /**
@@ -113,16 +154,21 @@ function CertLogo({ src, alt, color, placeholder }: Certification) {
 
 /**
  * Juego de logos de la landing de importaciones. Cambia WCA por ALACAT, que es
- * la asociación que el mockup de esa página pone en el set.
+ * la asociación que el mockup de esa página pone en el set, y CONSERVA ISO.
  *
- * TODO(assets): falta el archivo de ALACAT. La nota de la landing dice que la
- * URL del sitio en vivo respondía —lo que contradice el bloqueo anti-bot que se
- * documentó antes—, así que vale la pena reintentar la descarga directa. Hasta
- * entonces entra como marcador de posición, no como logo real.
+ * Se escribe entero en vez de derivarse del de home. Cuando se derivaba, sacar
+ * ISO del home lo sacaba también de aquí —dejando la fila en tres logos y un
+ * hueco en `lg`— y además ALACAT aparecía DOS VECES: el marcador de posición
+ * de esta lista más el real heredado, con el mismo `alt` y por tanto la misma
+ * `key` de React.
+ *
+ * El marcador ya no hace falta: el archivo llegó y ALACAT entra como logo real.
  */
 export const CERTIFICATIONS_IMPORTACIONES: Certification[] = [
-  { src: "", alt: "ALACAT", placeholder: true },
-  ...CERTIFICATIONS_HOME.filter((c) => !c.alt.startsWith("WCA")),
+  ALACAT,
+  AMACARGA,
+  CANACAR,
+  ISO,
 ];
 
 export default function Certifications({
@@ -162,8 +208,8 @@ export default function Certifications({
         {items.map((cert) => (
           <li
             key={cert.alt}
-            /* Acotado por ALTO y por ANCHO. Los cuatro recortes tienen
-               proporciones muy distintas —AMACARGA 2.39, CANACAR 1.61, WCA 1.54
+            /* Acotado por ALTO y por ANCHO. Los recortes tienen proporciones
+               muy distintas —AMACARGA 2.39, ALACAT 1.93, CANACAR 1.61, WCA 1.54
                e ISO 1.00, que es cuadrado—, así que fijar sólo el alto dejaría
                a AMACARGA al doble de ancho que ISO. Con el tope de 14rem los
                muy apaisados se limitan por ancho y el conjunto se lee parejo.

@@ -4,10 +4,12 @@
  * Envío compartido de leads: correo de respaldo -> webhook (stub) -> pantalla
  * de confirmación.
  *
- * Es el único sitio donde vive ese patrón. Lo usan los dos formularios del
- * sitio, que capturan cosas distintas pero terminan igual:
- *   - <QuoteWizard>     vía `useQuoteRequest`, 4 pasos con ramificación
+ * Es el único sitio donde vive ese patrón. Lo usan los formularios del sitio,
+ * que capturan cosas distintas pero terminan igual:
+ *   - <QuoteWizard>     vía `useQuoteRequest`, pasos con ramificación
  *   - <WhatsAppModal>   captura corta de los accesos rápidos a WhatsApp
+ *   - <ProviderForm>    registro de proveedores, el único SIN salida a
+ *                       WhatsApp (ver el parámetro `whatsappMessage`)
  *
  * YA NO REDIRIGE. Antes el envío terminaba en un `window.location.href` a
  * wa.me y el usuario salía del sitio sin saber si su solicitud había quedado
@@ -88,18 +90,26 @@ export function useLeadSubmit() {
   /** Guardado para poder reintentar sin que el formulario vuelva a armarlo. */
   const ultimoEnvio = useRef<{
     payload: LeadPayload;
-    whatsappMessage: string;
+    whatsappMessage: string | null;
     formulario: LeadSource;
   } | null>(null);
 
   const submitLead = useCallback(
     async (
       payload: LeadPayload,
-      whatsappMessage: string,
+      /**
+       * `null` para los formularios que NO tienen salida por WhatsApp — hoy el
+       * registro de proveedores: ese canal es de atención a clientes, y
+       * ofrecerlo ahí mandaría a un proveedor a la cola de ventas. Con `null`,
+       * `whatsappUrl` se queda en null y las pantallas de confirmación omiten
+       * la tarjeta solas, sin que cada formulario tenga que acordarse de
+       * esconderla.
+       */
+      whatsappMessage: string | null,
       formulario: LeadSource,
     ) => {
       ultimoEnvio.current = { payload, whatsappMessage, formulario };
-      setWhatsappUrl(buildWhatsAppUrl(whatsappMessage));
+      setWhatsappUrl(whatsappMessage ? buildWhatsAppUrl(whatsappMessage) : null);
       setStatus("submitting");
 
       // EL CORREO ES LO QUE DECIDE. Antes daba igual que fallara porque el

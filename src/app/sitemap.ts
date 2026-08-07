@@ -10,11 +10,11 @@ import { getAllPosts, postHref } from "@/lib/blog";
  * aquí solo, sin tocar este archivo. De ahí sale también `lastModified`, con la
  * fecha del frontmatter.
  *
- * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice y artículos. Las páginas
- * de servicio no entran porque todavía no se construyen; `allServicePaths()` de
- * lib/services.ts ya está listo para cuando existan, pero listarlas ahora sería
- * mandar al crawler a un 404. Lo mismo con /nosotros, /vacantes y
- * /apartado-legal, que hoy son enlaces sin destino.
+ * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice, artículos, /proveedores,
+ * /vacantes y /nosotros. Las páginas de servicio no entran porque todavía no se
+ * construyen; `allServicePaths()` de lib/services.ts ya está listo para cuando
+ * existan, pero listarlas ahora sería mandar al crawler a un 404. Lo mismo con
+ * /apartado-legal, que hoy es un enlace sin destino.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
@@ -38,6 +38,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: ultimoPost,
       changeFrequency: "weekly",
       priority: 0.8,
+    },
+    // Prioridad baja a propósito en las dos: son páginas de servicio al
+    // negocio, no contenido por el que se quiera competir en búsqueda.
+    {
+      url: new URL("/proveedores", SITE_URL).toString(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: new URL("/vacantes", SITE_URL).toString(),
+      // Cambia cada vez que se publica o se retira una vacante en
+      // lib/vacantes.ts, que es más seguido que el resto de estas páginas.
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      // Prioridad más alta que las otras dos: es contenido institucional —
+      // historia, misión y política de seguridad—, no un formulario de servicio.
+      url: new URL("/nosotros", SITE_URL).toString(),
+      changeFrequency: "yearly",
+      priority: 0.6,
     },
     ...posts.map((post) => ({
       url: new URL(postHref(post.slug), SITE_URL).toString(),

@@ -3,7 +3,7 @@ import { Plane, Ship, Truck, Warehouse } from "lucide-react";
 import { QuoteButton } from "../QuoteModal";
 
 /**
- * "Soluciones Logísticas a la Vanguardia". Cuatro tarjetas póster.
+ * "Soluciones logísticas a la vanguardia". Cuatro tarjetas póster.
  *
  * REUTILIZACIÓN PARCIAL (♻️ 3 de 4): las tres primeras comparten categoría con
  * los pósters de <ServicesGrid> del home y REUSAN SUS MISMAS FOTOS, que es lo
@@ -20,28 +20,28 @@ import { QuoteButton } from "../QuoteModal";
 const SOLUTIONS = [
   {
     icon: Plane,
-    title: "Transportación Aérea",
+    title: "Transportación aérea",
     description:
       "Logística de respuesta rápida para sus cargas de alta prioridad.",
     image: { src: "/servicios/transportacion-aerea.webp", w: 1080, h: 720 },
   },
   {
     icon: Ship,
-    title: "Transportación Marítima",
+    title: "Transportación marítima",
     description:
       "Gestión de contenedores completos (FCL) y carga consolidada (LCL).",
     image: { src: "/servicios/transporte-maritimo-fcl.webp", w: 1920, h: 960 },
   },
   {
     icon: Truck,
-    title: "Transportación Terrestre",
+    title: "Transportación terrestre",
     description:
       "Infraestructura robusta para cruces fronterizos y distribución nacional.",
     image: { src: "/servicios/transporte-terrestre-ltl.webp", w: 1080, h: 720 },
   },
   {
     icon: Warehouse,
-    title: "Servicios Adicionales",
+    title: "Servicios adicionales",
     description:
       "Gestión técnica de punta a punta como seguros de carga internacional y cumplimiento de NOMs.",
     // TODO(assets): si llega foto de almacén, se cablea aquí y nada más cambia.
@@ -60,7 +60,7 @@ export default function ImportSolutions() {
           id="soluciones-titulo"
           className="font-heading text-3xl font-bold text-brand-900 md:text-4xl"
         >
-          Soluciones Logísticas a la Vanguardia
+          Soluciones logísticas a la vanguardia
         </h2>
         <p className="mt-4 text-slate-500">
           En <strong className="font-semibold">Compass Solutions</strong>{" "}
@@ -108,7 +108,7 @@ export default function ImportSolutions() {
                 {solution.description}
               </p>
               <QuoteButton className="mt-4 rounded-full bg-white px-5 py-2.5 font-heading text-xs font-semibold text-brand-900 transition-colors hover:bg-brand-50">
-                Solicitar Cotización
+                Solicitar cotización
               </QuoteButton>
             </div>
           </li>

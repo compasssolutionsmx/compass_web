@@ -23,7 +23,7 @@ export default function CookiePreferencesButton() {
       onClick={reopenSettings}
       className="text-left hover:text-white"
     >
-      Preferencias de Cookies
+      Preferencias de cookies
     </button>
   );
 }

@@ -58,12 +58,18 @@ function StoryCard({ story }: { story: SuccessStory }) {
     // TARJETA EN brand-100 sobre el blanco de la sección — el default seguro
     // que fija el mockup, en lugar del verde limón del sitio en vivo.
     //
-    // El cuerpo va en slate-600 y NO en el slate-500 habitual del sitio: sobre
-    // brand-100 el 500 da 4.05:1 y no pasa AA; el 600 da 6.45:1.
+    // TARJETA BLANCA sobre la franja brand-100 de la sección. Era al revés
+    // —tarjeta tintada sobre página blanca— hasta que la sección se tintó: los
+    // dos brand-100 quedaban en 1.00:1 y la tarjeta desaparecía. Invertido, la
+    // separación vuelve a los mismos 1.18:1 que tenía.
+    //
+    // El cuerpo se queda en slate-600 aunque sobre blanco ya no haga falta: el
+    // slate-500 habitual del sitio pasaría (4.76:1), pero el 600 da 7.58:1 y
+    // sube el listón de un texto que es el argumento de venta de la sección.
     //
     // Sin glow al hover, a diferencia de `.tech-card`: no es clicable ni
     // seleccionable, y reaccionar al puntero prometería algo que no ocurre.
-    <div className="flex h-full flex-col rounded-3xl bg-brand-100 p-8">
+    <div className="flex h-full flex-col rounded-3xl bg-white p-8">
       {/* Alto fijo y ancho máximo a la vez: los tres archivos tienen
           proporciones muy distintas —CEMEX es 5.2 veces más ancho que alto,
           Arca 2.5— y sin el tope de ancho el de CEMEX saldría desproporcionado.
