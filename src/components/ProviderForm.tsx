@@ -8,10 +8,11 @@
  * de envío (`useLeadSubmit`) y las pantallas de cierre (`LeadConfirmation`),
  * pero se aparta en tres cosas, todas a propósito:
  *
- *   1. Va con `formulario: "proveedor"`, que en `lib/lead-email` tiene su
- *      propio asunto ("Nuevo proveedor interesado — <empresa>") y un pie que
- *      avisa a gritos que NO es una cotización. Sin eso, en la bandeja de
- *      ventas se lee igual que un lead y acaba en el flujo equivocado.
+ *   1. Va con `formulario: "proveedor"`, que en `lib/lead-email` tiene SU PROPIA
+ *      LISTA DE DESTINATARIOS (`PROVIDER_RECIPIENTS`), su propio asunto
+ *      ("Registro de proveedor — <empresa>") y un pie que avisa a gritos que NO
+ *      es una cotización. Ya no pasa por la bandeja comercial: antes llegaba a
+ *      `LEAD_RECIPIENTS` como todo lo demás y sólo se distinguía por el texto.
  *   2. Manda `null` como mensaje de WhatsApp: ese canal es de atención a
  *      clientes. Con `null`, `whatsappUrl` se queda vacío y las pantallas de
  *      confirmación omiten la tarjeta por sí solas.
@@ -23,6 +24,7 @@
  * este es el sitio donde contarlo.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
 import { useLeadSubmit } from "./useLeadSubmit";
@@ -62,6 +64,7 @@ export default function ProviderForm() {
   const [telefono, setTelefono] = useState("");
   const [servicio, setServicio] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [consiente, setConsiente] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -77,6 +80,14 @@ export default function ProviderForm() {
       setError("Revise el correo: no parece una dirección válida.");
       return;
     }
+    // El consentimiento se comprueba AL FINAL, después de los campos: si
+    // faltaran datos y además la casilla, lo primero que hay que arreglar son
+    // los datos. Usa el mismo `error` y la misma región `role="alert"` que el
+    // resto, así que se anuncia igual que cualquier campo requerido.
+    if (!consiente) {
+      setError("Debe aceptar el aviso de privacidad para enviar su registro.");
+      return;
+    }
 
     setError(null);
     void submitLead(
@@ -87,6 +98,11 @@ export default function ProviderForm() {
         telefono: telefono.trim() || undefined,
         servicio: servicio || undefined,
         mensaje: mensaje.trim() || undefined,
+        // Constancia de la casilla. Va como texto porque el payload de
+        // `useLeadSubmit` es Record<string, string | undefined> y el correo
+        // pinta valores crudos.
+        consentimiento:
+          "Aceptó el aviso de privacidad y el envío de comunicaciones",
       },
       // Sin salida por WhatsApp: ver la nota 2 de la cabecera.
       null,
@@ -119,6 +135,14 @@ export default function ProviderForm() {
   return (
     <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        {/* La nota de obligatorios vive DENTRO de la tarjeta y pegada a los
+            campos que describe. Estaba fuera, encima de la tarjeta, donde se
+            leía como parte de la introducción de la página y no como una
+            instrucción del formulario. */}
+        <p className="text-sm text-slate-500">
+          Los campos marcados con asterisco son obligatorios.
+        </p>
+
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label htmlFor="prov-empresa" className={LABEL}>
@@ -204,6 +228,40 @@ export default function ProviderForm() {
             placeholder="Cuéntenos qué ofrece su empresa: cobertura, capacidad, equipo, zonas donde opera…"
             className={FIELD}
           />
+        </div>
+
+        {/* CASILLA OBLIGATORIA. `aria-required` y no el `required` nativo: el
+            <form> va con `noValidate`, así que el navegador no valida por su
+            cuenta y quien manda es `handleSubmit`; `required` a secas prometería
+            una validación nativa que aquí está desactivada.
+
+            El texto ata las dos cosas —aviso de privacidad y comunicaciones— en
+            una sola frase y acota las comunicaciones a las "relacionadas con
+            este registro". Ver la nota del reporte sobre por qué ese matiz
+            importa frente a lo que dice el aviso de /apartado-legal. */}
+        <div className="flex items-start gap-3 pt-2">
+          <input
+            id="prov-consentimiento"
+            type="checkbox"
+            checked={consiente}
+            onChange={(e) => setConsiente(e.target.checked)}
+            aria-required="true"
+            className="mt-1 h-4 w-4 shrink-0 rounded border-slate-500 text-brand-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-900"
+          />
+          <label
+            htmlFor="prov-consentimiento"
+            className="text-sm leading-relaxed text-slate-600"
+          >
+            Acepto el{" "}
+            <Link
+              href="/apartado-legal#privacidad"
+              className="font-semibold text-brand-900 underline underline-offset-2 hover:opacity-80"
+            >
+              aviso de privacidad
+            </Link>{" "}
+            y el envío de comunicaciones de Compass Solutions relacionadas con
+            este registro. <span aria-hidden="true">*</span>
+          </label>
         </div>
 
         {error && (

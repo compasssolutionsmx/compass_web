@@ -115,7 +115,9 @@ export async function POST(request: Request) {
   try {
     const { data, error } = await resend.emails.send({
       from: leadFrom(),
-      to: leadRecipients(),
+      // POR ORIGEN: el registro de proveedores tiene su propia lista y no
+      // pasa por la bandeja comercial. Ver `RECIPIENTS_ENV` en lead-email.
+      to: leadRecipients(lead.formulario),
       // Para que el equipo conteste al prospecto directo desde el correo.
       replyTo: buildReplyTo(lead),
       subject: buildSubject(lead),

@@ -21,18 +21,22 @@ import "server-only";
  * Esa diferencia se refleja en el pie de cada correo (ver SOURCE_FOOTNOTES).
  *
  * VARIABLES DE ENTORNO:
- *   RESEND_KEY        obligatoria. Secreta: NUNCA prefijarla con NEXT_PUBLIC_.
- *   LEAD_RECIPIENTS   destinatarios, separados por coma. Es la fuente de verdad;
- *                     la lista del código sólo actúa de red y se avisa a gritos
- *                     en el log cuando toca usarla.
- *   LEAD_EMAIL_FROM   remitente. Opcional: si falta se usa el de abajo.
+ *   RESEND_KEY          obligatoria. Secreta: NUNCA prefijarla con NEXT_PUBLIC_.
+ *   LEAD_RECIPIENTS     destinatarios comerciales: cotizador y modal de
+ *                       WhatsApp, los dos únicos orígenes que sí son leads. Es
+ *                       la fuente de verdad; la lista del código sólo actúa de
+ *                       red y se avisa a gritos en el log cuando toca usarla.
+ *   PROVIDER_RECIPIENTS destinatarios del registro de proveedores.
+ *   VACANCY_RECIPIENTS  destinatarios de las postulaciones a vacantes (RH).
+ *                       Las dos van SEPARADAS a propósito: ver `RECIPIENTS_ENV`.
+ *   LEAD_EMAIL_FROM     remitente. Opcional: si falta se usa el de abajo.
  */
 
 import { requestTypeLabel } from "./request-types";
 
 /**
- * Lista de RESPALDO, para que un entorno mal configurado no se trague los
- * leads en silencio. La lista buena es `LEAD_RECIPIENTS`; ésta sólo entra si
+ * Lista de RESPALDO comercial, para que un entorno mal configurado no se trague
+ * los leads en silencio. La lista buena es `LEAD_RECIPIENTS`; ésta sólo entra si
  * aquélla falta, y cuando entra deja rastro en el log.
  */
 const FALLBACK_RECIPIENTS = [
@@ -45,6 +49,55 @@ const FALLBACK_RECIPIENTS = [
 ];
 
 /**
+ * Respaldo del registro de proveedores. NO comparte una sola dirección con la
+ * lista comercial de arriba salvo `hola@scndal.com`, y eso es intencional: un
+ * proveedor ofreciéndose no es un prospecto, y llegaba a las seis personas de
+ * ventas por no tener buzón propio.
+ */
+const PROVIDER_FALLBACK_RECIPIENTS = [
+  "pricing@compasssolutions.com.mx",
+  "hola@scndal.com",
+  "gmartinez@compasssolutions.com.mx",
+];
+
+/**
+ * Respaldo de las postulaciones a vacantes. Un solo buzón, el de RH, y ninguna
+ * dirección comercial: un CV con nombre, teléfono y correo no tiene por qué
+ * pasar por la bandeja de ventas — es un dato personal de alguien que busca
+ * trabajo, no un prospecto.
+ */
+const VACANCY_FALLBACK_RECIPIENTS = ["rh@compasssolutions.com.mx"];
+
+/**
+ * QUÉ VARIABLE DE ENTORNO manda en cada origen.
+ *
+ * Antes no existía este mapa: los cuatro formularios llamaban a un único
+ * `leadRecipients()` y todo terminaba en `LEAD_RECIPIENTS`. La diferencia entre
+ * orígenes vivía sólo en el asunto y el pie del correo, o sea que un registro de
+ * proveedor llegaba igualmente a la bandeja de ventas, avisado pero presente.
+ *
+ * EL NOMBRE DE CADA VARIABLE SIGUE AL ORIGEN, no al departamento que la lee:
+ * `proveedor` -> PROVIDER_RECIPIENTS, `vacante` -> VACANCY_RECIPIENTS. Es lo
+ * que mantiene el mapa legible de un vistazo. Llamarla HR_RECIPIENTS habría
+ * mezclado los dos criterios —quién recibe frente a qué se recibe— y obligaría
+ * a recordar de memoria que RH es lo de vacantes; además, si mañana RH deja de
+ * ser el destino, el nombre pasaría a mentir mientras que el origen no cambia.
+ */
+const RECIPIENTS_ENV: Record<LeadSource, string> = {
+  cotizador: "LEAD_RECIPIENTS",
+  whatsapp: "LEAD_RECIPIENTS",
+  proveedor: "PROVIDER_RECIPIENTS",
+  vacante: "VACANCY_RECIPIENTS",
+};
+
+const FALLBACK_BY_SOURCE: Record<LeadSource, string[]> = {
+  cotizador: FALLBACK_RECIPIENTS,
+  whatsapp: FALLBACK_RECIPIENTS,
+  proveedor: PROVIDER_FALLBACK_RECIPIENTS,
+  vacante: VACANCY_FALLBACK_RECIPIENTS,
+};
+
+/**
  * Remitente. El dominio está verificado en Resend (confirmado por el cliente),
  * que es lo que la API exige para entregar: desde un dominio sin verificar
  * responde 403 y no sale nada.
@@ -52,23 +105,29 @@ const FALLBACK_RECIPIENTS = [
 const DEFAULT_FROM = "Compass Solutions <leads@compasssolutions.com.mx>";
 
 /**
- * Destinatarios desde `LEAD_RECIPIENTS`.
+ * Destinatarios SEGÚN EL ORIGEN del formulario.
  *
  * Los dos caminos que no son el feliz gritan en el log en vez de dejar el
  * problema enterrado, porque el síntoma de este fallo es justamente que NO pasa
- * nada visible: el usuario se va a WhatsApp tan contento y el aviso nunca llega
- * a nadie.
+ * nada visible: quien envía el formulario ve su pantalla de confirmación tan
+ * contento y el aviso nunca llega a nadie.
  *
  *   - variable ausente o vacía  -> se usa la lista de respaldo del código
  *   - direcciones con mala pinta -> se descartan una a una, y el resto se manda
  *
  * Lo segundo importa más de lo que parece: Resend rechaza el envío ENTERO si
  * una sola dirección viene mal formada, así que un typo en la variable dejaría
- * sin correo también a los cinco destinatarios buenos. Mejor perder al del typo
+ * sin correo también a los destinatarios buenos. Mejor perder al del typo
  * —anotado en el log— que perderlos a todos.
+ *
+ * OJO: el respaldo que se usa cuando falla la variable es el DEL ORIGEN, nunca
+ * el comercial. Si `PROVIDER_RECIPIENTS` no está configurada, un registro de
+ * proveedor cae en `PROVIDER_FALLBACK_RECIPIENTS`, no en la lista de ventas.
  */
-export function leadRecipients(): string[] {
-  const raw = process.env.LEAD_RECIPIENTS;
+export function leadRecipients(source: LeadSource): string[] {
+  const variable = RECIPIENTS_ENV[source];
+  const respaldo = FALLBACK_BY_SOURCE[source];
+  const raw = process.env[variable];
 
   const candidatos = (raw ?? "")
     .split(",")
@@ -77,9 +136,9 @@ export function leadRecipients(): string[] {
 
   if (candidatos.length === 0) {
     console.error(
-      "[lead] LEAD_RECIPIENTS no está definida o vino vacía. Se usa la lista de respaldo del código; revisar la configuración del entorno.",
+      `[lead] ${variable} no está definida o vino vacía (origen: ${source}). Se usa la lista de respaldo del código; revisar la configuración del entorno.`,
     );
-    return FALLBACK_RECIPIENTS;
+    return respaldo;
   }
 
   const validos = candidatos.filter(isEmail);
@@ -87,15 +146,15 @@ export function leadRecipients(): string[] {
 
   if (descartados.length > 0) {
     console.error(
-      `[lead] LEAD_RECIPIENTS trae direcciones inválidas que se descartaron: ${descartados.join(", ")}`,
+      `[lead] ${variable} trae direcciones inválidas que se descartaron: ${descartados.join(", ")}`,
     );
   }
 
   if (validos.length === 0) {
     console.error(
-      "[lead] ninguna dirección de LEAD_RECIPIENTS era válida. Se usa la lista de respaldo del código.",
+      `[lead] ninguna dirección de ${variable} era válida. Se usa la lista de respaldo del código.`,
     );
-    return FALLBACK_RECIPIENTS;
+    return respaldo;
   }
 
   return validos;
@@ -167,6 +226,10 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     ["telefono", "Teléfono"],
     ["servicio", "Servicio que ofrece"],
     ["mensaje", "Mensaje"],
+    // El consentimiento va AL FINAL y en el correo a propósito: es la única
+    // constancia de que se marcó la casilla, y conviene que quede archivada en
+    // el mismo sitio que los datos que ampara.
+    ["consentimiento", "Consentimiento"],
   ],
   /**
    * Aquí manda la PERSONA, así que su nombre va primero —al revés que en
@@ -189,7 +252,10 @@ const SOURCE_LABELS: Record<LeadSource, string> = {
   cotizador: "Cotizador (formulario de 4 pasos)",
   whatsapp: "Modal rápido de WhatsApp",
   proveedor: "Registro de proveedores (/proveedores)",
-  vacante: "Vacante",
+  // Decía sólo "Vacante", que en la cabecera del correo no aclara si es una
+  // oferta publicada o alguien postulándose. Los otros tres nombran el
+  // formulario y su ruta; éste ahora también.
+  vacante: "Postulación a vacante (/vacantes)",
 };
 
 /**
@@ -221,8 +287,14 @@ const SOURCE_FOOTNOTES: Record<LeadSource, string> = {
    */
   proveedor:
     "NO ES UNA COTIZACIÓN: es una empresa que se ofrece como proveedora de Compass Solutions, registrada desde la página /proveedores del sitio.",
+  /**
+   * Reescrito al rutearlo a RH. El aviso "NO ES UNA COTIZACIÓN" tenía sentido
+   * cuando esto caía en la bandeja comercial y había que frenar a ventas; ahora
+   * llega a quien esperaba justamente esto, y advertirle de lo que no es sobra.
+   * Lo que sí le sirve a RH es qué trae el correo y qué hacer con él.
+   */
   vacante:
-    "NO ES UNA COTIZACIÓN: es una persona postulándose a una vacante de Compass Solutions, registrada desde la página /vacantes del sitio.",
+    "Postulación de empleo recibida desde la página /vacantes de compasssolutions.com.mx. Contiene datos personales de una persona candidata: trátese conforme al aviso de privacidad. Al responder, se contesta directamente a su correo.",
 };
 
 /**
@@ -353,7 +425,10 @@ export function buildSubject(lead: Lead): string {
     // sólo entra si no la mandaron.
     const quien =
       lead.datos.empresa || lead.datos.nombre || "empresa sin nombre";
-    return `Nuevo proveedor interesado — ${quien}`;
+    // Abre con "Registro de proveedor" y no con "Nuevo proveedor interesado":
+    // lo segundo se lee como una oportunidad comercial en la bandeja, que es
+    // exactamente la confusión que este correo tiene que evitar.
+    return `Registro de proveedor — ${quien}`;
   }
   return `Nuevo contacto WhatsApp — ${lead.datos.nombre || "sin nombre"}`;
 }

@@ -79,12 +79,13 @@ export default function ImportHero() {
             `text-5xl`, muy por encima de los 896px de la caja, así que parte
             siempre — en dos líneas en desktop y en cinco a 375px de viewport.
 
-            EL ESPACIO DURO ENTRE "en" Y "México" ES ANTI-HUÉRFANOS, escrito a mano y
-            no con `bindHeadingTail`: esa utilidad vive en lib/blog.ts, que
-            importa `node:fs` y gray-matter en el módulo, así que traerla aquí
-            arrastraría el lector de MDX entero al grafo de esta página. Su
-            propia documentación además la acota al <h1> del hero de artículo.
-            Hace exactamente esto: unir las dos últimas palabras.
+            EL ESPACIO DURO ENTRE "en" Y "México" ES ANTI-HUÉRFANOS. Está
+            escrito a mano por razones históricas: la utilidad equivalente vivía
+            en lib/blog.ts, que importa `node:fs` y gray-matter, así que traerla
+            aquí arrastraba el lector de MDX entero al grafo de esta página. Esa
+            restricción YA NO EXISTE — ahora es `bindTail`, en lib/typography.ts,
+            sin dependencias de Node. Este titular se puede migrar a
+            `{bindTail("…")}` cuando se revise el alcance; hace exactamente esto.
 
             Sin el espacio duro, a 375px el titular cerraba con "México" sola en
             la quinta línea. Con él cierra con "en México" (199px), que entra de

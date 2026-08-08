@@ -6,19 +6,17 @@ import HeroBackdrop from "@/components/HeroBackdrop";
 import { QuoteModalProvider } from "@/components/QuoteModal";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
-import {
-  COMPROMISOS_SEGURIDAD,
-  HISTORIA,
-  INTRO_SEGURIDAD,
-} from "@/lib/nosotros";
+import { COMPROMISOS_SEGURIDAD, INTRO_SEGURIDAD } from "@/lib/nosotros";
 import { NOSOTROS_LABEL } from "@/lib/site";
+import { bindTail } from "@/lib/typography";
 
 const PATH = "/nosotros";
 
 /**
- * Alimenta el <title> y el Open Graph. NO el <h1>: el titular visible de esta
- * página es "+12 años moviendo lo que le importa.", que es copy propio del hero
- * y no el nombre de la sección.
+ * Alimenta el <title> y el Open Graph. NO el <h1>: en pantalla el hero titula
+ * "Nuestra historia", que es de lo que va la página; "Nuestra compañía" es el
+ * nombre de la sección en el nav y es lo que conviene en el resultado de
+ * búsqueda y al compartir.
  */
 const TITLE = NOSOTROS_LABEL;
 const DESCRIPTION =
@@ -51,52 +49,20 @@ export const metadata: Metadata = {
 };
 
 /**
- * Un hito de la cronología.
+ * Los cuatro párrafos de la historia.
  *
- * El raíl —línea y marcador— vive en su propia columna del grid en vez de ir
- * como pseudo-elemento de la tarjeta: así la línea puede estirarse hasta el
- * alto real de la fila, que lo fija el texto y cambia en cada hito.
+ * Van en el módulo y no inline en el JSX para que el `.map` de abajo quede
+ * legible: el texto es lo único que cambia entre ellos. Aquí no vale sacarlo a
+ * `lib/nosotros.ts` como el resto del contenido de la página —lo hacía la
+ * cronología, y ese dato tenía estructura (año + texto) que otras superficies
+ * podían reutilizar. Esto es prosa corrida de una sola sección.
  */
-function HitoTimeline({
-  periodo,
-  texto,
-  esUltimo,
-}: {
-  periodo: string;
-  texto: string;
-  esUltimo: boolean;
-}) {
-  return (
-    <li className="grid grid-cols-[auto_1fr] gap-x-6 sm:grid-cols-[7rem_auto_1fr] sm:gap-x-8">
-      {/* El año va en su propia columna desde `sm`. En móvil no cabe al lado,
-          así que se repite arriba de la tarjeta (ver más abajo) y esta celda
-          desaparece. */}
-      <p className="hidden pt-4 text-right font-heading text-xl font-bold text-brand-700 sm:block">
-        {periodo}
-      </p>
-
-      {/* Raíl decorativo: la cronología ya se entiende por el año y el orden
-          del <ol>, así que no aporta nada a un lector de pantalla. */}
-      <div aria-hidden="true" className="relative flex w-3 justify-center">
-        {/* En el último hito la línea se corta en el marcador, para que no
-            quede un tramo colgando hacia la nada. */}
-        <span
-          className={`absolute top-0 w-0.5 bg-brand-200 ${esUltimo ? "h-7" : "h-full"}`}
-        />
-        <span className="absolute top-4 h-3 w-3 rounded-full bg-brand-900" />
-      </div>
-
-      <div className="pb-8">
-        <p className="mb-2 font-heading text-lg font-bold text-brand-700 sm:hidden">
-          {periodo}
-        </p>
-        <div className="tech-card p-5 md:p-6">
-          <p className="text-slate-600">{texto}</p>
-        </div>
-      </div>
-    </li>
-  );
-}
+const HISTORIA_PARRAFOS = [
+  "Compass Solutions nació en febrero de 2014 como un freight forwarder, iniciando operaciones con servicios aéreos y de importación terrestre inbound. La creciente demanda de sus clientes impulsó, en 2015, la integración de soluciones marítimas y, en 2016, la ampliación de cobertura con movimientos terrestres a nivel nacional.",
+  "De esta forma se consolidó una oferta integral de servicios en tres ejes principales: aéreo, terrestre y marítimo.",
+  "Entre 2017 y 2018 se fortaleció la operación terrestre, incrementando significativamente el volumen de movimientos y profesionalizando los servicios de última milla. En 2019, con la firme convicción de garantizar la mejor experiencia a sus clientes, se estableció el departamento de calidad.",
+  "Finalmente, en 2021 se dio un paso estratégico al robustecer la división terrestre, con el objetivo de elevar los estándares y profesionalizar aún más este sector clave dentro de la organización.",
+];
 
 /** Misión y visión comparten forma; sólo cambian etiqueta, título y texto. */
 function TarjetaValor({
@@ -139,12 +105,19 @@ export default function Nosotros() {
           <section className="relative overflow-hidden rounded-b-[2rem] px-6 pb-20 pt-32 md:pb-24 md:pt-40">
             <HeroBackdrop />
 
-            <div className="relative mx-auto max-w-7xl">
+            {/* Mismo centrado que el hero del home: `text-center` en el
+                contenedor y `mx-auto` en los bloques que lleven tope de ancho.
+                El eyebrow es un <p> con la pastilla en `inline-block`, así que
+                se centra con el `text-center`; el <h1> no lleva `max-w-*`, y
+                sin caja que centrar tampoco necesita `mx-auto`. Si algún día se
+                le pone tope, hay que añadírselo o quedará pegado a la izquierda
+                con el texto centrado dentro. */}
+            <div className="relative mx-auto max-w-7xl text-center">
               <Eyebrow tone="dark" className="mb-4">
-                Nuestra historia
+                Nuestra compañía
               </Eyebrow>
-              <h1 className="max-w-[16ch] font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
-                +12 años moviendo lo que le importa.
+              <h1 className="font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
+                Nuestra historia
               </h1>
             </div>
           </section>
@@ -154,24 +127,41 @@ export default function Nosotros() {
             aria-labelledby="historia-titulo"
             className="mx-auto max-w-7xl px-6 py-20 md:py-24"
           >
-            {/* Encabezado sólo para lectores de pantalla: en pantalla el hero
-                ya presenta la sección con su eyebrow y su <h1>, y repetirlo
-                aquí sería ruido. Sin él, el documento saltaría del <h1> a los
-                <h3> de misión/visión. */}
-            <h2 id="historia-titulo" className="sr-only">
-              Nuestra historia, año por año
-            </h2>
+            {/* OJO CON EL `ch`: se resuelve contra la fuente de ESTE div, que
+                hereda el cuerpo a 16px. Los párrafos de dentro van a 18px y el
+                <h2> a 30/36px, así que ninguno cabe a 68 caracteres reales;
+                el número es la caja, no la medida del texto que contiene. */}
+            <div className="mx-auto max-w-[68ch] text-center">
+              {/* Este era el <h1> del hero. Baja aquí como <h2> visible y de
+                  paso resuelve el encabezado de la sección: antes era un
+                  `sr-only` que sólo existía para que el documento no saltara
+                  del <h1> a los <h3> de misión y visión. */}
+              <h2
+                id="historia-titulo"
+                className="font-heading text-3xl font-bold leading-tight text-brand-900 md:text-4xl"
+              >
+                {/* Espacio DURO entre "le" e "importa.", misma protección que
+                    <ImportHero> y <ImportControl>. Sin él este titular deja
+                    "importa." sola en la última línea en dos bandas: hacia
+                    640px de viewport y otra vez por debajo de ~370px. Y a 36px
+                    entra en la caja por 5px justos en el arranque de `md`, así
+                    que en cuanto el kerning o el redondeo del navegador se
+                    muevan un pelo, parte. Atado, el peor caso son dos palabras
+                    en el último renglón, no una. */}
+                +12 años moviendo lo que le{"\u00A0"}importa.
+              </h2>
 
-            <ol className="mx-auto max-w-4xl">
-              {HISTORIA.map((hito, i) => (
-                <HitoTimeline
-                  key={hito.periodo}
-                  periodo={hito.periodo}
-                  texto={hito.texto}
-                  esUltimo={i === HISTORIA.length - 1}
-                />
-              ))}
-            </ol>
+              {/* `bindTail` ata las dos últimas palabras de cada párrafo. En
+                  texto centrado una última línea de una sola palabra se lee
+                  como un error de maquetación, no como el final natural del
+                  párrafo: queda sola en mitad de la caja. El caso que lo pedía
+                  era el P4, que cerraba con "organización." colgando. */}
+              <div className="mt-8 space-y-5 text-lg leading-relaxed text-slate-600">
+                {HISTORIA_PARRAFOS.map((parrafo) => (
+                  <p key={parrafo}>{bindTail(parrafo)}</p>
+                ))}
+              </div>
+            </div>
           </section>
 
           {/* ---------- MISIÓN Y VISIÓN ----------

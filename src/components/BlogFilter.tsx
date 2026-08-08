@@ -26,7 +26,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 export type FilterPost = {
   slug: string;
@@ -47,6 +47,7 @@ const TODAS = "Todas";
 
 export default function BlogFilter({ posts }: { posts: FilterPost[] }) {
   const [activa, setActiva] = useState<string>(TODAS);
+  const categoriasId = useId();
 
   // Orden de aparición en la lista —que ya viene de más reciente a más
   // antiguo—, no alfabético: así la primera pill es la del artículo más nuevo.
@@ -65,12 +66,32 @@ export default function BlogFilter({ posts }: { posts: FilterPost[] }) {
 
   return (
     <>
+      {/* Rótulo de la fila. NO es un <Eyebrow>: la pastilla del eyebrow se
+          leería como una pastilla más de la fila, es decir, como si "Categorías"
+          fuera una categoría seleccionable. Texto plano, con el mismo
+          tratamiento tipográfico que tenía el rótulo del hero.
+
+          Y NO es un heading: rotula un control de interfaz, no una sección de
+          contenido. Como heading aparecería en la navegación por encabezados
+          entre el <h1> y los artículos, que es justo donde estorba. Se conecta
+          al grupo con `aria-labelledby`, así el nombre accesible ES el texto
+          visible en vez de un `aria-label` paralelo que puede desincronizarse. */}
+      {/* Sin `mt`: lo tenía para separarse del <h1> que estaba justo encima, y
+          ese <h1> se fue al hero. Ahora esto es lo primero de la sección y el
+          hueco lo pone el `pt` de la sección, que ya está ajustado. */}
+      <p
+        id={categoriasId}
+        className="mb-3 font-heading text-sm font-semibold uppercase tracking-wide text-slate-500"
+      >
+        Categorías
+      </p>
+
       {/* `role="group"` y `aria-pressed` en vez de tabs: esto no cambia de
           panel, filtra una lista que sigue siendo la misma. Son botones de
           alternancia, y así los anuncia un lector de pantalla. */}
       <div
         role="group"
-        aria-label="Filtrar por categoría"
+        aria-labelledby={categoriasId}
         className="mb-10 flex flex-wrap gap-3"
       >
         {categorias.map((categoria) => {
@@ -104,6 +125,13 @@ export default function BlogFilter({ posts }: { posts: FilterPost[] }) {
           ? `${posts.length} artículos`
           : `${visibles.length} de ${posts.length} artículos, categoría ${activa}`}
       </div>
+
+      {/* Encabezado de la rejilla, sólo para lectores de pantalla. VIVE AQUÍ Y
+          NO EN LA PÁGINA porque tiene que quedar DESPUÉS del rótulo de las
+          pastillas y pegado a la lista que nombra; estando arriba anunciaba
+          "Artículos" y lo siguiente que aparecía era el filtro. Es el puente de
+          jerarquía: sin él la página salta del <h1> a los <h3> de las tarjetas. */}
+      <h2 className="sr-only">Artículos</h2>
 
       <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {visibles.map((post) => (

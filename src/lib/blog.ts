@@ -148,34 +148,13 @@ export function formatPostDate(iso: string): string {
 export type Heading = { id: string; text: string; level: 2 | 3 };
 
 /**
- * Une las DOS ÚLTIMAS PALABRAS de un titular con un espacio duro, para que la
- * última línea nunca quede con una sola palabra colgando.
- *
- * POR QUÉ UNA UTILIDAD Y NO UN \u00A0 A MANO EN CADA .mdx: el problema no es de
- * un título concreto sino de cualquiera que parta en varias líneas, y depende
- * del ancho de pantalla — el mismo titular puede estar bien en desktop y dejar
- * huérfana en un móvil estrecho. Resolverlo en el frontmatter obligaría a
- * revisar cada artículo nuevo a mano y a acertar para todos los breakpoints.
- *
- * SÓLO DOS PALABRAS, nunca tres. El bloque resultante es indivisible, así que
- * cuanto más largo, más riesgo de desbordar en pantallas estrechas: con las dos
- * últimas, el peor caso de los títulos actuales mide 195px a 24px y entra de
- * sobra en los 272px de un viewport de 320. Encadenando tres se iría a 287px y
- * se saldría.
- *
- * Se aplica SÓLO al <h1> del hero de artículo. Los párrafos y el resto del
- * texto no lo necesitan: ahí una última línea corta es normal y no chirría.
- *
- * Si el título ya trae un \u00A0 escrito a mano, no se toca: `lastIndexOf`
- * busca un espacio NORMAL, así que ese bloque ya unido cuenta como una palabra
- * y no se encadena otra encima.
+ * AQUÍ VIVÍA `bindHeadingTail`, la protección anti-huérfanos del <h1> de
+ * artículo. Se movió a `lib/typography.ts` como `bindTail` y se generalizó:
+ * este módulo importa `node:fs` y gray-matter, así que tenerla aquí la dejaba
+ * fuera del alcance de los componentes cliente y de cualquier página que no
+ * fuera la de artículo. El peor caso medido para los títulos del blog (195px a
+ * 24px contra los 272px de un viewport de 320) sigue documentado allí.
  */
-export function bindHeadingTail(text: string): string {
-  const limpio = text.trim();
-  const ultimoEspacio = limpio.lastIndexOf(" ");
-  if (ultimoEspacio === -1) return limpio; // una sola palabra: nada que unir
-  return `${limpio.slice(0, ultimoEspacio)}\u00A0${limpio.slice(ultimoEspacio + 1)}`;
-}
 
 /**
  * ANCLAS CONGELADAS: encabezados cuyo texto cambió DESPUÉS de publicarse y que

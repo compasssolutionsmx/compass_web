@@ -19,9 +19,9 @@ import {
   getAllPostSlugs,
   getAllPosts,
   getPostBySlug,
-  bindHeadingTail,
   postHref,
 } from "@/lib/blog";
+import { bindTail } from "@/lib/typography";
 
 /** Rutas estáticas: una por .mdx. */
 export function generateStaticParams() {
@@ -101,7 +101,20 @@ export default async function ArticlePage({
           />
 
           {/* ---------- HERO ---------- */}
-          <section className="relative overflow-hidden rounded-b-[2rem] bg-brand-950 px-6 pb-16 pt-32 md:pb-20 md:pt-40">
+          {/* GUTTER PROPIO DE ESTA PÁGINA: `px-6 lg:px-12`, mientras el resto
+              del sitio se queda en `px-6`. El hero de artículo es el único que
+              combina texto alineado a la izquierda con un bloque que corre casi
+              hasta el borde del contenedor (el <h1> es `max-w-4xl`, 896px), y
+              con 24px de inset el titular se lee pegado al canto. Los heroes
+              centrados —home, /importaciones, /nosotros— no tienen el problema
+              porque su texto nunca se acerca al borde.
+
+              LOS CUATRO CONTENEDORES DE LA PÁGINA LLEVAN EL MISMO VALOR: este
+              hero, el bloque de cuerpo + sidebar, el banner de cotización y
+              "Sigue leyendo". Tienen que moverse juntos o el <h1> deja de
+              arrancar en la misma x que el cuerpo, que es justo para lo que se
+              subió este contenedor de `max-w-4xl` a `max-w-7xl`. */}
+          <section className="relative overflow-hidden rounded-b-[2rem] bg-brand-950 pb-16 pt-32 md:pb-20 md:pt-40">
             <Image
               src={post.cover}
               alt={post.coverAlt}
@@ -124,8 +137,23 @@ export default async function ArticlePage({
             {/* `max-w-7xl` igual que el cuerpo y las demás secciones: antes
                 era `max-w-4xl` y el H1 arrancaba 192px más a la derecha que el
                 primer párrafo. El ancho de lectura se limita ahora en cada
-                bloque de texto, no en el contenedor. */}
-            <div className="relative mx-auto max-w-7xl">
+                bloque de texto, no en el contenedor.
+
+                EL `px` VA AQUÍ, EN EL MISMO ELEMENTO QUE EL `max-w-7xl`, y eso
+                no es cosmético: con `box-sizing: border-box` el tope de 1280px
+                INCLUYE el padding, así que el contenido arranca en
+                `(vp - 1280)/2 + px`. Cuando el padding estaba en el <section>
+                de fuera se quedaba FUERA del tope: el contenedor seguía
+                midiendo 1280 completos y el texto arrancaba en `px` a secas.
+
+                Las dos fórmulas coinciden hasta 1280px de viewport y divergen a
+                partir de ahí, hasta separarse exactamente el valor del padding
+                (48px en `lg`). El cuerpo, que sí tiene el `px` junto al
+                `max-w-7xl`, quedaba 48px más a la derecha que este titular.
+
+                Es el mismo patrón que ya usan el hero del home, el de
+                /importaciones y el del índice de blog. */}
+            <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
               <Eyebrow tone="dark" className="mb-4">
                 {post.category}
               </Eyebrow>
@@ -141,7 +169,7 @@ export default async function ArticlePage({
                   mide 991px— y da mejor reparto que el `max-w-5xl` que tuvo un
                   momento. */}
               <h1 className="max-w-4xl font-heading text-2xl font-bold leading-tight text-white md:text-4xl">
-                {bindHeadingTail(post.title)}
+                {bindTail(post.title)}
               </h1>
 
               <p className="mt-5 max-w-2xl text-lg text-brand-50">
@@ -158,8 +186,33 @@ export default async function ArticlePage({
           </section>
 
           {/* ---------- CUERPO + SIDEBAR ---------- */}
-          <div className="mx-auto max-w-7xl px-6 py-16 md:py-20">
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-16">
+          <div className="mx-auto max-w-7xl px-6 py-16 md:py-20 lg:px-12">
+            {/* LA PISTA IZQUIERDA TOPA EN LA MEDIDA DE LECTURA, no en `1fr`.
+                Con `1fr` la pista se estiraba a todo lo que sobrara (880px a
+                partir de 1280) mientras el texto se quedaba en sus 68ch (744px),
+                y esos 136px de sobrante se sumaban al gap: el hueco que se veía
+                entre el cuerpo y el índice era de 200px, no de los 64 del
+                `gap-16`.
+
+                Y el gap NO era la palanca. Con la pista izquierda en `1fr`, el
+                hueco visual sale de `caja - lateral - texto`: lo que el gap
+                cediera se lo iba a quedar el sobrante, así que bajarlo no movía
+                nada en pantalla.
+
+                Ahora la pista mide lo mismo que el texto y el sobrante se lo
+                queda la lateral, que pasa a ser elástica con suelo de 18rem. El
+                hueco visual es exactamente el gap declarado en todos los anchos.
+
+                EL `68ch` DEBE COINCIDIR con el `max-w-[68ch]` de <ArticleBody>.
+                Los dos se resuelven contra la misma fuente heredada (DM Sans a
+                16px, 1ch = 10.944px -> 744px), así que casan por construcción;
+                si allí se cambia la medida, hay que cambiarla aquí.
+
+                El suelo de 18rem en la lateral es lo que mantiene intacto el
+                comportamiento por debajo de ~1145px: ahí el texto todavía no
+                llega a sus 68ch y es la pista quien lo limita, exactamente como
+                antes. */}
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,68ch)_minmax(18rem,1fr)] lg:gap-16">
               <article>
                 <ArticleBody source={post.content} />
               </article>
@@ -188,7 +241,7 @@ export default async function ArticlePage({
           </div>
 
           {/* ---------- CIERRE: banner de cotización ---------- */}
-          <section className="mx-auto max-w-7xl px-6 pb-16">
+          <section className="mx-auto max-w-7xl px-6 pb-16 lg:px-12">
             <div className="brand-gradient rounded-3xl px-8 py-12 text-center md:px-14 md:py-16">
               <h2 className="mx-auto max-w-2xl font-heading text-2xl font-bold text-white md:text-3xl">
                 Solicite una cotización y mueva su carga con Compass
@@ -205,7 +258,7 @@ export default async function ArticlePage({
 
           {/* ---------- Sigue leyendo ---------- */}
           {related.length > 0 && (
-            <section className="mx-auto max-w-7xl px-6 pb-20">
+            <section className="mx-auto max-w-7xl px-6 pb-20 lg:px-12">
               <h2 className="mb-8 font-heading text-2xl font-bold text-brand-900 md:text-3xl">
                 Sigue leyendo
               </h2>

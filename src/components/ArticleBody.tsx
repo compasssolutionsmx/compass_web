@@ -117,6 +117,11 @@ export default function ArticleBody({ source }: { source: string }) {
   return (
     // `max-w-[68ch]` mantiene la línea en el rango cómodo de lectura
     // (~65-75 caracteres) aunque la columna sea más ancha.
+    //
+    // ESTE VALOR ESTÁ DUPLICADO en la pista izquierda del grid de
+    // /blog/[slug], que topa en `68ch` para que la pista no se estire más que
+    // el texto y deje un sobrante que se sume al gap. Si aquí cambia la medida,
+    // allí también.
     <div className="max-w-[68ch]">
       <MDXRemote source={source} components={components} />
     </div>

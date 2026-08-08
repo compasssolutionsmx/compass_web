@@ -1,9 +1,14 @@
 /**
- * Contenido de /nosotros: la cronología y los diez compromisos de la política
- * de seguridad y calidad.
+ * Contenido de /nosotros: los diez compromisos de la política de seguridad y
+ * calidad, y su entradilla.
  *
  * Va en `lib` y no dentro de la página, con el mismo criterio que
  * `lib/vacantes.ts` y `lib/services.ts`: es contenido del cliente, no marcado.
+ *
+ * AQUÍ VIVÍA `HISTORIA`, la cronología de la página. Se quitó al sustituir el
+ * timeline por texto corrido: dejó de haber dato estructurado (año + texto) que
+ * otra superficie pudiera reutilizar, y los cuatro párrafos que quedaron viven
+ * en la propia página porque no los pinta nadie más.
  *
  * OJO CON LA POLÍTICA: este mismo texto existe, casi palabra por palabra, en el
  * /apartado-legal del sitio actual, que está en el backlog. Cuando esa página se
@@ -11,40 +16,6 @@
  * escribirlo — si no, habrá dos copias que se desincronizan y dos URLs
  * compitiendo por el mismo contenido.
  */
-
-export type Hito = {
-  /** Un año o un rango. Se pinta tal cual. */
-  periodo: string;
-  texto: string;
-};
-
-export const HISTORIA: Hito[] = [
-  {
-    periodo: "2014",
-    texto:
-      "Compass Solutions nació en febrero de 2014 como un freight forwarder, iniciando operaciones con servicios aéreos y de importación terrestre inbound.",
-  },
-  {
-    periodo: "2015–2016",
-    texto:
-      "La creciente demanda de sus clientes impulsó, en 2015, la integración de soluciones marítimas y, en 2016, la ampliación de cobertura con movimientos terrestres a nivel nacional. De esta forma se consolidó una oferta integral en tres ejes principales: aéreo, terrestre y marítimo.",
-  },
-  {
-    periodo: "2017–2018",
-    texto:
-      "Se fortaleció la operación terrestre, incrementando significativamente el volumen de movimientos y profesionalizando los servicios de última milla.",
-  },
-  {
-    periodo: "2019",
-    texto:
-      "Con la convicción de garantizar la mejor experiencia a sus clientes, se estableció el departamento de calidad.",
-  },
-  {
-    periodo: "2021",
-    texto:
-      "Paso estratégico para robustecer la división terrestre, con el objetivo de elevar los estándares y profesionalizar aún más este sector clave dentro de la organización.",
-  },
-];
 
 export type Compromiso = {
   titulo: string;
