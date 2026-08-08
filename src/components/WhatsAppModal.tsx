@@ -33,6 +33,7 @@ import { REQUEST_TYPES } from "./useQuoteRequest";
 import { useLeadSubmit } from "./useLeadSubmit";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
 import { useSmoothScroll } from "./SmoothScroll";
+import { buildWhatsAppUrl } from "@/lib/site";
 
 type WhatsAppModalContextValue = {
   isOpen: boolean;
@@ -139,6 +140,19 @@ const FIELD =
   "w-full rounded-lg border border-slate-500 px-3 py-2.5 text-sm transition-colors focus:border-brand-900";
 const LABEL = "mb-1.5 block text-sm font-medium text-slate-700";
 
+/**
+ * Texto de la tarjeta de WhatsApp de la confirmación, SÓLO en este modal.
+ *
+ * El resto de formularios conserva el de `LeadConfirmation`, que ofrece
+ * WhatsApp como alternativa todavía sin usar. Aquí no aplica: para cuando esta
+ * pantalla se pinta, la pestaña de WhatsApp ya se abrió desde el clic. La
+ * tarjeta deja de ser una oferta y pasa a ser el respaldo de esa apertura, así
+ * que arranca por la única pregunta que le queda al usuario si algo falló
+ * —navegador que la bloqueó, app no instalada, pestaña cerrada sin querer—.
+ */
+const TEXTO_WHATSAPP_ABIERTO =
+  "¿No se abrió WhatsApp? Puede iniciar la conversación desde aquí.";
+
 function WhatsAppDialog() {
   const { closeModal } = useWhatsAppModal();
   const titleId = useId();
@@ -236,6 +250,39 @@ function WhatsAppDialog() {
     }
 
     setError(null);
+
+    const whatsappMessage = buildMessage({
+      nombre,
+      correo,
+      telefono,
+      tipo,
+      mensaje,
+    });
+
+    // APERTURA DENTRO DEL GESTO. Va aquí arriba, ANTES de `submitLead`, y no
+    // en un `.then` ni tras un `await`, a propósito: la activación transitoria
+    // que el navegador concede al clic sólo vale mientras la pila de ese
+    // evento sigue corriendo. Un `window.open` posterior al envío ya no
+    // contaría como respuesta al gesto y los bloqueadores de popups lo matan.
+    //
+    // No hace falta el truco de abrir una pestaña en blanco y parchear su
+    // `location` al terminar: el mensaje sale del estado local del formulario
+    // y `buildWhatsAppUrl` es síncrono, así que la URL definitiva ya se puede
+    // calcular aquí. El envío no aporta ningún dato al enlace.
+    //
+    // `handleSubmit` es el `onSubmit` del <form>, pero el submit lo dispara el
+    // botón: el evento se despacha de forma síncrona dentro del clic, así que
+    // la activación sigue vigente. Lo que NO puede es volverse `async`.
+    //
+    // Con "noopener" el open devuelve `null` siempre, así que no sirve para
+    // detectar bloqueo — y no importa: el respaldo no es una rama de código,
+    // es la tarjeta de la pantalla de confirmación, que se pinta igual.
+    window.open(
+      buildWhatsAppUrl(whatsappMessage),
+      "_blank",
+      "noopener,noreferrer",
+    );
+
     // OJO: aquí había un campo `origen: "whatsapp-rapido"` para marcar la
     // procedencia. Se quitó porque colisionaba: en el payload del cotizador
     // `origen` es la CIUDAD/PUERTO de salida, y los dos formularios comparten
@@ -249,7 +296,7 @@ function WhatsAppDialog() {
         tipo: tipo || undefined,
         mensaje: mensaje.trim() || undefined,
       },
-      buildMessage({ nombre, correo, telefono, tipo, mensaje }),
+      whatsappMessage,
       "whatsapp",
     );
   }
@@ -289,10 +336,15 @@ function WhatsAppDialog() {
               Hable con un agente
             </h2>
             {status === "success" ? (
-              <LeadSuccess whatsappUrl={whatsappUrl} onClose={closeModal} />
+              <LeadSuccess
+                whatsappUrl={whatsappUrl}
+                whatsappTexto={TEXTO_WHATSAPP_ABIERTO}
+                onClose={closeModal}
+              />
             ) : (
               <LeadError
                 whatsappUrl={whatsappUrl}
+                whatsappTexto={TEXTO_WHATSAPP_ABIERTO}
                 onRetry={retryLead}
                 isRetrying={isSubmitting}
               />

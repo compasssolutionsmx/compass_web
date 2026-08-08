@@ -25,13 +25,19 @@ import { useEffect, useRef } from "react";
 import WhatsAppIcon from "./WhatsAppIcon";
 
 /**
- * Texto de la tarjeta de WhatsApp, igual en éxito y en error.
+ * Texto POR DEFECTO de la tarjeta de WhatsApp, igual en éxito y en error.
  *
  * Va en una constante y no repetido en los dos sitios porque es literalmente el
  * mismo mensaje: duplicado, ya se había desincronizado una vez del trato de
  * usted que usa el resto del sitio ("Déjenos sus datos", "Escriba su nombre",
  * "Solicite una Cotización"). Con una sola fuente, corregirlo es corregirlo en
  * las tres superficies a la vez.
+ *
+ * Se puede sobrescribir por pantalla con `whatsappTexto`. Lo hace SÓLO
+ * <WhatsAppModal>, que abre WhatsApp por su cuenta en el clic de envío y por
+ * tanto necesita hablar en pasado ("ya lo abrimos") en vez de ofrecerlo como
+ * una alternativa que el usuario todavía no ha usado. El cotizador no abre
+ * nada, así que conserva este texto.
  */
 const TEXTO_WHATSAPP =
   "Si lo necesita, también puede contactarnos por WhatsApp";
@@ -81,6 +87,7 @@ function useFocusOnMount() {
 
 export function LeadSuccess({
   whatsappUrl,
+  whatsappTexto,
   onReset,
   resetLabel,
   onClose,
@@ -88,6 +95,8 @@ export function LeadSuccess({
   description,
 }: {
   whatsappUrl: string | null;
+  /** Sobrescribe el texto de la tarjeta de WhatsApp. Ver `TEXTO_WHATSAPP`. */
+  whatsappTexto?: string;
   /** Vuelve al formulario vacío. En el cotizador inline es la salida principal. */
   onReset?: () => void;
   resetLabel?: string;
@@ -129,7 +138,9 @@ export function LeadSuccess({
           "Ya tenemos sus datos. Nuestro equipo revisará la solicitud y se pondrá en contacto con usted."}
       </p>
 
-      {whatsappUrl && <WhatsAppCard url={whatsappUrl} texto={TEXTO_WHATSAPP} />}
+      {whatsappUrl && (
+        <WhatsAppCard url={whatsappUrl} texto={whatsappTexto ?? TEXTO_WHATSAPP} />
+      )}
 
       {(onReset || onClose) && (
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -159,10 +170,13 @@ export function LeadSuccess({
 
 export function LeadError({
   whatsappUrl,
+  whatsappTexto,
   onRetry,
   isRetrying,
 }: {
   whatsappUrl: string | null;
+  /** Sobrescribe el texto de la tarjeta de WhatsApp. Ver `TEXTO_WHATSAPP`. */
+  whatsappTexto?: string;
   onRetry: () => void;
   isRetrying: boolean;
 }) {
@@ -205,7 +219,9 @@ export function LeadError({
 
       {/* Aquí WhatsApp deja de ser un extra y pasa a ser la vía de rescate: si
           el registro falló, es lo único que queda para no perder el lead. */}
-      {whatsappUrl && <WhatsAppCard url={whatsappUrl} texto={TEXTO_WHATSAPP} />}
+      {whatsappUrl && (
+        <WhatsAppCard url={whatsappUrl} texto={whatsappTexto ?? TEXTO_WHATSAPP} />
+      )}
     </div>
   );
 }
