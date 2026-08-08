@@ -46,12 +46,12 @@ export default function StatsSection() {
             </h2>
 
             <p className="mt-5 text-slate-700">
-              Desde 2014, movemos tu carga sin fronteras. Nacimos como freight
+              Desde 2014, movemos su carga sin fronteras. Nacimos como freight
               forwarder especializado en transporte aéreo y hoy coordinamos
               importaciones y exportaciones por aire, mar y tierra bajo un mismo
               techo, con despacho aduanal, gestión documental y un departamento
-              de calidad que respalda cada embarque. Tú te enfocas en tu
-              negocio; nosotros en que tu mercancía llegue segura y a tiempo.
+              de calidad que respalda cada embarque. Usted se enfoca en su
+              negocio; nosotros en que su mercancía llegue segura y a tiempo.
             </p>
 
             {/* Sin CTA a propósito: la sección es informativa y la página ya

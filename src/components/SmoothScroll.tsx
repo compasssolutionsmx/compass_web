@@ -141,6 +141,59 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
     lenisRef.current?.resize();
   }, [pathname]);
 
+  /**
+   * Aterriza en el ancla cuando se llega a una página CON hash en la URL.
+   *
+   * EL PROBLEMA: los enlaces del nav son `/#soluciones` y `/#oferta`. Desde el
+   * propio home, Lenis los intercepta él mismo (compara pathname, ver su
+   * `onClick`) y todo funciona. Desde /blog o cualquier otra página el pathname
+   * difiere, Lenis NO interviene y el posicionamiento queda en manos del router
+   * — que lo intentaba antes de que la página nueva estuviera medida, así que
+   * se aterrizaba en el hero en vez de en la sección.
+   *
+   * Aquí no había NADA que lo cubriera: no existía ningún manejo de
+   * `location.hash` en el proyecto, sólo el `resize()` de arriba.
+   *
+   * POR QUÉ ESTE COMPONENTE Y NO LA PÁGINA: <SmoothScroll> envuelve `children`
+   * en el layout raíz, así que NO se desmonta al navegar — la instancia de
+   * Lenis sobrevive a la navegación con las dimensiones de la página anterior.
+   * Es el único sitio que ve a la vez el cambio de ruta y la instancia viva.
+   *
+   * EL ORDEN IMPORTA y por eso va dentro de un doble rAF:
+   *   1. este efecto corre tras el commit del DOM nuevo
+   *   2. dos frames después el layout ya está aplicado y las alturas son reales
+   *   3. `resize()` refresca el límite ANTES de pedir el scroll — `scrollTo`
+   *      hace `clamp(0, target, this.limit)` (lenis.mjs), así que con el límite
+   *      de la página anterior un destino profundo se truncaría hacia arriba
+   *   4. y ya entonces se pide el desplazamiento
+   *
+   * `immediate: true`: se llega desde otra página, así que animar el recorrido
+   * entero del home sería un barrido largo e innecesario. El `offset: -96`
+   * replica el `scroll-padding-top: 6rem` para no quedar bajo el header fijo,
+   * igual que los anclas del nav.
+   *
+   * Con `prefers-reduced-motion` Lenis no existe, así que cae al salto nativo.
+   */
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.length < 2) return;
+
+    let frame = 0;
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        const lenis = lenisRef.current;
+        if (!lenis) {
+          document.getElementById(hash.slice(1))?.scrollIntoView();
+          return;
+        }
+        lenis.resize();
+        lenis.scrollTo(hash, { offset: -96, immediate: true });
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
+
   const api = useMemo<SmoothScrollApi>(
     () => ({
       pause: () => lenisRef.current?.stop(),

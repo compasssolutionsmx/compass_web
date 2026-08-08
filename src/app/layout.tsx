@@ -45,7 +45,7 @@ export const SITE_URL = "https://compasssolutions.com.mx";
 
 const SITE_TITLE = "Freight forwarder en México | Compass Solutions";
 const SITE_DESCRIPTION =
-  "Coordinamos tu logística internacional: transporte aéreo, marítimo y terrestre, despacho aduanal y gestión documental, bajo un solo punto de contacto.";
+  "Coordinamos su logística internacional: transporte aéreo, marítimo y terrestre, despacho aduanal y gestión documental, bajo un solo punto de contacto.";
 
 export const metadata: Metadata = {
   // Necesario para que las URLs relativas de Open Graph y los canonical se

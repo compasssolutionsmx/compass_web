@@ -66,17 +66,33 @@ export default function ImportHero() {
           Los bloques con `max-w-*` llevan su propio `mx-auto`, porque si no sus
           cajas quedarían a la izquierda con el texto centrado dentro. */}
       <div className="relative mx-auto w-full max-w-7xl px-6 text-center">
+        {/* El separador es un PUNTO MEDIO (·, U+00B7) y no un guion: separa la
+            marca del posicionamiento sin leerse como una resta ni como un
+            guion de diálogo. Está en el subset latino de DM Sans que sirve el
+            build, comprobado — no cae a `.notdef`. */}
         <Eyebrow tone="dark" className="mb-4">
-          Expertos en importaciones en México
+          Compass Solutions · Expertos en logística nacional e internacional
         </Eyebrow>
 
         {/* Clases del <h1> del home. SIN `whitespace-nowrap`: aquel es un
-            arreglo para el titular corto del home, y aquí la frase es más larga
-            —877px a text-5xl— así que forzarla a una línea la desbordaría por
-            debajo de 944px de viewport. Con `max-w-4xl` (896px) cabe en una
-            línea en desktop y parte sola por debajo. */}
+            arreglo para el titular corto del home, y esta frase mide 1573px a
+            `text-5xl`, muy por encima de los 896px de la caja, así que parte
+            siempre — en dos líneas en desktop y en cinco a 375px de viewport.
+
+            EL ESPACIO DURO ENTRE "en" Y "México" ES ANTI-HUÉRFANOS, escrito a mano y
+            no con `bindHeadingTail`: esa utilidad vive en lib/blog.ts, que
+            importa `node:fs` y gray-matter en el módulo, así que traerla aquí
+            arrastraría el lector de MDX entero al grafo de esta página. Su
+            propia documentación además la acota al <h1> del hero de artículo.
+            Hace exactamente esto: unir las dos últimas palabras.
+
+            Sin el espacio duro, a 375px el titular cerraba con "México" sola en
+            la quinta línea. Con él cierra con "en México" (199px), que entra de
+            sobra en los 327px disponibles e incluso en los 272px de un viewport
+            de 320. En desktop no cambia nada: allí la última línea ya era
+            "forwarder experto en México". */}
         <h1 className="mx-auto max-w-4xl font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
-          Traemos lo que sea, de donde sea
+          Importe y exporte con su freight forwarder experto en{"\u00A0"}México
         </h1>
 
         <p className="mx-auto mt-6 max-w-3xl text-lg text-slate-200">

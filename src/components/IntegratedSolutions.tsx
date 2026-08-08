@@ -22,7 +22,7 @@ const SERVICES = [
   {
     icon: Warehouse,
     name: "Almacenamiento",
-    description: "Resguardo y manejo de tu inventario.",
+    description: "Resguardo y manejo de su inventario.",
   },
 ];
 
@@ -60,8 +60,8 @@ export default function IntegratedSolutions() {
             <p className="mt-5 text-brand-50">
               Coordinamos importaciones y exportaciones por aire, mar y tierra
               bajo un mismo techo, conectando los puertos, aeropuertos y
-              corredores terrestres donde se mueve tu carga. Un solo punto de
-              contacto para toda tu operación internacional.
+              corredores terrestres donde se mueve su carga. Un solo punto de
+              contacto para toda su operación internacional.
             </p>
 
             <QuoteButton className="mt-8 rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-50">

@@ -30,7 +30,7 @@ const FEATURES = [
   {
     title: "Inteligencia logística",
     description:
-      "No solo transportamos; diseñamos la ruta más eficiente para tu cadena de suministro, mitigando riesgos desde el origen.",
+      "No solo transportamos; diseñamos la ruta más eficiente para su cadena de suministro, mitigando riesgos desde el origen.",
   },
   {
     title: "Capacidad global",
@@ -40,7 +40,7 @@ const FEATURES = [
   {
     title: "Certeza jurídica",
     description:
-      "Expertos en clasificación arancelaria y NOMs. Importa con la tranquilidad de que tu carga cumple con cada regulación vigente.",
+      "Expertos en clasificación arancelaria y NOMs. Importe con la tranquilidad de que su carga cumple con cada regulación vigente.",
   },
 ];
 
@@ -77,31 +77,30 @@ export default function ImportControl() {
               se fundía con la franja. Sobre blanco pasa lo contrario — el pill
               blanco del `tint` daría 1.00:1— y el brand-100 da 1.18:1. */}
               <Eyebrow className="mb-5">
-                Gestión aduanal y logística de precisión
+                Freight forwarder puerta a puerta
               </Eyebrow>
-              {/* El separador entre "sin" y "sorpresas." es un espacio DURO
-              (\u00A0), y arregla un quiebre feo: a `md:text-4xl` el titular mide
-              702px y la columna 592px, así que el algoritmo goloso metía "sin"
-              en la primera línea —cabía, 487px— y dejaba "sorpresas." sola en
-              la segunda. Con el espacio duro, "sin sorpresas." es un solo
-              bloque de 271px que no se puede partir, y el corte cae después de
-              "control,".
-              No es un <br>: eso forzaría el salto también por debajo de `md`,
-              donde la frase entera sí cabe en una línea. */}
+              {/* El separador entre "su" y "puerta" es un espacio DURO (\u00A0), y
+                arregla un quiebre feo: a `md:text-4xl` el titular mide 596px y
+                la columna dentro de la tarjeta 536px, así que el algoritmo
+                goloso metía "su" en la primera línea —cabía, 461px— y dejaba
+                "puerta" sola en la segunda. Con el espacio duro, "su puerta" es
+                un bloque indivisible de 182px y el corte cae tras "a": 406px
+                arriba, 182px abajo.
+                No es un <br>: eso forzaría el salto también por debajo de `md`,
+                donde la frase entera cabe en una línea (497px a text-3xl). */}
               <h2 className="font-heading text-3xl font-bold text-brand-900 md:text-4xl">
-                Su carga bajo control, sin{"\u00A0"}sorpresas.
+                Su carga, de origen a su{"\u00A0"}puerta
               </h2>
               {/* slate-600 y NO el slate-500 habitual del sitio: sobre brand-100 el
               500 se queda en 4.05:1 y no pasa AA; el 600 da 6.45:1. Es la misma
               corrección que ya llevan <ImportStats> y las tarjetas de casos de
               éxito, que están sobre este mismo tinte. */}
               <p className="mt-5 max-w-[48ch] text-slate-600">
-                En Compass Solutions, entendemos que una importación detenida es
-                dinero perdido. Por ello, ofrecemos una solución integral que
-                abarca desde la recolección en el extranjero hasta la entrega en
-                tu puerta. Nos especializamos en carga consolidada (LCL),
-                contenedores completos (FCL) y proyectos especiales,
-                adaptándonos al volumen y urgencia de tu negocio.
+                Coordinamos cada tramo de su importación —desde la recolección
+                en origen hasta la entrega en su fábrica o bodega en México—
+                trabajando de la mano con agentes aduanales certificados, para
+                que el despacho nunca sea el cuello de botella de su cadena de
+                suministro.
               </p>
             </div>
 
@@ -111,13 +110,34 @@ export default function ImportControl() {
             esquinas redondeadas — la figura flota sobre el tinte de la franja.
             Venía del hero, donde ocupaba la columna entera.
 
-            TOPE DE 420px, no ancho completo: a ancho de columna (592px en
-            desktop) la imagen salía 220px más alta que el texto de al lado y se
-            comía la sección. Medida la columna izquierda —eyebrow 52px + h2 a
-            dos líneas 80px + párrafo de 6 líneas 164px + botón 76px = 372px—,
-            con 420px la imagen queda 48px por encima, que es la proporción que
-            la deja como ancla visual sin dominar. Para bajarla más, el siguiente
-            escalón de 20px es 400px (+28px) y luego 380px (paridad exacta).
+            TOPE DE 504px, no ancho completo (era 420px; +20%). La columna mide
+            536px a partir de 1328px de viewport —1232 de contenido, menos los
+            112 del `lg:p-14` de la tarjeta, menos los 48 del `gap-12`, entre
+            dos—, así que el tope deja 32px de aire: 16px por lado con el
+            `mx-auto`. Por debajo de 1216px de viewport la columna es más
+            estrecha que el tope y manda ella; `max-width` no fuerza ancho, así
+            que la imagen NUNCA desborda.
+
+            LO QUE SÍ SE PAGA: el arte es cuadrado (1100x1100), o sea que 504px
+            de ancho son 504px de alto, y la columna de texto sólo mide 248px
+            (eyebrow 32 + mb-5 20 + h2 a dos líneas 80 + mt-5 20 + párrafo de 4
+            líneas 96). Con `items-center` la fila la marca la imagen y el texto
+            queda centrado en el sobrante: 104px de aire arriba y abajo con el
+            `-mt-12` puesto (eran 128px sin él). El ritmo ENTRE SECCIONES no se
+            mueve —lo fijan el `py-20` de la sección y el `pb-16 md:pb-20` de
+            <Certifications>, que no dependen del alto del contenido—, pero el
+            desequilibrio dentro de la rejilla es real: si molesta, el arreglo es
+            `lg:items-start`, no recortar la imagen.
+
+            EL VACÍO NO ES DEL CSS, ES DEL ARCHIVO. Medida la caja alfa del
+            .webp: la tinta ocupa de la fila 180 a la 962 del lienzo de 1100, o
+            sea 180px transparentes arriba y 138px abajo (estable con umbral de
+            alfa de 0 a 200, es un recorte limpio y no un degradado). A 504px en
+            pantalla eso son 82.5px arriba y 63.2px abajo INCORPORADOS a la
+            imagen: 146px de vacío, más que los 120px que ponían juntos el
+            padding de la tarjeta y el `mt-16` de la fila de abajo. Por eso el
+            aire se recorta tirando de la imagen y no bajando paddings, y por eso
+            cualquier ajuste futuro debe medir la caja alfa antes que el CSS.
 
             Se lee sobre el tinte: su tinta dominante es un azul casi negro
             (#1c2030) que da 13.77:1 sobre brand-100, y sólo el 5.3% del arte es
@@ -136,8 +156,18 @@ export default function ImportControl() {
               alt="Un tiranosaurio rugiendo mientras sale de un contenedor marítimo abierto"
               width={1100}
               height={1100}
-              sizes="(min-width: 1024px) 420px, 100vw"
-              className="mx-auto h-auto w-full max-w-[420px]"
+              sizes="(min-width: 1024px) 504px, 100vw"
+              /* `lg:-mt-12` NO recorta la imagen: cancela 48px del vacío que el
+                 archivo trae dentro. Con `items-center` la caja de margen es la
+                 que se centra en la fila, así que un margen negativo deja que
+                 el borde de la imagen sobresalga por arriba de la fila esos
+                 48px — se mete en el padding de la tarjeta, que ahí sólo tiene
+                 píxeles transparentes. Aun así entra 8px por dentro del borde
+                 (56 de padding menos 48), así que no llega a desbordar.
+                 Sólo a partir de `lg`: por debajo la rejilla es de una columna
+                 y la imagen va justo bajo el texto, separada por `gap-10`; un
+                 tirón de 48px ahí la solaparía. */
+              className="mx-auto h-auto w-full max-w-[504px] lg:-mt-12"
             />
           </div>
 
@@ -154,8 +184,13 @@ export default function ImportControl() {
 
             Contraste sobre el tinte: la tarjeta se separa del fondo en 12.82:1,
             el título blanco da 15.07:1 dentro de ella, la descripción
-            slate-200 12.22:1 y el borde de hover brand-300 6.51:1. */}
-          <ul className="mt-16 grid gap-6 md:grid-cols-3">
+            slate-200 12.22:1 y el borde de hover brand-300 6.51:1.
+
+            `mt-6` (24px) y no el `mt-16` que tenía: el hueco que se ve NO es
+            este margen, es este margen MÁS los 63.2px transparentes con que
+            termina el .webp de arriba. Con 64px el hueco real era de 127px;
+            con 24px queda en 87px, a la par de los 90px que quedan arriba. */}
+          <ul className="mt-6 grid gap-6 md:grid-cols-3">
             {FEATURES.map((feature) => (
               <li
                 key={feature.title}

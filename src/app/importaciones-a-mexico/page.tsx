@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Certifications, {
-  CERTIFICATIONS_IMPORTACIONES,
-} from "@/components/Certifications";
+import Certifications from "@/components/Certifications";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { QuoteModalProvider } from "@/components/QuoteModal";
@@ -83,6 +81,25 @@ function buildJsonLd() {
   };
 }
 
+/**
+ * Nav interno del header de esta landing. NO son los enlaces globales del
+ * sitio: apuntan a secciones de esta misma página, así que retienen al
+ * visitante en vez de sacarlo, que es lo que `variant="conversion"` quiere
+ * evitar.
+ *
+ * Los `href` llevan la RUTA COMPLETA y no `/#seccion`: la barra sola significa
+ * "home + ancla" y mandaría al usuario a otra página. Con la ruta de aquí,
+ * Lenis compara pathname, ve que es el actual y lo intercepta con su scroll
+ * suave y su offset.
+ *
+ * Sin "Gestión aduanal / freight forwarder" por ahora, decisión de contenido.
+ */
+const NAV_LANDING = [
+  { href: `${PATH}#certificaciones`, label: "Certificaciones" },
+  { href: `${PATH}#soluciones`, label: "Soluciones" },
+  { href: `${PATH}#resultados`, label: "Resultados" },
+];
+
 export default function ImportacionesAMexico() {
   return (
     <WhatsAppModalProvider>
@@ -91,7 +108,7 @@ export default function ImportacionesAMexico() {
             enlaces de nav — en una landing de una sola sección apuntarían fuera
             de la página, que es lo último que quiere una página de campaña.
             Volver al header completo es cambiar esta palabra. */}
-        <Header topTone="dark" variant="conversion" />
+        <Header topTone="dark" variant="conversion" navLinks={NAV_LANDING} />
 
         <main className="flex-1">
           <script
@@ -110,21 +127,22 @@ export default function ImportacionesAMexico() {
               no trae `pt` propio. */}
           <QuoteSection />
 
-          {/* ♻️ mismo componente del home, con ALACAT en lugar de WCA */}
-          <Certifications
-            items={CERTIFICATIONS_IMPORTACIONES}
-            title="Certificados para el éxito"
-          />
+          {/* ♻️ IDÉNTICA a la del home: mismos logos y mismo título, sin
+              props. Tuvo las dos cosas propias —un juego con ISO en vez de WCA
+              y el título "Certificados para el éxito" del mockup— y las dos se
+              retiraron. El componente sigue aceptando `items` y `title` por si
+              alguna vez vuelven a divergir. */}
+          <Certifications />
 
           {/* 🆕 */}
           <ImportControl />
 
+          {/* ♻️ 3 de 4 tarjetas comparten categoría y foto con ServicesGrid */}
+          <ImportSolutions />
+
           {/* ♻️ mismo patrón que StatsSection, en 4 métricas — ver la nota del
               componente sobre por qué no se parametrizó aquél */}
           <ImportStats />
-
-          {/* ♻️ 3 de 4 tarjetas comparten categoría y foto con ServicesGrid */}
-          <ImportSolutions />
 
           {/* 🆕 */}
           <ImportCtaBanner />

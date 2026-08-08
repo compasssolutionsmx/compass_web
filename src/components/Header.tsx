@@ -6,7 +6,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { QuoteButton } from "./QuoteModal";
 import { useSmoothScroll } from "./SmoothScroll";
-import { SALES_PHONE_DISPLAY } from "@/lib/site";
+import { NOSOTROS_LABEL } from "@/lib/site";
 
 /**
  * Una sola lista para el nav de escritorio y para el panel móvil: son la misma
@@ -22,17 +22,25 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
  * 404 es peor que un nav más corto. La página está VACÍA por ahora —sólo el
  * chasis— pero ya no rompe la navegación.
  *
- * PENDIENTE, anterior a este cambio: los dos anclas van sin barra
- * (`#soluciones`, `#oferta`), así que apuntan a la PÁGINA ACTUAL. Desde el home
- * funcionan; desde /blog, /vacantes, /proveedores o /nosotros no hay tales
- * secciones y el clic no hace nada. El arreglo es `/#soluciones`, pero se deja
- * aparte para no mezclarlo aquí.
+ * LOS DOS ANCLAS VAN CON BARRA (`/#soluciones`, `/#oferta`) y no sueltas. Sin
+ * ella apuntaban a la PÁGINA ACTUAL: funcionaban en el home, pero desde /blog,
+ * /nosotros, /vacantes, /proveedores o /apartado-legal no existen esas
+ * secciones y el clic no hacía nada. Con la barra, desde fuera navegan al home
+ * y bajan a la sección; dentro del home el destino no cambia.
+ *
+ * Y EL SCROLL SUAVE SE CONSERVA en el home, que era el riesgo: Lenis no busca
+ * `href` que empiecen por "#", sino que resuelve cada enlace a URL absoluta y
+ * compara `pathname` con el de la página actual (ver `onClick` en lenis.mjs).
+ * Desde el home, `/#soluciones` resuelve a pathname "/" —el mismo— así que lo
+ * sigue interceptando con su offset. Desde otra página los pathname difieren,
+ * Lenis no interviene y navega <Link> con el salto nativo, que ya respeta el
+ * `scroll-padding-top: 6rem` de globals.css.
  */
 const NAV_LINKS = [
-  { href: "#soluciones", label: "Soluciones" },
-  { href: "#oferta", label: "Oferta" },
+  { href: "/#soluciones", label: "Soluciones" },
+  { href: "/#oferta", label: "Oferta" },
+  { href: "/nosotros", label: NOSOTROS_LABEL },
   { href: "/blog", label: "Blog" },
-  { href: "/nosotros", label: "Nuestra Compañía" },
 ];
 
 const MOBILE_PANEL_ID = "menu-movil";
@@ -56,17 +64,43 @@ export default function Header({
   topTone,
   /**
    * `full`        el header del sitio: nav completo + CTA + hamburguesa.
-   * `conversion`  el de las landings de campaña: logo, teléfono y un solo CTA.
-   *               Se quitan los enlaces de nav porque en una landing de una
-   *               sola sección apuntarían fuera de la página — una salida
-   *               gratuita en la única página cuyo trabajo es convertir.
+   * `conversion`  el de las landings de campaña: logo y un solo CTA. El
+   *               teléfono que llevaba se retiró — el footer lo sigue
+   *               mostrando en todas las páginas, esta incluida.
+   *               Sin los enlaces GLOBALES, porque en una landing apuntarían
+   *               fuera de la página — una salida gratuita en la única página
+   *               cuyo trabajo es convertir. Puede recuperar un nav propio
+   *               pasándole `navLinks` (ver abajo).
    */
   variant = "full",
+  /**
+   * Enlaces del nav. Por defecto los globales del sitio, y ninguno en
+   * `conversion`.
+   *
+   * Existe para que una landing pueda montar su PROPIO nav —anclas internas a
+   * sus secciones— sin recuperar los globales, que es justo lo que esa variante
+   * quiere evitar. La distinción no es cosmética: un enlace interno retiene al
+   * visitante y uno global lo saca de la página de campaña.
+   *
+   * OJO CON LOS `href` EN UNA LANDING: tienen que llevar SU ruta, no la raíz.
+   * `/#soluciones` significa "home + ancla" y se llevaría al usuario a otra
+   * página; lo correcto es `/importaciones-a-mexico#soluciones`. Con la ruta
+   * completa Lenis compara pathname, ve que coincide con la actual y lo
+   * intercepta con su desplazamiento suave (ver su `onClick`).
+   */
+  navLinks,
 }: {
   topTone: "dark" | "light";
   variant?: "full" | "conversion";
+  navLinks?: { href: string; label: string }[];
 }) {
   const esConversion = variant === "conversion";
+  /**
+   * Qué enlaces se pintan. `conversion` sin `navLinks` explícitos se queda sin
+   * nav —su comportamiento de siempre— y el resto hereda los globales.
+   */
+  const enlaces = navLinks ?? (esConversion ? [] : NAV_LINKS);
+  const hayNav = enlaces.length > 0;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // El disparador es la POSICIÓN DE SCROLL, no "estar sobre el hero". Así el
@@ -239,7 +273,7 @@ export default function Header({
               El estado condensado no tiene este problema: va a max-w-4xl y le
               sobran 188px. Si alguna vez se acorta el nav, esto puede volver a
               `md`. */}
-          {!esConversion && (
+          {hayNav && (
             <nav
               aria-label="Principal"
               className={`hidden items-center border border-transparent text-sm font-medium text-brand-900 transition-[max-width,padding,gap,background-color,border-radius,box-shadow] duration-300 motion-reduce:transition-none lg:flex ${
@@ -248,7 +282,7 @@ export default function Header({
                   : "glass gap-8 rounded-full px-8 py-3"
               }`}
             >
-              {NAV_LINKS.map((link) => (
+              {enlaces.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -264,18 +298,6 @@ export default function Header({
               barra glass de B no se lee como vidrio sobre vidrio sino como una
               pastilla sólida de acento. Por eso no hace falta adaptarlo. */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-            {esConversion && (
-              /* El teléfono es la otra vía de contacto de la landing. Se oculta
-                 en pantallas muy angostas para que no compita con el CTA. */
-              <a
-                href={`tel:+${SALES_PHONE_DISPLAY.replace(/\D/g, "")}`}
-                className={`hidden font-heading text-sm font-semibold transition-opacity hover:opacity-80 sm:inline ${
-                  onDarkSurface ? "text-white" : "text-brand-900"
-                }`}
-              >
-                {SALES_PHONE_DISPLAY}
-              </a>
-            )}
             {/* Cristal azul: el cuerpo, las sombras en capas, el barrido de
               brillo y el respeto a prefers-reduced-motion viven en la utilidad
               `.glass-cta` de globals.css. Aquí sólo va la forma y el contenido.
@@ -300,7 +322,7 @@ export default function Header({
               />
             </QuoteButton>
 
-            {!esConversion && (
+            {hayNav && (
               <button
                 ref={openButtonRef}
                 type="button"
@@ -324,7 +346,7 @@ export default function Header({
       </header>
 
       {/* ---- Menú móvil: panel deslizante ---- */}
-      {isMenuOpen && !esConversion && (
+      {isMenuOpen && hayNav && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
             className="absolute inset-0 bg-black/50 motion-safe:animate-fade-in"
@@ -355,7 +377,7 @@ export default function Header({
               aria-label="Principal (móvil)"
               className="flex flex-col gap-1 px-6"
             >
-              {NAV_LINKS.map((link) => (
+              {enlaces.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

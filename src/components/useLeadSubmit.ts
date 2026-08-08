@@ -109,7 +109,9 @@ export function useLeadSubmit() {
       formulario: LeadSource,
     ) => {
       ultimoEnvio.current = { payload, whatsappMessage, formulario };
-      setWhatsappUrl(whatsappMessage ? buildWhatsAppUrl(whatsappMessage) : null);
+      setWhatsappUrl(
+        whatsappMessage ? buildWhatsAppUrl(whatsappMessage) : null,
+      );
       setStatus("submitting");
 
       // EL CORREO ES LO QUE DECIDE. Antes daba igual que fallara porque el

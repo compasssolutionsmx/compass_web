@@ -52,6 +52,13 @@ export type Compromiso = {
 };
 
 /**
+ * Entradilla de la política. Vive aquí y no en la página porque la pintan DOS
+ * rutas (/nosotros y /apartado-legal) y es el mismo párrafo en las dos.
+ */
+export const INTRO_SEGURIDAD =
+  "Como agente de carga, Compass sabe que la confianza de sus clientes se construye con operaciones seguras y consistentes. Su política de seguridad y calidad se traduce en diez compromisos concretos.";
+
+/**
  * El orden ES el contenido: son los compromisos 01 a 10 de la política, y así
  * los numera el documento del cliente. Por eso se pintan en un <ol> y el número
  * visible sale del índice, no de un campo que pueda quedar desalineado.

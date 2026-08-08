@@ -27,13 +27,13 @@ const FEATURES = [
     icon: Headset,
     title: "Atención personalizada",
     description:
-      "Supervisamos cada embarque con un enfoque de logística integral, brindando estatus claros y soluciones a la medida de tu negocio.",
+      "Supervisamos cada embarque con un enfoque de logística integral, brindando estatus claros y soluciones a la medida de su negocio.",
   },
   {
     icon: Settings2,
     title: "Soluciones a la medida",
     description:
-      "Te asesoramos para diseñar la mejor estrategia con el respaldo de nuestros expertos en logística 360.",
+      "Le asesoramos para diseñar la mejor estrategia con el respaldo de nuestros expertos en logística 360.",
   },
   {
     icon: Radar,
@@ -51,7 +51,7 @@ const FEATURES = [
     icon: MessagesSquare,
     title: "Comunicación clara",
     description:
-      "Información precisa y constante para que estés informado del estatus de tus envíos, ya sea de carga consolidada o dedicada.",
+      "Información precisa y constante para que esté informado del estatus de sus envíos, ya sea de carga consolidada o dedicada.",
   },
   {
     icon: Tag,
@@ -67,18 +67,15 @@ export default function FeaturesGrid() {
     // propósito: encima va el cotizador, cuya tarjeta ya aporta 40px de padding
     // interno además del `pb-20` de su sección. Con `pt-20` aquí, el blanco
     // entre la última fila de la tarjeta y este título sumaba ~200px.
-    <section
-      id="oferta"
-      className="mx-auto max-w-7xl px-6 pb-20 pt-4 md:pt-6"
-    >
+    <section id="oferta" className="mx-auto max-w-7xl px-6 pb-20 pt-4 md:pt-6">
       <Eyebrow className="mb-3 text-center">Por qué Compass Solutions</Eyebrow>
       <h2 className="mx-auto mb-4 max-w-3xl text-center font-heading text-3xl font-bold text-brand-900 md:text-4xl">
-        Movemos tu carga con precisión, seguridad y compromiso
+        Movemos su carga con precisión, seguridad y compromiso
       </h2>
       <p className="mx-auto mb-14 max-w-2xl text-center text-slate-500">
         Movemos importaciones y exportaciones por vía aérea, marítima y
         terrestre con despacho aduanal, gestión documental y visibilidad total
-        de tu operación en México.
+        de su operación en México.
       </p>
       {/* El <li> ES la tarjeta y es hijo directo del grid, así que el
           `align-items: stretch` por defecto ya iguala las alturas de cada fila.

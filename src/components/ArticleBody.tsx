@@ -12,7 +12,9 @@ function toPlainText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(toPlainText).join("");
   if (node && typeof node === "object" && "props" in node) {
-    return toPlainText((node as { props: { children?: ReactNode } }).props.children);
+    return toPlainText(
+      (node as { props: { children?: ReactNode } }).props.children,
+    );
   }
   return "";
 }
@@ -24,9 +26,7 @@ function toPlainText(node: ReactNode): string {
 function heading(level: 2 | 3) {
   const Tag = level === 2 ? "h2" : "h3";
   const size =
-    level === 2
-      ? "mt-12 text-2xl md:text-3xl"
-      : "mt-8 text-xl md:text-2xl";
+    level === 2 ? "mt-12 text-2xl md:text-3xl" : "mt-8 text-xl md:text-2xl";
 
   return function Heading({ children }: { children?: ReactNode }) {
     return (

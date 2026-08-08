@@ -13,6 +13,27 @@ import matter from "gray-matter";
 
 const BLOG_DIR = path.join(process.cwd(), "src/content/blog");
 
+/**
+ * CATEGORÍAS VÁLIDAS, declaradas en un solo sitio. Antes `category` era un
+ * string libre en cada .mdx: un typo creaba una categoría nueva en silencio y
+ * nadie se enteraba hasta verla suelta en el filtro del índice.
+ *
+ * Mismo patrón que `lib/services.ts`: la lista manda y el contenido se valida
+ * contra ella. Añadir una categoría es añadirla aquí; el tipo y el filtro del
+ * índice se enteran solos.
+ */
+export const BLOG_CATEGORIES = [
+  "Comercio exterior",
+  "Logística internacional",
+  "Transporte terrestre",
+  "Transporte aéreo",
+  "Operación y almacén",
+  "Tecnología",
+  "Actualidad",
+] as const;
+
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
+
 export type PostFrontmatter = {
   title: string;
   /**
@@ -30,7 +51,7 @@ export type PostFrontmatter = {
   /** ISO `YYYY-MM-DD`. */
   date: string;
   author: string;
-  category: string;
+  category: BlogCategory;
   cover: string;
   coverAlt: string;
   keywords: string[];
@@ -59,8 +80,23 @@ export function postHref(slug: string): string {
 function parsePost(fileName: string): Post {
   const raw = fs.readFileSync(path.join(BLOG_DIR, fileName), "utf8");
   const { data, content } = matter(raw);
+  const frontmatter = data as PostFrontmatter;
+
+  // Se valida en BUILD y se revienta, en vez de dejar pasar la categoría rara.
+  // Esto corre en `readAll`, o sea durante la generación estática: un .mdx con
+  // un typo tira el build con el nombre del archivo y la lista buena, que es
+  // mucho mejor que publicar una categoría huérfana que el filtro del índice
+  // pintaría como una pill más.
+  if (!BLOG_CATEGORIES.includes(frontmatter.category)) {
+    throw new Error(
+      `[blog] ${fileName}: categoría "${frontmatter.category}" no está declarada. ` +
+        `Las válidas son: ${BLOG_CATEGORIES.join(", ")}. ` +
+        `Si la categoría es nueva, añádela a BLOG_CATEGORIES en lib/blog.ts.`,
+    );
+  }
+
   return {
-    ...(data as PostFrontmatter),
+    ...frontmatter,
     slug: fileName.replace(/\.mdx$/, ""),
     content,
   };
@@ -112,11 +148,60 @@ export function formatPostDate(iso: string): string {
 export type Heading = { id: string; text: string; level: 2 | 3 };
 
 /**
+ * Une las DOS ÚLTIMAS PALABRAS de un titular con un espacio duro, para que la
+ * última línea nunca quede con una sola palabra colgando.
+ *
+ * POR QUÉ UNA UTILIDAD Y NO UN \u00A0 A MANO EN CADA .mdx: el problema no es de
+ * un título concreto sino de cualquiera que parta en varias líneas, y depende
+ * del ancho de pantalla — el mismo titular puede estar bien en desktop y dejar
+ * huérfana en un móvil estrecho. Resolverlo en el frontmatter obligaría a
+ * revisar cada artículo nuevo a mano y a acertar para todos los breakpoints.
+ *
+ * SÓLO DOS PALABRAS, nunca tres. El bloque resultante es indivisible, así que
+ * cuanto más largo, más riesgo de desbordar en pantallas estrechas: con las dos
+ * últimas, el peor caso de los títulos actuales mide 195px a 24px y entra de
+ * sobra en los 272px de un viewport de 320. Encadenando tres se iría a 287px y
+ * se saldría.
+ *
+ * Se aplica SÓLO al <h1> del hero de artículo. Los párrafos y el resto del
+ * texto no lo necesitan: ahí una última línea corta es normal y no chirría.
+ *
+ * Si el título ya trae un \u00A0 escrito a mano, no se toca: `lastIndexOf`
+ * busca un espacio NORMAL, así que ese bloque ya unido cuenta como una palabra
+ * y no se encadena otra encima.
+ */
+export function bindHeadingTail(text: string): string {
+  const limpio = text.trim();
+  const ultimoEspacio = limpio.lastIndexOf(" ");
+  if (ultimoEspacio === -1) return limpio; // una sola palabra: nada que unir
+  return `${limpio.slice(0, ultimoEspacio)}\u00A0${limpio.slice(ultimoEspacio + 1)}`;
+}
+
+/**
+ * ANCLAS CONGELADAS: encabezados cuyo texto cambió DESPUÉS de publicarse y que
+ * conservan a la fuerza el `id` que ya tenían.
+ *
+ * El slug sale del texto, así que reescribir un encabezado cambia su ancla y
+ * rompe cualquier enlace externo —compartido por chat, guardado en marcadores,
+ * citado desde fuera— que apuntara a esa sección. Aquí se declara el id viejo
+ * para el texto nuevo y el ancla sobrevive a la corrección de copy.
+ *
+ * La clave es el TEXTO NUEVO, tal cual queda en el .mdx. Al añadir una entrada,
+ * copiar el id anterior literal — no volver a derivarlo del texto viejo.
+ */
+const ANCLAS_CONGELADAS: Record<string, string> = {};
+
+/**
  * Slug de un encabezado. Se usa en DOS sitios que deben coincidir: el `id` que
  * se pinta en el <h2>/<h3> del cuerpo y el `href` del índice. Por eso vive aquí
- * y no duplicado en cada componente.
+ * y no duplicado en cada componente — y por eso la tabla de anclas congeladas
+ * se consulta AQUÍ DENTRO: así los dos consumidores heredan el override sin que
+ * ninguno tenga que acordarse de aplicarlo.
  */
 export function slugifyHeading(text: string): string {
+  const congelada = ANCLAS_CONGELADAS[text.trim()];
+  if (congelada) return congelada;
+
   return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // fuera acentos

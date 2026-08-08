@@ -6,11 +6,21 @@ import HeroBackdrop from "@/components/HeroBackdrop";
 import { QuoteModalProvider } from "@/components/QuoteModal";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
-import { COMPROMISOS_SEGURIDAD, HISTORIA } from "@/lib/nosotros";
+import {
+  COMPROMISOS_SEGURIDAD,
+  HISTORIA,
+  INTRO_SEGURIDAD,
+} from "@/lib/nosotros";
+import { NOSOTROS_LABEL } from "@/lib/site";
 
 const PATH = "/nosotros";
 
-const TITLE = "Nuestra Compañía";
+/**
+ * Alimenta el <title> y el Open Graph. NO el <h1>: el titular visible de esta
+ * página es "+12 años moviendo lo que le importa.", que es copy propio del hero
+ * y no el nombre de la sección.
+ */
+const TITLE = NOSOTROS_LABEL;
 const DESCRIPTION =
   "Más de 12 años moviendo carga: la historia de Compass Solutions desde 2014, su misión y visión, y los diez compromisos de su política de seguridad y calidad.";
 
@@ -204,10 +214,7 @@ export default function Nosotros() {
             </h2>
             <Eyebrow className="mb-4">Política de seguridad</Eyebrow>
             <p className="max-w-[62ch] text-lg text-slate-700">
-              Como agente de carga, Compass sabe que la confianza de sus
-              clientes se construye con operaciones seguras y consistentes. Su
-              política de seguridad y calidad se traduce en diez compromisos
-              concretos.
+              {INTRO_SEGURIDAD}
             </p>
 
             {/* <ol> porque los diez están numerados en el documento del cliente

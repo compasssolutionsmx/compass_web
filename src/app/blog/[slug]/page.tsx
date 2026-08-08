@@ -19,6 +19,7 @@ import {
   getAllPostSlugs,
   getAllPosts,
   getPostBySlug,
+  bindHeadingTail,
   postHref,
 } from "@/lib/blog";
 
@@ -129,8 +130,18 @@ export default async function ArticlePage({
                 {post.category}
               </Eyebrow>
 
-              <h1 className="max-w-4xl font-heading text-3xl font-bold leading-tight text-white md:text-5xl">
-                {post.title}
+              {/* `text-2xl md:text-4xl` (24/36px), bajado de `text-3xl
+                  md:text-5xl`. A 48px NINGÚN titular cabía en una línea: el más
+                  largo medía 1321px contra los 1232px útiles del contenedor
+                  padre, así que todos partían sí o sí. A 36px tres de los
+                  cuatro actuales entran completos en una sola línea.
+
+                  Y la caja vuelve a `max-w-4xl` (896px): con la fuente más
+                  chica ya no hace de cuello de botella —el titular más ancho
+                  mide 991px— y da mejor reparto que el `max-w-5xl` que tuvo un
+                  momento. */}
+              <h1 className="max-w-4xl font-heading text-2xl font-bold leading-tight text-white md:text-4xl">
+                {bindHeadingTail(post.title)}
               </h1>
 
               <p className="mt-5 max-w-2xl text-lg text-brand-50">
@@ -162,13 +173,13 @@ export default async function ArticlePage({
 
                   <div className="brand-gradient rounded-2xl p-6">
                     <p className="font-heading text-lg font-bold text-white">
-                      ¿Necesitas mejorar tu logística?
+                      ¿Necesita mejorar su logística?
                     </p>
                     <p className="mt-2 text-sm text-brand-50">
-                      Cuéntanos qué mueves y te proponemos la mejor ruta.
+                      Cuéntenos qué mueve y le proponemos la mejor ruta.
                     </p>
                     <QuoteButton className="mt-5 w-full rounded-full bg-white px-6 py-2.5 font-heading text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-50">
-                      Contáctanos
+                      Contáctenos
                     </QuoteButton>
                   </div>
                 </div>
@@ -180,11 +191,11 @@ export default async function ArticlePage({
           <section className="mx-auto max-w-7xl px-6 pb-16">
             <div className="brand-gradient rounded-3xl px-8 py-12 text-center md:px-14 md:py-16">
               <h2 className="mx-auto max-w-2xl font-heading text-2xl font-bold text-white md:text-3xl">
-                Solicita una cotización y mueve tu carga con Compass
+                Solicite una cotización y mueva su carga con Compass
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-brand-50">
                 Aéreo, marítimo y terrestre bajo un mismo techo, con un solo
-                punto de contacto para toda tu operación.
+                punto de contacto para toda su operación.
               </p>
               <QuoteButton className="mt-8 rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-50">
                 Solicitar cotización

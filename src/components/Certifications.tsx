@@ -38,13 +38,7 @@ type Certification = {
   alt: string;
   /** Se pinta tal cual, sin `mask-image`, porque el arte ya viene a color. */
   color?: boolean;
-  /** Sin archivo todavía: se dibuja un marcador con el nombre. */
-  placeholder?: boolean;
 };
-
-/* Cada logo se declara UNA VEZ y los dos juegos se componen abajo. Antes el de
-   la landing se derivaba del de home con un `.filter()`, y eso ató los dos:
-   tocar la fila del home cambiaba la de la landing sin querer. */
 
 const AMACARGA: Certification = {
   src: "/logo-certs/amacarga-trim.png",
@@ -53,10 +47,6 @@ const AMACARGA: Certification = {
 const CANACAR: Certification = {
   src: "/logo-certs/canacar-trim.png",
   alt: "CANACAR",
-};
-const ISO: Certification = {
-  src: "/logo-certs/isoeeee-trim.png",
-  alt: "ISO",
 };
 const WCA: Certification = {
   src: "/logo-certs/WCA-LOGO.svg",
@@ -81,8 +71,8 @@ const WCA: Certification = {
  * quedan las letras oscuras y el azul claro #3FB5EF (2.32:1 sobre blanco), sin
  * la banda que los sostiene. El archivo parece pensado para fondo oscuro.
  *
- * TODO(cliente): pedir un ALACAT o bien monocromo sobre alfa —como AMACARGA,
- * CANACAR e ISO, y entonces se le quita este `color` y entra al tratamiento
+ * TODO(cliente): pedir un ALACAT o bien monocromo sobre alfa —como AMACARGA
+ * y CANACAR, y entonces se le quita este `color` y entra al tratamiento
  * común—, o bien a color recortado al bounding box de la tinta, sin el campo
  * blanco. Con cualquiera de los dos, esta fila vuelve a leerse pareja.
  */
@@ -92,7 +82,20 @@ const ALACAT: Certification = {
   color: true,
 };
 
-/** ALACAT ocupa el lugar que tenía ISO. */
+/**
+ * EL ÚNICO JUEGO DE LOGOS, y lo usan las dos páginas que montan esta fila: el
+ * home y /importaciones-a-mexico.
+ *
+ * Hubo un segundo set, `CERTIFICATIONS_IMPORTACIONES`, mientras la landing
+ * mostraba ISO en lugar de WCA. Al retirarse ISO del sitio, los dos juegos
+ * quedaron con los mismos cuatro logos y mantener dos arrays idénticos sólo
+ * habría servido para que se desincronizaran: quien edite esta lista esperaría,
+ * con razón, que las dos filas cambien a la vez. Lo que la landing sí conserva
+ * propio es el TÍTULO, que pasa por prop.
+ *
+ * Si algún día vuelven a divergir, se declara otro array aquí y se le pasa por
+ * `items` — que es como estaba y sigue soportado.
+ */
 export const CERTIFICATIONS_HOME: Certification[] = [
   AMACARGA,
   CANACAR,
@@ -101,18 +104,18 @@ export const CERTIFICATIONS_HOME: Certification[] = [
 ];
 
 /**
- * Los tres PNG son monocromos blancos sobre alfa, así que sobre fondo claro
+ * Los PNG son monocromos blancos sobre alfa, así que sobre fondo claro
  * desaparecerían: se tiñen a brand-900 con `mask-image` (ver `.cert-mark` en
  * globals.css), que da la silueta exacta sin transformar ningún color.
  *
  * TODO(logos): los `-trim.png` son RECORTES generados a partir de los archivos
  * originales del cliente, que siguen intactos al lado. Se recortaron porque los
- * tres eran casi todo lienzo transparente y en proporciones distintas: la tinta
- * de AMACARGA ocupaba el 55% del alto del archivo, la de CANACAR el 58% y la de
- * ISO el 70%. Con `mask-size: contain` eso significa que a la misma altura CSS
- * cada logo se dibujaba a un tamaño distinto, y los tres bastante más chicos
- * que el SVG de WCA, que sí viene ajustado. Recortados al bounding box de la
- * tinta, los cuatro responden igual a la misma caja. Verificado que siguen
+ * dos eran casi todo lienzo transparente y en proporciones distintas: la tinta
+ * de AMACARGA ocupaba el 55% del alto del archivo y la de CANACAR el 58%. Con
+ * `mask-size: contain` eso significa que a la misma altura CSS cada logo se
+ * dibujaba a un tamaño distinto, y los dos bastante más chicos que el SVG de
+ * WCA, que sí viene ajustado. Recortados al bounding box de la tinta,
+ * responden igual a la misma caja. Verificado que siguen
  * siendo monocromos sobre alfa, que es lo que `.cert-mark` necesita.
  *
  * EXCEPCIÓN: WCA, cuyo SVG ya viene a color (naranja, guinda y gris).
@@ -123,19 +126,7 @@ export const CERTIFICATIONS_HOME: Certification[] = [
  * El <span> enmascarado no es una imagen para el navegador, de ahí el
  * `role="img"` + `aria-label`: es lo que conserva el equivalente del `alt`.
  */
-function CertLogo({ src, alt, color, placeholder }: Certification) {
-  if (placeholder) {
-    return (
-      <span
-        role="img"
-        aria-label={alt}
-        className="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 font-heading text-xs font-semibold text-brand-900"
-      >
-        {alt}
-      </span>
-    );
-  }
-
+function CertLogo({ src, alt, color }: Certification) {
   if (color) {
     return (
       <Image src={src} alt={alt} fill unoptimized className="object-contain" />
@@ -152,25 +143,6 @@ function CertLogo({ src, alt, color, placeholder }: Certification) {
   );
 }
 
-/**
- * Juego de logos de la landing de importaciones. Cambia WCA por ALACAT, que es
- * la asociación que el mockup de esa página pone en el set, y CONSERVA ISO.
- *
- * Se escribe entero en vez de derivarse del de home. Cuando se derivaba, sacar
- * ISO del home lo sacaba también de aquí —dejando la fila en tres logos y un
- * hueco en `lg`— y además ALACAT aparecía DOS VECES: el marcador de posición
- * de esta lista más el real heredado, con el mismo `alt` y por tanto la misma
- * `key` de React.
- *
- * El marcador ya no hace falta: el archivo llegó y ALACAT entra como logo real.
- */
-export const CERTIFICATIONS_IMPORTACIONES: Certification[] = [
-  ALACAT,
-  AMACARGA,
-  CANACAR,
-  ISO,
-];
-
 export default function Certifications({
   items = CERTIFICATIONS_HOME,
   title = "Certificados y asociados con",
@@ -184,9 +156,14 @@ export default function Certifications({
     // <QuoteSection>, que se recortó a `pb-10 md:pb-12` (40/48px) para acercar
     // esta fila al cotizador. Añadir aquí otro `pt` sería el doble padding que
     // hay que evitar entre dos secciones seguidas.
+    // `id` para que el nav interno de /importaciones-a-mexico pueda anclar aquí.
+    // `scroll-mt-28` deja aire bajo el header fijo al llegar por ancla; sin él
+    // el título quedaría tapado. En el home no estorba: nadie ancla a esta
+    // sección desde el nav global.
     <section
+      id="certificaciones"
       aria-labelledby="certificaciones-titulo"
-      className="mx-auto max-w-7xl px-6 pb-16 md:pb-20"
+      className="mx-auto max-w-7xl scroll-mt-28 px-6 pb-16 md:pb-20"
     >
       {/* Un <h2> de verdad y no un <Eyebrow>: hace falta un elemento con `id`
           para nombrar la sección, y de paso la fila de logos entra en el
@@ -209,9 +186,9 @@ export default function Certifications({
           <li
             key={cert.alt}
             /* Acotado por ALTO y por ANCHO. Los recortes tienen proporciones
-               muy distintas —AMACARGA 2.39, ALACAT 1.93, CANACAR 1.61, WCA 1.54
-               e ISO 1.00, que es cuadrado—, así que fijar sólo el alto dejaría
-               a AMACARGA al doble de ancho que ISO. Con el tope de 14rem los
+               muy distintas —AMACARGA 2.39, ALACAT 1.93, CANACAR 1.61 y WCA
+               1.54—, así que fijar sólo el alto dejaría a AMACARGA mucho más
+               ancho que el resto. Con el tope de 14rem los
                muy apaisados se limitan por ancho y el conjunto se lee parejo.
                A esta altura (80px en md+) el más apaisado, AMACARGA, sale a
                191px de ancho, así que el tope de 224px NO llega a actuar y los

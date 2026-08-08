@@ -75,9 +75,9 @@ const AEREO_INT = mode(INTERNACIONAL, "aereo");
  */
 const SCOPE_COPY: Record<string, string> = {
   "servicio-internacional":
-    "Traemos tu carga desde China, Estados Unidos y cualquier parte del mundo, y llevamos tus exportaciones a donde tu negocio necesite crecer. Importación y exportación por aire, mar y tierra, con despacho aduanal y un solo punto de contacto.",
+    "Traemos su carga desde China, Estados Unidos y cualquier parte del mundo, y llevamos sus exportaciones a donde su negocio necesite crecer. Importación y exportación por aire, mar y tierra, con despacho aduanal y un solo punto de contacto.",
   "servicio-nacional":
-    "Movemos tu mercancía a cualquier rincón de México con la seguridad y los tiempos que tu operación exige. Cobertura terrestre y aérea nacional, flota propia y monitoreo en tiempo real de principio a fin.",
+    "Movemos su mercancía a cualquier rincón de México con la seguridad y los tiempos que su operación exige. Cobertura terrestre y aérea nacional, flota propia y monitoreo en tiempo real de principio a fin.",
 };
 
 const SCOPE_CARDS = [INTERNACIONAL, NACIONAL].map((branch) => ({
@@ -139,7 +139,7 @@ export default function ServicesGrid() {
       <p className="mx-auto mb-10 max-w-2xl text-center text-slate-500">
         En Compass Solutions brindamos soluciones logísticas globales y locales
         que permiten el crecimiento de pequeñas y grandes empresas. No importa
-        desde ni a donde quieras llegar, nosotros lo podemos lograr.
+        desde ni a donde quiera llegar, nosotros lo podemos lograr.
       </p>
 
       {/* ---- Fila 1: las dos ramas de alcance, protagonistas ---- */}

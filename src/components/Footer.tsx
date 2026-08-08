@@ -5,20 +5,54 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
 
 /**
  * VARIOS ENLACES DE ABAJO NO SON CLICABLES (auditoría de enlaces internos): las
- * seis rutas de SERVICE_LINKS y las dos de /apartado-legal devuelven 404 — esas
- * páginas no existen todavía. Los `href` se quedan en los datos porque son el
- * destino real una vez que Alex confirme la arquitectura de URLs de servicios y
- * se construya /apartado-legal.
+ * seis rutas de SERVICE_LINKS no existen todavía y devuelven 404. Los `href` se
+ * quedan en los datos porque son el destino real una vez que Alex confirme la
+ * arquitectura de URLs de servicios.
  *
  * `live: true` marca las rutas que YA existen y por tanto se renderizan como
  * `<Link>`: hoy /proveedores y /vacantes. Activar otra es poner el flag cuando
  * su página exista, no tocar el marcado.
+ *
+ * "Términos y condiciones" YA NO ESTÁ en esta lista: apuntaba a
+ * /apartado-legal#terminos y esa sección se retiró de la página (no existe el
+ * texto legal), así que el ancla no lleva a ninguna parte. Si algún día llega
+ * el documento, se añade la sección allí y la entrada aquí.
+ *
+ * LAS DOS ENTRADAS DE /apartado-legal van `live`, y sus anclas son los `id` de
+ * los dos `tabpanel` de <LegalTabs> — que es de donde ese componente saca qué
+ * pestaña abrir, comparando contra `location.hash`. Si algún día se renombra un
+ * panel, estos dos `href` se rompen en silencio: el ancla es el contrato.
+ *
+ * "Política de seguridad" es NUEVA aquí. Antes no existía ninguna entrada hacia
+ * ella y la política se había quedado sin un solo enlace entrante en todo el
+ * sitio: el único que hubo apuntaba de /apartado-legal a /nosotros#politica-
+ * titulo y desapareció al reconstruir esa página con pestañas.
+ *
+ * OJO CON EL SCROLL DE #seguridad: su panel NO está en el HTML inicial —las
+ * pestañas desmontan el inactivo—, así que al cargar la página el navegador
+ * busca el ancla, no la encuentra y abandona su salto nativo. La pestaña sí
+ * queda seleccionada al hidratar; lo que puede no ocurrir es el desplazamiento.
+ * Con #privacidad no pasa, porque ése es el panel por defecto y sí viene en el
+ * HTML. Sin verificar en navegador.
+ *
+ * OJO 2: la página sigue con `noindex` porque su aviso es un borrador con datos
+ * pendientes. Eso es deliberado y no se contradice — poder LLEGAR al aviso desde
+ * cualquier página es justo lo que se busca; lo que no queremos es que Google lo
+ * indexe mientras no esté aprobado.
  */
 const INFO_LINKS = [
   { href: "/proveedores", label: "Proveedores", live: true },
   { href: "/vacantes", label: "Trabaja con nosotros", live: true },
-  { href: "/apartado-legal#terminos", label: "Términos y condiciones" },
-  { href: "/apartado-legal#privacidad", label: "Aviso de privacidad" },
+  {
+    href: "/apartado-legal#privacidad",
+    label: "Aviso de privacidad",
+    live: true,
+  },
+  {
+    href: "/apartado-legal#seguridad",
+    label: "Política de seguridad",
+    live: true,
+  },
 ];
 
 const SERVICE_LINKS = [
@@ -57,7 +91,7 @@ export default function Footer() {
           />
           <p className="max-w-xs text-sm">
             Expertos en logística integral nacional e internacional. Diseñamos
-            estrategias a la medida de tu cadena de suministro, respaldados por
+            estrategias a la medida de su cadena de suministro, respaldados por
             una red de aliados certificados y flota propia.
           </p>
         </div>

@@ -51,18 +51,30 @@ const SOLUTIONS = [
 
 export default function ImportSolutions() {
   return (
+    // `id="soluciones"` para el nav interno de esta landing. Coincide con el de
+    // <ServicesGrid> en el home, pero son páginas distintas y nunca conviven en
+    // el mismo documento, así que no hay colisión.
     <section
+      id="soluciones"
       aria-labelledby="soluciones-titulo"
-      className="mx-auto max-w-7xl px-6 py-20"
+      className="mx-auto max-w-7xl scroll-mt-28 px-6 py-20"
     >
-      <div className="mx-auto mb-12 max-w-2xl text-center">
+      {/* `max-w-3xl` (768px) y no `max-w-2xl` (672px): el titular mide 712px a
+          `md:text-4xl` con Archivo semi expanded, así que en la caja anterior
+          partía en dos líneas dejando "vanguardia" suelta. Con 768px entra
+          completo y sobran 56px.
+          El párrafo se queda en `max-w-2xl` con su propio `mx-auto` para no
+          perder su medida de lectura — sólo el titular necesitaba el ancho
+          extra. Por debajo de `md` la caja la limita el viewport y la frase
+          parte sola, que es lo que debe pasar en móvil. */}
+      <div className="mx-auto mb-12 max-w-3xl text-center">
         <h2
           id="soluciones-titulo"
           className="font-heading text-3xl font-bold text-brand-900 md:text-4xl"
         >
           Soluciones logísticas a la vanguardia
         </h2>
-        <p className="mt-4 text-slate-500">
+        <p className="mx-auto mt-4 max-w-2xl text-slate-500">
           En <strong className="font-semibold">Compass Solutions</strong>{" "}
           brindamos soluciones logísticas globales que incentivan el crecimiento
           de su compañía, coordinando toda la cadena de suministro de forma

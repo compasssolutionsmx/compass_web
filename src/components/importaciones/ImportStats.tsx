@@ -53,31 +53,25 @@ const METRICS = [
 
 export default function ImportStats() {
   return (
-    // ESTA ES LA FRANJA TINTADA de este tramo. El tinte estuvo en
-    // <ImportControl>, la sección de arriba, y se pasó aquí para que el color
-    // caiga sobre las cifras. La secuencia queda: blanco (certificaciones) ->
-    // blanco (gestión aduanal) -> TINTE (esto) -> blanco (soluciones).
+    // SOBRE BLANCO y ya sin franja tintada: la página cierra su tramo central
+    // en blanco continuo —gestión aduanal (brand-50 con tarjeta), soluciones y
+    // estas cifras— y el único color de la zona lo pone la tarjeta del banner
+    // de abajo.
     //
-    // `py-20` SIMÉTRICO, y ahora sin ninguna excepción por breakpoint. Es lo que
-    // le corresponde por ser la tintada: su padding ES el borde del color, así
-    // que recortarlo de un lado desbalancearía la banda a la vista. Cualquier
-    // ajuste futuro del hueco entre secciones tiene que salir de la blanca.
+    // `py-20` SIMÉTRICO, sin excepciones por breakpoint. Los overrides en `lg`
+    // que llevó este `pt` (56px y luego 20px) compensaban el hueco muerto de
+    // <ImportControl>, que ya no existe: aquella sección termina en su fila de
+    // tarjetas a ancho completo y no deja sobrante.
     //
-    // Durante un tiempo este `pt` llevó un override en `lg` (primero 56px,
-    // luego 20px) para compensar el hueco muerto que dejaba <ImportControl>.
-    // Ese parche murió cuando <ImportControl> absorbió las tres tarjetas de
-    // promesas en una fila a ancho completo: su último elemento llega ahora al
-    // borde de la rejilla y no deja sobrante. El hueco es la suma limpia de los
-    // dos paddings, 80 + 80 = 160px.
-    //
-    // `lg:items-start` Y NO `items-center`, que es lo que blinda ese cálculo.
-    // Al quitarse el marcador de imagen de la columna izquierda, ésta bajó a
-    // 152px contra los 248px de las métricas: centrada, se habría desplazado
-    // 48px hacia abajo arrastrando el <h2> con ella y el hueco habría saltado a
-    // 208px. Alineadas por arriba, el <h2> queda pegado al padding pase lo que
-    // pase con el alto de cualquiera de las dos columnas — sin parches de
-    // padding, que es como se resolvió esto las dos veces anteriores.
-    <section aria-labelledby="resultados-titulo" className="bg-brand-100 py-20">
+    // `lg:items-start` en la rejilla es lo que blinda el cálculo por este lado:
+    // al quitarse el marcador de imagen, la columna izquierda (152px) quedó más
+    // baja que las métricas (248px) y centrada habría bajado el <h2> 48px.
+    // Alineadas por arriba, el <h2> queda pegado al padding pase lo que pase.
+    <section
+      id="resultados"
+      aria-labelledby="resultados-titulo"
+      className="scroll-mt-28 py-20"
+    >
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 lg:grid-cols-2 lg:items-start lg:gap-12">
         <div>
           <h2
