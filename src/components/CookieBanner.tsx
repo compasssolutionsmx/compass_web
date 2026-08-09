@@ -1,25 +1,33 @@
 "use client";
 
 /**
- * Banner de consentimiento de cookies.
+ * Banner de cookies. INFORMATIVO, no bloqueante.
+ *
+ * QUÉ CAMBIÓ Y POR QUÉ IMPORTA: el sitio pasó a opt-out con el default ya
+ * concedido (ver la cabecera de `lib/consent`), así que este banner ya no pide
+ * permiso, avisa. La medición está corriendo mientras se lee. Eso reordena todo
+ * lo demás: se puede cerrar sin elegir, tiene X y responde a Escape, y el copy
+ * describe lo que ocurre en vez de pedir una decisión previa.
  *
  * NO ES UN MODAL. Se ancla abajo, sin overlay, sin bloquear el scroll y sin
  * atrapar el foco: el sitio se sigue leyendo y navegando con el banner puesto.
- * Por eso lleva `aria-modal="false"` — es un diálogo en el sentido de que pide
- * una decisión, pero no secuestra la página, y anunciarlo como modal mentiría
- * sobre lo que un lector de pantalla puede hacer.
+ * Por eso lleva `aria-modal="false"` — anunciarlo como modal mentiría sobre lo
+ * que un lector de pantalla puede hacer.
  *
- * TAMPOCO TIENE BOTÓN DE CERRAR, ni se cierra con Escape, y es a propósito. Un
- * banner que se puede descartar sin elegir deja al usuario en un limbo: o se
- * interpreta como aceptación —prohibido, el GDPR no admite consentimiento
- * tácito— o se queda sin decisión y reaparece en cada carga. Las tres salidas
- * son las tres respuestas legítimas.
+ * CERRAR NO ES NEUTRO, y conviene saberlo antes de tocar el botón de la X: sin
+ * decisión previa, cerrar GUARDA el equivalente a aceptar. No es que se dé por
+ * consentido lo que no se dijo — el default ya estaba concedido antes de que el
+ * banner apareciera; lo que se guarda es la constancia de que se informó, para
+ * no volver a interrumpir en cada carga. La lógica y el caso contrario —cerrar
+ * con una oposición ya guardada, que no la pisa— están en `dismiss`, en
+ * <ConsentProvider>.
  *
- * "Aceptar" y "Rechazar" comparten EXACTAMENTE el mismo estilo (mismo tamaño,
- * mismo peso, uno relleno y el otro contorno pero del mismo ancho): el EDPB
- * considera oscuro el patrón de hacer el rechazo menos visible que la
- * aceptación, y la forma más defendible de cumplirlo es que ninguno de los dos
- * parezca el camino sugerido.
+ * RECHAZAR SIGUE AQUÍ, y es la pieza que sostiene el modelo: es el mecanismo de
+ * oposición, disponible en el primer aviso y luego para siempre desde
+ * "Preferencias de cookies" en el footer. Comparte tamaño, peso y ancho con
+ * "Aceptar" — que el rechazo no quede más chico ni escondido detrás de un clic
+ * extra es buena práctica con o sin GDPR, y aquí además es lo único que le da
+ * sentido a llamar a esto una preferencia.
  *
  * DOS VISTAS EN EL MISMO COMPONENTE:
  *   - COMPACTA (por defecto): tarjeta chica, un párrafo corto y las dos
@@ -28,11 +36,13 @@
  *   - PANEL (sólo cuando `isPanelOpen`): la lista de categorías con sus
  *     interruptores, "Guardar mi selección" y "Cancelar". Se llega a esta
  *     vista ÚNICAMENTE desde "Preferencias de cookies" en el footer
- *     (`reopenSettings()`), nunca desde un botón de este banner — por eso no
+ *     (`reopenBanner()`), nunca desde un botón de este banner — por eso no
  *     hace falta un toggle interno para entrar y salir del panel.
  */
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { X } from "lucide-react";
 import { useConsent } from "./ConsentProvider";
 import type { OptionalCategory } from "@/lib/consent";
 
@@ -62,13 +72,13 @@ const CATEGORIAS: {
     key: "analytics",
     titulo: "Analíticas",
     descripcion:
-      "Nos dicen qué páginas se visitan y cómo se navega, de forma agregada. Se usarán cuando se active Google Analytics 4.",
+      "Nos dicen qué páginas se visitan y cómo se navega, de forma agregada. Se cargan a través de Google Tag Manager.",
   },
   {
     key: "marketing",
     titulo: "Marketing y publicidad",
     descripcion:
-      "Permiten medir el resultado de las campañas y mostrarle anuncios relevantes en otros sitios. Se usarán cuando se activen Google Ads y Meta Pixel.",
+      "Permiten medir el resultado de las campañas y mostrarle anuncios relevantes en otros sitios. Se cargan a través de Google Tag Manager.",
   },
 ];
 
@@ -180,6 +190,30 @@ export default function CookieBanner() {
     };
   }, [isBannerVisible]);
 
+  /**
+   * Escape cierra el banner, igual que la X.
+   *
+   * EL LISTENER VA EN `document` Y CEDE EL PASO A LOS MODALES. <QuoteModal> y
+   * <WhatsAppModal> escuchan su propio Escape para cerrarse, y los tres pueden
+   * estar montados a la vez: sin la guarda, una sola pulsación cerraría el
+   * modal que el usuario está mirando Y, de paso, un banner tapado que ni ve
+   * —dejando escrita una decisión que no tomó—. La guarda pregunta por
+   * cualquier diálogo modal abierto en el documento, que es justo lo que este
+   * banner no es (`aria-modal="false"`), así que no se detecta a sí mismo.
+   */
+  useEffect(() => {
+    if (!isBannerVisible) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      dismiss();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isBannerVisible, dismiss]);
+
   if (!isBannerVisible) return null;
 
   return (
@@ -209,8 +243,23 @@ export default function CookieBanner() {
            `max-w-sm` y `p-4`, más chicos que antes (`max-w-md`/`p-5`): es la
            tarjeta compacta que se pidió. `mr-auto` la ancla a la izquierda
            dentro del envoltorio. */
-        className="glass pointer-events-auto mr-auto max-w-sm rounded-2xl p-4 text-brand-900 shadow-2xl shadow-brand-950/20 motion-safe:animate-fade-in"
+        className="glass pointer-events-auto relative mr-auto max-w-sm rounded-2xl p-4 text-brand-900 shadow-2xl shadow-brand-950/20 motion-safe:animate-fade-in"
       >
+        {/* La X y la tecla Escape hacen lo mismo: `dismiss`. Antes no existía
+            ninguna de las dos porque el banner no se podía cerrar sin elegir;
+            ver la cabecera para qué implica cerrar ahora.
+            44x44 de área táctil (h-8 w-8 más el padding de la tarjeta no llega,
+            así que va h-9 w-9 con el icono a 16px) y `aria-label` porque el
+            botón no tiene texto. */}
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="Cerrar el aviso de cookies"
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-brand-900/5 hover:text-brand-900"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+
         {/* `sr-only`: la vista compacta no lleva título visible —es sólo
             párrafo + dos pastillas—, pero el diálogo necesita un nombre
             accesible para `aria-labelledby`. Sigue existiendo en el DOM,
@@ -219,18 +268,30 @@ export default function CookieBanner() {
           Cookies en este sitio
         </h2>
 
-        <p className="text-xs leading-relaxed text-slate-600">
-          {/* TODO(compliance): "Aviso de privacidad" va como texto, NO como
-              enlace. La página /apartado-legal no existe todavía —confirmado
-              al auditar enlaces internos del sitio, misma ruta que el Footer
-              también dejó de enlazar en esa auditoría—, así que un
-              <Link href="/apartado-legal#privacidad"> aquí sería otro 404 más,
-              justo en el banner de consentimiento. En cuanto exista la
-              página, se envuelve este span en <Link> y ya. */}
-          Usamos cookies para mejorar su experiencia.{" "}
-          <span className="font-semibold text-brand-900">
-            Aviso de privacidad
-          </span>
+        {/* COPY DESCRIPTIVO, no una petición de permiso: dice qué se usa, para
+            qué, y que puede oponerse cuando quiera. El texto anterior ("Usamos
+            cookies para mejorar su experiencia") servía cuando nada se cargaba
+            hasta que el usuario respondiera; con la medición ya corriendo sería
+            un eufemismo, y "publicidad" no aparecía por ningún lado.
+
+            "Aviso de privacidad" YA VA COMO ENLACE. El TODO que había aquí
+            esperaba a que /apartado-legal existiera, y existe: es la misma ruta
+            y la misma ancla que enlaza el Footer, y #privacidad es además la
+            pestaña por defecto de <LegalTabs>, así que no depende del hash para
+            abrir bien.
+
+            `pr-8` deja sitio a la X para que no se solape con el texto. */}
+        <p className="pr-8 text-xs leading-relaxed text-slate-600">
+          Este sitio utiliza cookies de medición y publicidad para entender cómo
+          se navega y evaluar nuestras campañas. Puede oponerse en cualquier
+          momento desde este aviso o desde el enlace de preferencias de cookies
+          en el pie de página. Consulte nuestro{" "}
+          <Link
+            href="/apartado-legal#privacidad"
+            className="font-semibold text-brand-900 underline underline-offset-2 hover:no-underline"
+          >
+            aviso de privacidad
+          </Link>
           .
         </p>
 
@@ -291,12 +352,18 @@ export default function CookieBanner() {
         {/* Aceptar relleno, Rechazar en contorno — pedido así explícitamente.
             MISMO ancho (`flex-1`), MISMA altura, MISMO tamaño de texto, MISMO
             peso: lo único que cambia es el relleno, no el tamaño ni la
-            posición. Es esa igualdad de tamaño/orden/prominencia —no que los
-            dos tengan idéntico fill— lo que pide el criterio del EDPB contra
-            patrones oscuros: que "rechazar" no quede más chico, más gris ni
-            escondido detrás de un clic extra frente a "aceptar". El contorno
+            posición. Que "rechazar" no quede más chico, más gris ni escondido
+            detrás de un clic extra sigue siendo el criterio, y con el default
+            ya concedido importa MÁS que antes, no menos: es el único control
+            que le queda al usuario sobre algo que ya está pasando. El contorno
             en brand-900 sobre el vidrio da 10.75:1 (medido, ver el comentario
             de la tarjeta), muy por encima de AA.
+
+            "Aceptar" no enciende nada que estuviera apagado: confirma el estado
+            por defecto y lo deja escrito, igual que cerrar. Se conserva porque
+            un aviso con una sola salida visible ("Rechazar") se lee como si la
+            otra respuesta no existiera.
+
             Ya no hay botón "Personalizar" aquí: el panel de categorías sólo
             se abre desde "Preferencias de cookies" en el footer. */}
         <div className="mt-3 flex gap-2">
@@ -326,19 +393,16 @@ export default function CookieBanner() {
               Guardar mi selección
             </button>
 
-            {/* Sólo aparece cuando el banner se reabrió desde el footer, o sea
-                cuando YA hay una decisión guardada a la que volver. En la
-                primera visita no existe: cerrar sin elegir sería
-                consentimiento tácito. */}
-            {dismiss && (
-              <button
-                type="button"
-                onClick={dismiss}
-                className="font-heading text-sm font-semibold text-slate-600 underline underline-offset-4 transition-opacity hover:opacity-70 sm:px-1"
-              >
-                Cancelar
-              </button>
-            )}
+            {/* YA NO ES CONDICIONAL. Antes sólo existía con una decisión previa
+                a la que volver; ahora `dismiss` está siempre disponible y hace
+                lo mismo que la X: descartar sin tocar los interruptores. */}
+            <button
+              type="button"
+              onClick={dismiss}
+              className="font-heading text-sm font-semibold text-slate-600 underline underline-offset-4 transition-opacity hover:opacity-70 sm:px-1"
+            >
+              Cancelar
+            </button>
           </div>
         )}
       </div>

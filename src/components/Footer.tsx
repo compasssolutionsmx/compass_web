@@ -132,10 +132,12 @@ export default function Footer() {
                 </li>
               ),
             )}
-            {/* Retirar el consentimiento tiene que ser tan fácil como darlo
-                (GDPR art. 7.3), así que la puerta de vuelta al banner vive
-                aquí, junto al resto de lo legal. Éste SÍ es interactivo de
-                verdad: no navega, sólo reabre el banner ya montado. */}
+            {/* El mecanismo de oposición permanente. Desde que el sitio es
+                opt-out y el banner se puede cerrar sin elegir, ésta es la vía
+                por la que el usuario se opone después, así que no puede faltar
+                de ninguna página: vive en el footer, que sale en todas, junto
+                al resto de lo legal. Éste SÍ es interactivo de verdad: no
+                navega, sólo reabre el banner ya montado. */}
             <li>
               <CookiePreferencesButton />
             </li>

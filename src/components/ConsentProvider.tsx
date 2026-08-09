@@ -10,9 +10,10 @@
  *
  * ─── CÓMO ENCHUFAR LAS ETIQUETAS QUE FALTAN ───────────────────────────────
  *
- * Hoy el sitio no carga NINGÚN script de terceros. La plomería ya está puesta
- * para que respeten el consentimiento desde el día uno, y hay dos formas de
- * conectarse según cómo se comporte la herramienta:
+ * Hoy el único script de terceros es Google Tag Manager, que se monta SIEMPRE
+ * y se limita solo con Consent Mode (ver <GoogleTagManagerGate>). Para lo que
+ * venga después hay dos formas de conectarse, según cómo se comporte la
+ * herramienta:
  *
  * 1. GOOGLE (GA4, Google Ads) — soportan Consent Mode v2, así que el script se
  *    puede cargar SIEMPRE y él solo se limita: sin consentimiento manda pings
@@ -54,6 +55,7 @@ import {
 } from "react";
 import {
   CONSENT_STORAGE_KEY,
+  DEFAULT_PREFERENCES,
   DENY_ALL,
   GRANT_ALL,
   consentModeSignals,
@@ -140,8 +142,9 @@ const getFalse = () => false;
 
 type ConsentContextValue = {
   /**
-   * Preferencias EFECTIVAS. Mientras no haya decisión son las denegadas: hasta
-   * que el usuario diga que sí, la respuesta es que no.
+   * Preferencias EFECTIVAS. Mientras no haya decisión son las de
+   * `DEFAULT_PREFERENCES`, que hoy están concedidas: el sitio es opt-out y mide
+   * hasta que el usuario se oponga. Ver la cabecera de `lib/consent`.
    */
   preferences: ConsentPreferences;
   hasDecided: boolean;
@@ -156,14 +159,24 @@ type ConsentContextValue = {
   saveDraft: () => void;
   openPanel: () => void;
   closePanel: () => void;
-  /** Reabre el banner con el panel desplegado. Lo usa el enlace del footer. */
-  reopenSettings: () => void;
   /**
-   * Cerrar sin tocar nada. Sólo existe cuando YA hay una decisión previa a la
-   * que volver: sin ella, descartar el banner equivaldría a un consentimiento
-   * tácito, que el GDPR no admite.
+   * Reabre el banner con el panel desplegado. Es el acceso permanente a la
+   * preferencia: lo usa el enlace "Preferencias de cookies" del footer, que
+   * está en todas las páginas.
    */
-  dismiss: (() => void) | null;
+  reopenBanner: () => void;
+  /**
+   * Cierra el banner sin que el usuario haya pulsado aceptar ni rechazar: la X,
+   * la tecla Escape y el "Cancelar" del panel.
+   *
+   * YA NO PUEDE SER `null`. En el modelo opt-in no existía sin decisión previa,
+   * porque descartar el banner habría equivalido a un consentimiento tácito.
+   * Ahora el default ya es concedido, así que cerrar no concede nada que no
+   * estuviera concedido: lo único que hace es dejar constancia de que se
+   * informó, para no volver a interrumpir en cada carga. Ver `dismiss` abajo
+   * para qué guarda exactamente y por qué no pisa una decisión anterior.
+   */
+  dismiss: () => void;
 };
 
 const ConsentContext = createContext<ConsentContextValue | null>(null);
@@ -209,38 +222,34 @@ export default function ConsentProvider({ children }: { children: ReactNode }) {
     getFalse,
   );
 
-  const preferences = decision?.preferences ?? DENY_ALL;
+  const preferences = decision?.preferences ?? DEFAULT_PREFERENCES;
   const hasDecided = decision !== null;
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   /** El usuario volvió a abrir el banner teniendo ya una decisión guardada. */
   const [isReopened, setIsReopened] = useState(false);
-  const [draft, setDraft] = useState<ConsentPreferences>(DENY_ALL);
+  const [draft, setDraft] = useState<ConsentPreferences>(DEFAULT_PREFERENCES);
 
   const isBannerVisible = isHydrated && (!hasDecided || isReopened);
 
-  const commit = useCallback(
-    (next: ConsentPreferences) => {
-      // Se compara contra lo GUARDADO antes de escribir: si una categoría pasa
-      // de concedida a denegada, es una revocación.
-      const revoked = (Object.keys(next) as OptionalCategory[]).some(
-        (category) => preferences[category] && !next[category],
-      );
+  const commit = useCallback((next: ConsentPreferences) => {
+    persist(next);
+    broadcast(next);
+    setIsPanelOpen(false);
+    setIsReopened(false);
 
-      persist(next);
-      broadcast(next);
-      setIsPanelOpen(false);
-      setIsReopened(false);
-
-      // Un script de terceros ya cargado no se descarga solo: sus cookies están
-      // puestas y sus listeners vivos. Consent Mode corta el envío de datos de
-      // Google, pero para el resto la única forma honesta de que "rechazar"
-      // signifique algo es recargar y volver a montar la página sin ellos.
-      // Conceder no lo necesita: montar scripts sí se puede hacer en caliente.
-      if (revoked) window.location.reload();
-    },
-    [preferences],
-  );
+    // YA NO SE RECARGA AL REVOCAR. Aquí había un `window.location.reload()`
+    // cuando una categoría pasaba de concedida a denegada, y tenía sentido
+    // mientras GTM se montaba y desmontaba con el consentimiento: React
+    // desmonta su árbol, no el <script> que ya inyectó, así que volver a un
+    // documento sin contenedor sólo se conseguía recargando.
+    //
+    // Ahora el contenedor está montado de forma permanente (ver
+    // <GoogleTagManagerGate>), así que no hay nada que desmontar: el
+    // `gtag('consent','update')` con las señales en denegado que acaba de
+    // publicar `broadcast` es todo el efecto que la revocación puede tener, y
+    // se aplica en caliente. Recargar sólo costaría la página al usuario.
+  }, []);
 
   const acceptAll = useCallback(() => commit(GRANT_ALL), [commit]);
   const rejectAll = useCallback(() => commit(DENY_ALL), [commit]);
@@ -253,24 +262,42 @@ export default function ConsentProvider({ children }: { children: ReactNode }) {
   );
 
   // El borrador se siembra al ABRIR el panel, no en un efecto que persiga al
-  // estado: quien abre sabe con qué valores debe arrancar.
+  // estado: quien abre sabe con qué valores debe arrancar. Sin decisión previa
+  // arranca en `DEFAULT_PREFERENCES`, que es lo que de verdad está pasando —
+  // mostrar los interruptores apagados mientras se mide sería mentir.
   const openPanel = useCallback(() => {
-    setDraft(hasDecided ? preferences : DENY_ALL);
+    setDraft(preferences);
     setIsPanelOpen(true);
-  }, [hasDecided, preferences]);
+  }, [preferences]);
 
   const closePanel = useCallback(() => setIsPanelOpen(false), []);
 
-  const reopenSettings = useCallback(() => {
+  const reopenBanner = useCallback(() => {
     setDraft(preferences);
     setIsPanelOpen(true);
     setIsReopened(true);
   }, [preferences]);
 
+  /**
+   * Cerrar sin elegir. Hay dos caminos y la diferencia importa:
+   *
+   *  - SIN decisión previa: se persiste el equivalente a aceptar. No es un
+   *    consentimiento que nos inventemos, es la constancia de que se informó y
+   *    el usuario no se opuso; sin ella el banner reaparecería en cada carga,
+   *    que es exactamente la interrupción que este modelo viene a quitar.
+   *  - CON decisión previa (el banner reabierto desde el footer): NO se toca
+   *    nada. Quien rechazó y sólo vino a mirar sigue rechazado. Guardar aquí un
+   *    `GRANT_ALL` revertiría su oposición por el mero hecho de cerrar una
+   *    ventana, y ése es el peor fallo posible en esta pantalla.
+   */
   const dismiss = useCallback(() => {
+    if (!hasDecided) {
+      commit(GRANT_ALL);
+      return;
+    }
     setIsPanelOpen(false);
     setIsReopened(false);
-  }, []);
+  }, [commit, hasDecided]);
 
   const value = useMemo<ConsentContextValue>(
     () => ({
@@ -285,8 +312,8 @@ export default function ConsentProvider({ children }: { children: ReactNode }) {
       saveDraft,
       openPanel,
       closePanel,
-      reopenSettings,
-      dismiss: hasDecided ? dismiss : null,
+      reopenBanner,
+      dismiss,
     }),
     [
       preferences,
@@ -300,7 +327,7 @@ export default function ConsentProvider({ children }: { children: ReactNode }) {
       saveDraft,
       openPanel,
       closePanel,
-      reopenSettings,
+      reopenBanner,
       dismiss,
     ],
   );
@@ -321,7 +348,12 @@ export function ConsentGate({
   category: OptionalCategory;
   children: ReactNode;
 }) {
-  const { preferences, hasDecided } = useConsent();
-  if (!hasDecided || !preferences[category]) return null;
+  // Se mira SÓLO la preferencia efectiva, no `hasDecided`. Antes se exigían las
+  // dos porque sin decisión no había consentimiento; ahora "sin decisión" ya
+  // significa concedido, y seguir exigiendo la decisión dejaría estas etiquetas
+  // apagadas para la mayoría de visitas mientras GTM sí mide. Quien quiera lo
+  // contrario tiene `DEFAULT_PREFERENCES`.
+  const { preferences } = useConsent();
+  if (!preferences[category]) return null;
   return <>{children}</>;
 }

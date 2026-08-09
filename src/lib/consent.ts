@@ -1,5 +1,5 @@
 /**
- * Núcleo del consentimiento de cookies (GDPR). Sin React y sin DOM más allá de
+ * Núcleo de la preferencia de cookies. Sin React y sin DOM más allá de
  * `localStorage`, para que lo puedan compartir el provider de cliente y el
  * script inline que corre antes de la hidratación.
  *
@@ -8,6 +8,21 @@
  * la lee en el primer byte de JS, para que Google Consent Mode ya sepa a qué
  * atenerse antes de que cargue cualquier etiqueta. Las constantes de este
  * archivo alimentan a los dos, así que no pueden desincronizarse.
+ *
+ * ─── ESTO ES OPT-OUT, NO OPT-IN. LÉASE ANTES DE TOCAR NADA ────────────────
+ *
+ * Sin decisión guardada, medición y publicidad están CONCEDIDAS: el
+ * `consent default` sale en `granted` y las etiquetas miden desde la primera
+ * carga. El usuario se opone después, y esa oposición es lo que se persiste.
+ *
+ * Es un cambio de modelo pedido de forma explícita, y tiene una consecuencia
+ * jurídica que conviene tener escrita donde vive el código y no sólo en un
+ * chat: encaja con la LFPDPPP mexicana —dato no sensible, con aviso previo y
+ * mecanismo de oposición permanente, que es el enlace del pie— y NO cumple el
+ * GDPR ni la ePrivacy europea, que exigen consentimiento previo y expreso
+ * antes de escribir cualquier cookie que no sea necesaria. Si algún día el
+ * sitio se dirige a la UE, esto hay que revertirlo: basta con volver a poner
+ * `DENY_ALL` en `DEFAULT_PREFERENCES` y en el `default` del bootstrap.
  */
 
 /** Categorías que el usuario puede apagar. Las necesarias no se negocian. */
@@ -27,9 +42,12 @@ export const CONSENT_STORAGE_KEY = "compass:consent";
 /**
  * Subir esta versión invalida todas las decisiones guardadas y vuelve a mostrar
  * el banner. Hay que subirla SIEMPRE que cambie el alcance de lo que se
- * consintió: una categoría nueva, una herramienta nueva dentro de una categoría
- * existente o un cambio de finalidad. El GDPR pide consentimiento informado, y
- * una decisión tomada sobre otro conjunto de cookies no lo es.
+ * informó: una categoría nueva, una herramienta nueva dentro de una categoría
+ * existente o un cambio de finalidad.
+ *
+ * SE QUEDA EN 1 al pasar a opt-out, a propósito. Subirla borraría las
+ * oposiciones ya registradas y volvería a medir a quien había dicho que no, que
+ * es el único efecto que este cambio de modelo NO debe tener.
  */
 export const CONSENT_VERSION = 1;
 
@@ -48,6 +66,17 @@ export const GRANT_ALL: ConsentPreferences = {
   analytics: true,
   marketing: true,
 };
+
+/**
+ * Lo que rige MIENTRAS NO HAY DECISIÓN guardada. Es la pieza que define el
+ * modelo: apuntando a `GRANT_ALL` el sitio es opt-out, apuntando a `DENY_ALL`
+ * vuelve a ser opt-in.
+ *
+ * Tiene que valer lo mismo que el `consent default` del bootstrap de abajo, o
+ * la UI y las etiquetas contarían cosas distintas: el banner mostraría los
+ * interruptores apagados mientras Google ya estaría midiendo.
+ */
+export const DEFAULT_PREFERENCES: ConsentPreferences = GRANT_ALL;
 
 /**
  * Señales de Google Consent Mode v2 que corresponden a cada categoría.
@@ -79,8 +108,11 @@ export function consentModeSignals(preferences: ConsentPreferences) {
  * vieja, decisión caducada o storage bloqueado (Safari en privado lanza al
  * escribir, y algunos navegadores al leer).
  *
- * Cualquier duda se resuelve a favor de volver a preguntar, nunca a favor de
- * asumir consentimiento.
+ * OJO CON LO QUE SIGNIFICA `null` DESDE QUE ESTO ES OPT-OUT: ya no es "no
+ * medir hasta que responda", es "medir y avisar". Un storage bloqueado deja al
+ * usuario en el estado por defecto —concedido— y volviendo a ver el banner en
+ * cada carga, que es lo único que se puede hacer sin sitio donde recordar su
+ * respuesta. Quien necesite garantías ahí tiene el rechazo del navegador.
  */
 export function readConsent(): ConsentDecision | null {
   if (typeof window === "undefined") return null;
@@ -148,20 +180,24 @@ export function writeConsent(preferences: ConsentPreferences): ConsentDecision {
 }
 
 /**
- * Script que corre ANTES de la hidratación (`beforeInteractive` en el root
- * layout). Hace dos cosas, en este orden:
+ * Script que corre ANTES de la hidratación (etiqueta cruda al principio del
+ * <body>). Hace dos cosas, en este orden:
  *
- *  1. Fija el estado por defecto de Consent Mode v2 en "denegado". Esto tiene
- *     que ejecutarse antes que cualquier etiqueta de Google; si GA4 o Ads
- *     arrancan sin un `default` previo, asumen consentimiento y ya se disparó
- *     la primera petición con cookies. Por eso no puede vivir en el provider de
- *     React: para cuando React hidrata, ya sería tarde.
- *  2. Reproduce la decisión guardada, si la hay. Sin esto, quien ya aceptó
- *     tendría medio segundo de estado denegado en cada carga y se perderían
- *     eventos.
+ *  1. Fija el estado por defecto de Consent Mode v2 en CONCEDIDO, las siete
+ *     señales. Sigue siendo obligatorio declararlo de forma explícita aunque
+ *     coincida con lo que gtag.js asumiría por su cuenta: un `default` escrito
+ *     es lo que hace que el estado sea auditable y lo que deja el hueco por el
+ *     que entra el `update` de abajo.
+ *  2. Reproduce la decisión guardada, si la hay, POR ENCIMA de ese default.
+ *     Aquí es donde vive la oposición: quien rechazó en su día vuelve a quedar
+ *     denegado antes de que ninguna etiqueta mande nada. Esto es lo que impide
+ *     que el paso a opt-out reactive la medición de quien ya había dicho que no.
  *
- * `wait_for_update: 500` le da medio segundo a ese update antes de que las
- * etiquetas decidan qué mandar.
+ * SIN `wait_for_update`. Servía para que las etiquetas esperasen medio segundo
+ * a un update que podía relajar un default denegado; con el default ya en
+ * concedido no hay nada que esperar, y el replay del punto 2 corre de forma
+ * síncrona en este mismo script, antes que cualquier etiqueta. Dejarlo sólo
+ * retrasaría el primer hit.
  *
  * Se genera desde este módulo, y no a mano en el layout, para que la clave, la
  * versión, la caducidad y el mapeo de señales sean literalmente los mismos que
@@ -171,10 +207,9 @@ export function consentBootstrapScript(): string {
   return `(function(){
   window.dataLayer = window.dataLayer || [];
   function gtag(){window.dataLayer.push(arguments);}
-  gtag('consent','default',${JSON.stringify({
-    ...consentModeSignals(DENY_ALL),
-    wait_for_update: 500,
-  })});
+  gtag('consent','default',${JSON.stringify(
+    consentModeSignals(DEFAULT_PREFERENCES),
+  )});
   try {
     var raw = window.localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)});
     if (!raw) return;

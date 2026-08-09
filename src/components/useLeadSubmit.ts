@@ -21,6 +21,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { buildWhatsAppUrl } from "@/lib/site";
+import { pushEvent } from "@/lib/analytics";
 // SÓLO EL TIPO. `lead-email` es un módulo `server-only`; un `import type` se
 // borra al compilar, así que nada de ese archivo —ni su configuración, ni por
 // arrastre la clave de Resend— acaba en el bundle del navegador.
@@ -81,6 +82,20 @@ async function postToWebhook(data: LeadPayload): Promise<void> {
   console.info("[lead] POST al webhook (stub, sin conectar):", data);
 }
 
+/**
+ * Evento de conversión que le corresponde a cada origen.
+ *
+ * SÓLO LOS DOS QUE SON LEADS DE VENTA. `proveedor` es una empresa ofreciéndose
+ * y `vacante` una persona postulándose: contarlos como conversión inflaría
+ * justo la métrica con la que se juzgan las campañas, y son formularios que las
+ * campañas no pagan. Por eso el mapa es `Partial` y los dos que faltan faltan a
+ * propósito — un origen sin entrada simplemente no dispara nada.
+ */
+const CONVERSION_EVENT: Partial<Record<LeadSource, string>> = {
+  cotizador: "lead_cotizador",
+  whatsapp: "lead_whatsapp",
+};
+
 export type LeadStatus = "idle" | "submitting" | "success" | "error";
 
 export function useLeadSubmit() {
@@ -124,6 +139,34 @@ export function useLeadSubmit() {
         console.error("[lead] falló el correo de respaldo:", emailError);
         setStatus("error");
         return;
+      }
+
+      /**
+       * CONVERSIÓN. Éste es el ÚNICO punto de disparo del sitio, y tiene que
+       * seguir siéndolo: por aquí pasan los cuatro formularios —cotizador,
+       * modal corto, proveedores y vacantes—, así que ningún montaje se queda
+       * sin cubrir y ninguno puede contar doble. Añadir un push en
+       * <QuoteWizard> o en <WhatsAppModal> duplicaría el evento del cotizador,
+       * que se monta DOS VECES a la vez en el home (sección del hero y modal).
+       *
+       * VA DESPUÉS DEL POST Y ANTES DEL ÉXITO, no al entrar: sólo se llega aquí
+       * si `/api/lead` respondió 2xx. Un 400 de validación, el 429 del
+       * limitador, el 503 sin RESEND_KEY o el timeout salen todos por el
+       * `return` de arriba sin tocar esta línea. Se dispara una vez por envío
+       * conseguido, así que un segundo formulario en la misma sesión —o un
+       * reintento que por fin sale bien— cuenta otra vez, que es lo correcto.
+       */
+      const evento = CONVERSION_EVENT[formulario];
+      if (evento) {
+        pushEvent(evento, {
+          form_origin: formulario,
+          service_type: payload.tipo,
+          service_sub: payload.sub,
+          contact_preference: payload.contactoPreferido,
+          // La ruta se lee del navegador y no del payload: es la página desde
+          // la que se envió, y el modal del cotizador vive en casi todas.
+          page_path: window.location.pathname,
+        });
       }
 
       // El webhook NO decide: hoy es un stub que no puede fallar, y cuando se
