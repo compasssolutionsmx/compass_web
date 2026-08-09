@@ -18,17 +18,21 @@
  * aparte. Mientras tanto, quien quiera compartirlo puede dejar el enlace en el
  * mensaje.
  *
+ * YA NO HAY CAMPO "PUESTO DE INTERÉS". Era un <select> con las vacantes
+ * publicadas, y el botón de cada tarjeta lo preseleccionaba. Ahora la referencia
+ * al puesto viaja DENTRO DEL MENSAJE, como una frase que la persona ve, puede
+ * corregir y puede continuar. Se gana que el dato sea legible y editable por
+ * quien postula; se pierde que el asunto del correo lo traiga como campo aparte
+ * (ver `buildSubject` en lib/lead-email.ts, que ya no depende de él).
+ *
  * EXPONE UN `ref` IMPERATIVO (`aplicarPuesto`) para que <VacantesBoard> pueda
- * rellenar el selector desde el botón de una tarjeta. Es lo mínimo que hay que
+ * insertar esa frase desde el botón de una tarjeta. Es lo mínimo que hay que
  * abrir hacia fuera: el resto del estado sigue viviendo aquí dentro.
  */
 
 import { useImperativeHandle, useRef, useState } from "react";
-import Link from "next/link";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
-import { QuoteButton } from "./QuoteModal";
 import { useLeadSubmit } from "./useLeadSubmit";
-import type { Vacante } from "@/lib/vacantes";
 
 /** Mismos estilos de campo que el cotizador, el modal corto y proveedores. */
 const FIELD =
@@ -36,19 +40,38 @@ const FIELD =
 
 const LABEL = "mb-1.5 block text-sm font-medium text-slate-700";
 
-/** Para quien no encaja en ninguna vacante publicada, o cuando no hay ninguna. */
-const OTRO_PUESTO = "Otro";
+/**
+ * Frase que el botón "Postularme a este puesto" inserta al PRINCIPIO del
+ * mensaje. Cierra en punto y deja dos saltos detrás para que la persona siga
+ * escribiendo debajo sin tener que abrir línea ella.
+ */
+function referenciaAVacante(puesto: string): string {
+  return `Me interesa la vacante de ${puesto}.`;
+}
+
+/**
+ * Reconoce una referencia ya insertada para SUSTITUIRLA en vez de apilar otra:
+ * sin esto, pulsar dos botones distintos —o el mismo dos veces— dejaría el
+ * mensaje encabezado por dos frases contradictorias.
+ *
+ * Ancla al principio y es deliberadamente laxa con el nombre del puesto: lo
+ * único que tiene que reconocer es la forma de la frase, no un catálogo de
+ * vacantes que cambia. Si alguien escribió esa misma frase a mano, se la
+ * sustituye — que es justo lo que querría al pulsar el botón de otra tarjeta.
+ */
+const REFERENCIA_PREVIA = /^Me interesa la vacante de .+?\.(?:\r?\n)*/;
 
 export type VacanteFormHandle = {
-  /** Preselecciona un puesto y manda el foco al primer campo que falte. */
+  /**
+   * Encabeza el mensaje con la referencia al puesto —sin borrar lo que la
+   * persona ya hubiera escrito— y manda el foco al primer campo que falte.
+   */
   aplicarPuesto: (puesto: string) => void;
 };
 
 export default function VacanteForm({
-  vacantes,
   ref,
 }: {
-  vacantes: Vacante[];
   ref?: React.Ref<VacanteFormHandle>;
 }) {
   const { status, isSubmitting, whatsappUrl, submitLead, retryLead } =
@@ -57,7 +80,6 @@ export default function VacanteForm({
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [puesto, setPuesto] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -66,35 +88,65 @@ export default function VacanteForm({
   const telefonoRef = useRef<HTMLInputElement>(null);
   const mensajeRef = useRef<HTMLTextAreaElement>(null);
 
-  // Las opciones salen de las vacantes ACTIVAS que recibe la página, así que
-  // publicar o retirar una en lib/vacantes.ts mueve el selector solo. "Otro"
-  // va siempre al final, y es la única opción cuando no hay ninguna publicada.
-  const opciones = [...vacantes.map((vacante) => vacante.puesto), OTRO_PUESTO];
-
   useImperativeHandle(ref, () => ({
     aplicarPuesto(valor: string) {
-      setPuesto(valor);
       setError(null);
 
+      /* LO ESCRITO NO SE PIERDE. La frase se ANTEPONE a lo que hubiera, no lo
+         reemplaza: encabezar el mensaje es lo que se lee bien en el correo, y
+         quien ya había contado su experiencia la conserva debajo. Si ya había
+         una referencia puesta por otro botón, esa sí se sustituye — para eso
+         está `REFERENCIA_PREVIA`.
+
+         Se usa la forma funcional de `setMensaje` y no la variable `mensaje`
+         del render: dos pulsaciones seguidas, antes de que React vuelva a
+         pintar, leerían el mismo valor viejo y la segunda perdería a la
+         primera. */
+      const frase = referenciaAVacante(valor);
+      setMensaje((actual) => {
+        const resto = actual.replace(REFERENCIA_PREVIA, "");
+        return resto.trim() ? `${frase}\n\n${resto}` : `${frase}\n\n`;
+      });
+
       /* El foco va al primer campo VACÍO, no siempre al primero: si alguien ya
-         escribió su nombre y luego cambia de puesto, devolverlo al nombre le
+         escribió su nombre y luego pulsa otra vacante, devolverlo al nombre le
          borraría el sitio donde estaba. Sin esto, quien navega con teclado o
          lector de pantalla pulsa el botón de una tarjeta y no se entera de que
          algo cambió al otro lado de la página.
 
          `preventScroll`: mover el foco arrastra el scroll por defecto, y eso
-         pelearía con el desplazamiento suave que <VacantesBoard> hace en
-         móvil. Quién y cuándo se mueve la página se decide allá, no aquí. */
+         pelearía con el desplazamiento suave que <VacantesBoard> hace desde la
+         lista de vacantes hasta aquí arriba, en todos los anchos. Quién y
+         cuándo se mueve la página se decide allá, no aquí. */
       const pendiente = (
         [
           [nombre, nombreRef],
           [correo, correoRef],
           [telefono, telefonoRef],
-          [mensaje, mensajeRef],
         ] as const
       ).find(([valorActual]) => !valorActual.trim());
 
-      pendiente?.[1].current?.focus({ preventScroll: true });
+      if (pendiente) {
+        pendiente[1].current?.focus({ preventScroll: true });
+        return;
+      }
+
+      /* Con los datos ya llenos, el único sitio que queda por escribir es el
+         mensaje — y antes también acababa aquí, porque estaba vacío y era el
+         último de la lista de arriba. La diferencia es que ahora YA TIENE texto,
+         así que hay que llevar el cursor AL FINAL a mano: un `focus()` a secas
+         lo deja en la posición 0 y lo siguiente que se teclee entraría por
+         delante de la frase, no debajo.
+
+         Va en un `requestAnimationFrame` porque el `setMensaje` de arriba
+         todavía no llegó al DOM: leer `el.value.length` en este mismo tick
+         daría el largo del texto ANTERIOR. */
+      requestAnimationFrame(() => {
+        const el = mensajeRef.current;
+        if (!el) return;
+        el.focus({ preventScroll: true });
+        el.setSelectionRange(el.value.length, el.value.length);
+      });
     },
   }));
 
@@ -116,7 +168,6 @@ export default function VacanteForm({
     void submitLead(
       {
         nombre: nombre.trim(),
-        puesto: puesto || undefined,
         correo: correo.trim(),
         telefono: telefono.trim() || undefined,
         mensaje: mensaje.trim() || undefined,
@@ -149,37 +200,30 @@ export default function VacanteForm({
 
   return (
     <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-8">
-      {/* AVISO DE ORIGEN. Va ANTES de los campos, que es donde todavía sirve:
-          después de llenarlos, decirle a alguien que se equivocó de formulario
-          es hacerle perder el trabajo hecho.
-
-          Tratamiento sobrio a propósito —borde y fondo tenue de la familia
-          brand— y NO `accent-red`, que está reservado a la salida de
-          proveedores del cotizador. Un bloque rojo aquí leería como error,
-          y esto es una aclaración.
-
-          Contraste sobre el fondo resultante (brand-100/60 sobre el blanco de
-          la tarjeta): texto slate-600 6.88:1, enlaces brand-900 13.69:1. */}
-      <p className="mb-6 rounded-2xl border border-brand-900/15 bg-brand-100/60 p-4 text-sm leading-relaxed text-slate-600">
-        Este formulario es exclusivo para postulaciones de empleo. Si busca una
-        cotización, use el{" "}
-        {/* Abre el modal del cotizador en esta misma página, en vez de mandar
-            al usuario al home a buscarlo. `QuoteButton` ya es `type="button"`,
-            así que no envía este formulario. */}
-        <QuoteButton className="font-medium text-brand-900 underline underline-offset-2 transition-opacity hover:opacity-80">
-          cotizador
-        </QuoteButton>
-        . Si desea registrarse como proveedor, visite{" "}
-        <Link
-          href="/proveedores"
-          className="font-medium text-brand-900 underline underline-offset-2 transition-opacity hover:opacity-80"
-        >
-          Proveedores
-        </Link>
-        .
-      </p>
-
+      {/* EL AVISO DE ORIGEN SE FUE A LA COLUMNA IZQUIERDA, con el texto de
+          introducción (ver <VacantesBoard>). Sigue cumpliendo su función —llegar
+          ANTES de que nadie llene nada— porque esa columna se lee primero en las
+          dos disposiciones: a la izquierda de la tarjeta en desktop y encima de
+          ella en móvil. Aquí dentro le robaba el arranque al formulario. */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        {/* La nota de obligatorios vive DENTRO de la tarjeta y pegada a los
+            campos que describe, igual que en <ProviderForm>. Estaba fuera,
+            encima de la tarjeta y bajo un titular que ya no existe, donde se
+            leía como parte de la introducción de la página y no como una
+            instrucción del formulario.
+
+            Va DESPUÉS del aviso de origen: primero se aclara si este es el
+            formulario correcto y sólo después cómo llenarlo. */}
+        <p className="text-sm text-slate-500">
+          Los campos marcados con asterisco son obligatorios.
+        </p>
+
+        {/* NOMBRE A ANCHO COMPLETO y no emparejado: los campos cortos son tres
+            —nombre, correo y teléfono—, así que alguno se queda sin pareja. El
+            que sobra es este, no el teléfono: correo y teléfono son las dos vías
+            de contacto y se leen como un par (es la misma fila que en
+            <ProviderForm>), mientras que un teléfono suelto ocupando toda la
+            caja se vería desproporcionado. */}
         <div>
           <label htmlFor="vac-nombre" className={LABEL}>
             Nombre <span aria-hidden="true">*</span>
@@ -195,54 +239,42 @@ export default function VacanteForm({
           />
         </div>
 
-        <div>
-          <label htmlFor="vac-correo" className={LABEL}>
-            Correo <span aria-hidden="true">*</span>
-          </label>
-          <input
-            ref={correoRef}
-            id="vac-correo"
-            type="email"
-            required
-            value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            className={FIELD}
-          />
+        {/* Rejilla de una sola fila: en `md` van lado a lado y por debajo caen
+            apilados, como todo lo demás de la tarjeta. El orden del DOM es el
+            mismo que el visual —izquierda antes que derecha—, así que el
+            tabulador sigue el recorrido natural. */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="vac-correo" className={LABEL}>
+              Correo <span aria-hidden="true">*</span>
+            </label>
+            <input
+              ref={correoRef}
+              id="vac-correo"
+              type="email"
+              required
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              className={FIELD}
+            />
+          </div>
+          <div>
+            <label htmlFor="vac-telefono" className={LABEL}>
+              Teléfono
+            </label>
+            <input
+              ref={telefonoRef}
+              id="vac-telefono"
+              type="tel"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              className={FIELD}
+            />
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="vac-telefono" className={LABEL}>
-            Teléfono
-          </label>
-          <input
-            ref={telefonoRef}
-            id="vac-telefono"
-            type="tel"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className={FIELD}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="vac-puesto" className={LABEL}>
-            Puesto de interés
-          </label>
-          <select
-            id="vac-puesto"
-            value={puesto}
-            onChange={(e) => setPuesto(e.target.value)}
-            className={FIELD}
-          >
-            <option value="">Seleccione una opción</option>
-            {opciones.map((opcion) => (
-              <option key={opcion} value={opcion}>
-                {opcion}
-              </option>
-            ))}
-          </select>
-        </div>
-
+        {/* AQUÍ ATERRIZA LA REFERENCIA AL PUESTO, donde antes había un <select>
+            aparte. Ancho completo, como el resto del bloque de escritura. */}
         <div>
           <label htmlFor="vac-mensaje" className={LABEL}>
             Mensaje

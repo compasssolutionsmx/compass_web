@@ -18,10 +18,20 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
  * texto legal), así que el ancla no lleva a ninguna parte. Si algún día llega
  * el documento, se añade la sección allí y la entrada aquí.
  *
- * LAS DOS ENTRADAS DE /apartado-legal van `live`, y sus anclas son los `id` de
- * los dos `tabpanel` de <LegalTabs> — que es de donde ese componente saca qué
- * pestaña abrir, comparando contra `location.hash`. Si algún día se renombra un
- * panel, estos dos `href` se rompen en silencio: el ancla es el contrato.
+ * LAS TRES ENTRADAS DE /apartado-legal van `live` — y `live: true` NO ES
+ * OPCIONAL: sin el flag, el `map` de abajo las pinta en texto plano y el enlace
+ * deja de existir sin que nada falle. Ya pasó con esta misma columna.
+ *
+ * La primera es la PÁGINA ENTERA, sin ancla: <LegalTabs> resuelve `activa` como
+ * `vigente ?? anclaDeLaUrl ?? "privacidad"`, así que sin hash abre en su
+ * pestaña por defecto. Va antes que las otras dos porque las contiene: primero
+ * el documento, luego sus dos secciones.
+ *
+ * Las otras dos llevan ancla, y esas anclas son los `id` de los dos `tabpanel`
+ * de <LegalTabs> — que es de donde ese componente saca qué pestaña abrir,
+ * comparando contra `location.hash`. Si algún día se renombra un panel, esos
+ * dos `href` se rompen en silencio: el ancla es el contrato. El de la página
+ * entera no corre ese riesgo, que es otra razón para tenerlo.
  *
  * "Política de seguridad" es NUEVA aquí. Antes no existía ninguna entrada hacia
  * ella y la política se había quedado sin un solo enlace entrante en todo el
@@ -43,6 +53,7 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
 const INFO_LINKS = [
   { href: "/proveedores", label: "Proveedores", live: true },
   { href: "/vacantes", label: "Trabaja con nosotros", live: true },
+  { href: "/apartado-legal", label: "Apartado legal", live: true },
   {
     href: "/apartado-legal#privacidad",
     label: "Aviso de privacidad",
@@ -150,9 +161,37 @@ export default function Footer() {
           <h4 className="mb-4 font-heading text-sm font-semibold text-white">
             Ubicación
           </h4>
+          {/* La dirección abre la ficha del sitio en Google Maps. Es un <a> y no
+              un <Link>: sale del sitio, así que el router de Next no tiene nada
+              que prefetchear ni que interceptar.
+
+              `target="_blank"` con `rel="noopener noreferrer"` — el `noopener`
+              no es decorativo: sin él la pestaña nueva recibe `window.opener` y
+              puede reescribir la dirección de ésta.
+
+              MISMO TRATAMIENTO QUE EL RESTO DE ENLACES DEL PIE: hereda el
+              `text-slate-300` del <footer> y sube a blanco en el hover con
+              `transition-colors`, igual que las entradas de "Información". Sin
+              subrayado, también como ellas. Contraste sobre brand-950:
+                slate-300 en reposo   11.93:1
+                blanco en hover       17.71:1
+              Los dos pasan AA y AAA. El único que baja de ahí en este pie es el
+              slate-400 de las entradas inertes (6.91:1), y esa diferencia es
+              justo la señal de que no se puede hacer clic.
+
+              El enlace envuelve el texto ENTERO y no una palabra suelta: la
+              dirección es una sola unidad y partirla dejaría media frase
+              clicable sin motivo. */}
           <p className="mb-6 text-sm">
-            Mitikah, Torre M, Av. Río Churubusco 601-piso 17 int 1707, Xoco,
-            Benito Juárez, 03330 Ciudad de México, CDMX
+            <a
+              href="https://maps.app.goo.gl/ipKMCtBJQzui5dMW7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-white"
+            >
+              Mitikah, Torre M, Av. Río Churubusco 601-piso 17 int 1707, Xoco,
+              Benito Juárez, 03330 Ciudad de México, CDMX
+            </a>
           </p>
           <h4 className="mb-2 font-heading text-sm font-semibold text-white">
             Ventas y soporte

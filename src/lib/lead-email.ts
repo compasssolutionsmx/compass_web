@@ -235,16 +235,21 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
    * Aquí manda la PERSONA, así que su nombre va primero —al revés que en
    * `proveedor`, donde identifica la empresa.
    *
-   * `puesto` y no `tipo`, por el mismo motivo que `servicio` en proveedores:
-   * `orderedFields` traduce la clave `tipo` con `requestTypeLabel`, que sólo
-   * conoce los slugs del cotizador y no encontraría nada.
+   * YA NO HAY CLAVE `puesto`. El formulario de /vacantes tenía un <select> de
+   * puesto de interés y se quitó: ahora el botón de cada tarjeta encabeza el
+   * MENSAJE con "Me interesa la vacante de <puesto>.", así que el dato llega
+   * dentro del texto que escribe la persona y no como campo aparte.
+   *
+   * Por eso `mensaje` sube justo detrás del nombre, y no cierra la tabla como
+   * en los otros formularios: es la fila donde RH lee a qué se postula quien
+   * escribe. Si un envío antiguo o manual trajera `puesto`, `orderedFields`
+   * lo pinta igual al final con su nombre crudo — no se pierde nada.
    */
   vacante: [
     ["nombre", "Nombre"],
-    ["puesto", "Puesto de interés"],
+    ["mensaje", "Mensaje"],
     ["correo", "Correo"],
     ["telefono", "Teléfono"],
-    ["mensaje", "Mensaje"],
   ],
 };
 
@@ -406,9 +411,9 @@ function orderedFields(lead: Lead): [string, string][] {
 
 /**
  * Asunto. Cada origen tiene el suyo y empieza por una palabra distinta
- * ("cotización" / "contacto" / "proveedor"), que es lo único que se ve en la
- * bandeja antes de abrir: por ahí se distingue un registro de proveedor de un
- * lead comercial sin tener que leer el cuerpo.
+ * ("cotización" / "contacto" / "proveedor" / "postulación"), que es lo único que
+ * se ve en la bandeja antes de abrir: por ahí se distingue un registro de
+ * proveedor de un lead comercial sin tener que leer el cuerpo.
  */
 export function buildSubject(lead: Lead): string {
   if (lead.formulario === "cotizador") {
@@ -416,9 +421,19 @@ export function buildSubject(lead: Lead): string {
     return `Nueva cotización — ${tipo}`;
   }
   if (lead.formulario === "vacante") {
-    const puesto = lead.datos.puesto || "puesto sin especificar";
-    const nombre = lead.datos.nombre || "sin nombre";
-    return `Nueva postulación a vacante: ${puesto} (candidato: ${nombre})`;
+    /**
+     * YA NO NOMBRA EL PUESTO. Lo traía de `lead.datos.puesto`, el <select> que
+     * el formulario de /vacantes tenía y que se quitó; sin ese campo, la línea
+     * anterior habría quedado como "Nueva postulación a vacante: puesto sin
+     * especificar" en TODOS los correos, que es peor que no decirlo.
+     *
+     * Dónde está ahora: en la primera línea del mensaje ("Me interesa la
+     * vacante de <puesto>."), que en el cuerpo va en la fila inmediatamente
+     * debajo del nombre. El asunto pierde el triaje por puesto en la bandeja;
+     * si hiciera falta recuperarlo habría que mandar la vacante pulsada como
+     * un dato aparte, y eso es justo el campo que se acaba de retirar.
+     */
+    return `Nueva postulación de empleo — ${lead.datos.nombre || "sin nombre"}`;
   }
   if (lead.formulario === "proveedor") {
     // La empresa es lo que identifica al proveedor; el nombre de la persona

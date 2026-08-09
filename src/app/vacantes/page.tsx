@@ -15,15 +15,6 @@ const TITLE = "Vacantes";
 const DESCRIPTION =
   "Trabaje en Compass Solutions: vacantes en operación, servicio a cliente y administración dentro de nuestras soluciones aéreas, marítimas y terrestres.";
 
-/**
- * TODO(assets): foto real de la operación (equipo, patio o terminal).
- * Placeholder de placehold.co mientras tanto, la misma convención que las
- * portadas pendientes del blog; el dominio ya está permitido en
- * next.config.ts. Se usa en el fondo del hero Y como imagen de Open Graph.
- */
-const HERO_IMAGE =
-  "https://placehold.co/1600x900/011b26/ffffff?text=Foto+de+la+operacion";
-
 export const metadata: Metadata = {
   title: `${TITLE} | Compass Solutions`,
   description: DESCRIPTION,
@@ -37,12 +28,19 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     // Explícita y no heredada: un `openGraph` propio REEMPLAZA al del layout
     // raíz, así que sin esto la página se compartiría sin miniatura.
+    //
+    // Es la miniatura de marca del layout, repetida a mano. Aquí había un
+    // placeholder de placehold.co que servía a la vez de fondo del hero y de
+    // imagen de Open Graph; al entrar la foto real en el hero, ese placeholder
+    // desapareció y con él la única imagen que tenía la página. La foto del
+    // hero no sirve de recambio: es 1728x608 (2.84:1), lejos del 1.91:1 que
+    // piden las tarjetas sociales, y se recortaría por la mitad.
     images: [
       {
-        url: HERO_IMAGE,
+        url: "/brand/thumbnail.jpg",
         width: 1200,
         height: 630,
-        alt: "Vacantes en Compass Solutions",
+        alt: "Contenedor Compass Solutions en el Puerto de Lázaro Cárdenas",
       },
     ],
   },
@@ -59,66 +57,85 @@ export default function Vacantes() {
         <Header topTone="dark" />
 
         <main className="flex-1">
-          {/* HERO CORTO. No compite con el contenido: esta página existe para
-              que alguien lea una vacante y se postule, así que el encabezado
-              presenta y se quita de en medio. El `pt` grande es el hueco que
-              necesita el header flotante, no aire decorativo.
+          {/* HERO CORTO, misma forma que el de /nosotros y /proveedores: sólo
+              eyebrow + titular, centrados. Los dos párrafos y el botón que
+              vivían aquí bajaron a <VacantesBoard>, junto al formulario y a la
+              lista que describen. El `pt` grande es el hueco que necesita el
+              header flotante, no aire decorativo; el ritmo vertical
+              (pt-32/pb-16, md:pt-40/md:pb-20) es el mismo de /proveedores, que
+              es el que corresponde ahora que el hero tiene esa misma altura de
+              contenido.
 
-              `overflow-hidden` aquí NO afecta al `sticky` del formulario: ese
-              vive en la sección de abajo, fuera de este recorte. */}
-          <section className="relative overflow-hidden rounded-b-[2rem] px-6 pb-12 pt-28 md:pb-16 md:pt-32">
-            <div className="absolute inset-0">
+              `overflow-hidden` recorta la foto a las esquinas redondeadas. No
+              afecta a nada de abajo: el resto de la página vive fuera de este
+              recorte. */}
+          <section className="relative overflow-hidden rounded-b-[2rem] pb-16 pt-32 md:pb-20 md:pt-40">
+            {/* MISMA PILA DE TRES CAPAS QUE <ImportHero> Y QUE EL HOME:
+                brand-950 de base, la foto al 60% de opacidad y el `hero-overlay`
+                encima. Las tres hacen falta, y no es una copia por simetría: el
+                `hero-overlay` SOLO no alcanza. Esta foto tiene un rango enorme
+                —una zona casi blanca— y con ella al 100%, con el mismo velo, el
+                peor punto de esta banda de texto deja el eyebrow en 3.40:1, que
+                NO pasa AA (el h1 aguantaría en 5.20:1, pero de poco sirve). El
+                60% es lo que cierra esa brecha, y es exactamente lo que aplica
+                <HeroVideo> a su <video> en el home.
+
+                CONTRASTE MEDIDO per-pixel sobre el archivo real compuesto con
+                la pila entera —la foto recortada como la recorta `object-cover`
+                a cada ancho, más los dos radiales del velo con su geometría—, y
+                sólo en los pixeles que cubren los glifos, con las mismas fuentes
+                del build (Archivo wdth 112.5 y DM Sans). Peor caso de cada uno,
+                en el barrido de 320 a 2560px:
+                  h1 blanco            8.82:1  (peor a 320px de viewport)
+                  eyebrow brand-50     5.59:1  (peor a 320px, ya sobre su
+                                                pastilla white/10)
+                Los dos pasan AA, y el h1 también AAA. El eyebrow es el que
+                menos margen tiene: si se aclara el velo, es el primero en caer.
+
+                Sale mejor parado que el hero de /importaciones-a-mexico con la
+                misma foto porque este hero mide ~350px de alto en vez de 75vh:
+                `object-cover` recorta una banda central mucho más estrecha y la
+                zona clara del archivo queda casi toda fuera del encuadre.
+
+                `alt=""`: es fondo decorativo y el mensaje lo lleva el <h1>.
+                `priority` porque es la imagen sobre el pliegue y la candidata a
+                LCP de la página. */}
+            <div className="absolute inset-0 bg-brand-950">
               <Image
-                src={HERO_IMAGE}
+                src="/home/back-compass-all.webp"
                 alt=""
-                fill
+                width={1728}
+                height={608}
                 priority
                 sizes="100vw"
-                className="object-cover"
+                className="h-full w-full object-cover opacity-60"
               />
-              {/* VELO AL 75%, y el número no es estético: el contraste hay que
-                  garantizarlo contra la zona MÁS CLARA de la foto que llegue,
-                  no contra su promedio. Calculado sobre el peor caso posible
-                  —blanco puro debajo— con brand-950 al 75%:
-                    texto blanco (H1 y CTA)      7.94:1
-                    párrafos slate-200           6.44:1
-                    eyebrow brand-50 en su pill  5.57:1
-                  Los tres pasan AA. Al 65% el eyebrow caía a 4.14:1 y no
-                  pasaba, así que 75% es el suelo, no una preferencia. */}
-              <div className="absolute inset-0 bg-brand-950/75" />
+              <div className="hero-overlay absolute inset-0" />
             </div>
 
-            <div className="relative mx-auto max-w-7xl">
+            {/* EL `px` VA EN EL MISMO ELEMENTO QUE EL `max-w-7xl`, no en el
+                <section> de fuera. Con `box-sizing: border-box` el tope de
+                1280px incluye el padding; si el padding queda fuera del tope, el
+                contenedor sigue midiendo 1280 completos y el bloque arranca en
+                un punto distinto al de las secciones de abajo. Es el mismo
+                desfase que se corrigió en /proveedores y en el hero de artículo.
+                Con el `px` aquí dentro, hero y secciones comparten borde en
+                todos los anchos: por debajo de 1328px manda el `px-6` de los
+                dos, y por encima el `max-w-7xl` centrado de los dos. */}
+            <div className="relative mx-auto max-w-7xl px-6 text-center">
               <Eyebrow tone="dark" className="mb-4">
                 Vacantes
               </Eyebrow>
-              <h1 className="max-w-3xl font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
+              {/* SIN `bindTail` A PROPÓSITO, al revés que en /proveedores. El
+                  bloque que ataría son las dos últimas palabras, "Compass
+                  Solutions": 17 caracteres que a `text-4xl` en Archivo
+                  semiexpandida miden ~355px, contra los 272px de caja que quedan
+                  a 320px de viewport. Al ser indivisible desbordaría en vez de
+                  reajustarse — justo el caso contra el que avisa la propia
+                  utilidad. Sin atar parte en tres líneas y no desborda. */}
+              <h1 className="font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
                 Trabaje en Compass Solutions
               </h1>
-              <p className="mt-5 max-w-2xl text-lg text-slate-200">
-                En Compass Solutions crecemos junto con la operación: cada nueva
-                ruta, cliente y proyecto de comercio exterior requiere personas
-                comprometidas con la seguridad, la puntualidad y el servicio.
-              </p>
-              <p className="mt-4 max-w-2xl text-slate-200">
-                Buscamos perfiles para las áreas de operación, servicio a
-                cliente y administración, dentro de nuestras soluciones aéreas,
-                marítimas y terrestres, respaldados por más de 12 años de
-                experiencia en logística internacional.
-              </p>
-
-              {/* Ancla y no botón: es una navegación dentro de la página, y así
-                  funciona con "abrir en pestaña nueva" y con el teclado sin
-                  añadir nada. Lenis intercepta los anclas con el mismo offset
-                  que el nav; con `prefers-reduced-motion` Lenis no se instancia
-                  y queda el salto nativo, que ya respeta el
-                  `scroll-padding-top: 6rem` de globals.css. */}
-              <a
-                href="#vacantes-disponibles"
-                className="mt-8 inline-block rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-50"
-              >
-                Ver vacantes disponibles
-              </a>
             </div>
           </section>
 
