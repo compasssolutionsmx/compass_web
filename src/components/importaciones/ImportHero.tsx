@@ -70,8 +70,22 @@ export default function ImportHero() {
             marca del posicionamiento sin leerse como una resta ni como un
             guion de diálogo. Está en el subset latino de DM Sans que sirve el
             build, comprobado — no cae a `.notdef`. */}
-        <Eyebrow tone="dark" className="mb-4">
-          Compass Solutions · Expertos en logística nacional e internacional
+        {/* `size="compacto"`: 12px por debajo de `md`, 14 de ahí en adelante.
+
+            EL TEXTO SE ACORTÓ —eran 66 caracteres, "Compass Solutions ·
+            Expertos en logística nacional e internacional", y partía en dos
+            líneas a cualquier tamaño y en cualquier teléfono— y con los 34 de
+            ahora entra en UNA línea en los tres anchos.
+
+            AUN ASÍ EL COMPACTO SE QUEDA, y no por inercia: a 14px la pastilla
+            mide 271px contra los 272px de caja que hay a 320px de viewport. Un
+            píxel no es margen, es suerte — cualquier diferencia de renderizado
+            de la fuente la parte en dos y devuelve el bloque pesado que
+            acabamos de quitar. A 12px la pastilla mide 222px y sobran 50. De
+            `md` en adelante vuelve sola a 14px, así que el tamaño de escritorio
+            no depende de esta decisión. */}
+        <Eyebrow tone="dark" size="compacto" className="mb-4">
+          Logística nacional e internacional
         </Eyebrow>
 
         {/* Clases del <h1> del home. SIN `whitespace-nowrap`: aquel es un
@@ -92,7 +106,21 @@ export default function ImportHero() {
             sobra en los 327px disponibles e incluso en los 272px de un viewport
             de 320. En desktop no cambia nada: allí la última línea ya era
             "forwarder experto en México". */}
-        <h1 className="mx-auto max-w-4xl font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
+        {/* 1.75rem (28px) EN MÓVIL, contra los 36 de `text-4xl`. `md:text-5xl`
+            no se toca: de 768px en adelante esto queda exactamente igual.
+
+            El valor no es un escalón de la escala porque el escalón no servía:
+            a `text-3xl` (30px) el titular todavía se va a SEIS líneas a 320px y
+            a CUATRO a 375, porque "exporte" y "forwarder" no llegan a caber
+            acompañadas. A 28px baja a cuatro y tres. Y bajar más no compra
+            nada: a `text-2xl` (24px) el reparto de líneas es idéntico al de 28
+            en los tres anchos, así que 28 es el tamaño más grande que ya da el
+            recorte máximo.
+
+            El espacio duro de abajo sigue siendo necesario y sigue siendo
+            seguro: a 28px el bloque atado "en México" mide 152px, contra los
+            272px de caja que quedan a 320px de viewport. */}
+        <h1 className="mx-auto max-w-4xl font-heading text-[1.75rem] font-bold leading-tight text-white md:text-5xl">
           Importe y exporte con su freight forwarder experto en{"\u00A0"}México
         </h1>
 

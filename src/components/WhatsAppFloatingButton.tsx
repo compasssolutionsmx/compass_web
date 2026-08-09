@@ -18,6 +18,21 @@ const ZONA_HEADER_PX = 96;
 const BASE_BOTTOM_PX = 24;
 
 /**
+ * HISTÉRESIS DEL OCULTADO. Ocultar y volver a mostrar NO usan el mismo umbral:
+ * se oculta al bajar de `ZONA_HEADER_PX` y no reaparece hasta superar
+ * `ZONA_HEADER_PX + HISTERESIS_PX`. Entre esos dos valores, decida lo que decida
+ * la medición, el estado no cambia.
+ *
+ * EL NÚMERO SALE DE LA BARRA DE DIRECCIONES, que es el salto más grande que el
+ * borde del footer puede pegar sin que el usuario haya scrolleado: ~56px en
+ * Chrome Android y hasta ~88px en Safari de iOS. Con menos margen que eso, un
+ * solo repliegue de la barra basta para cruzar la frontera de ida y de vuelta.
+ * Se paga con que, al volver a subir, el botón reaparece 96px más tarde de lo
+ * que desapareció — barato al lado de un parpadeo.
+ */
+const HISTERESIS_PX = 96;
+
+/**
  * Ancla el botón justo por encima del footer.
  *
  * El desplazamiento NO es un valor fijo: se recalcula contra el borde superior
@@ -41,7 +56,21 @@ const BASE_BOTTOM_PX = 24;
  * móvil lo es— al llegar al final de la página el footer ocupa toda la pantalla
  * y no queda ni un hueco donde poner el botón sin invadirlo. Ahí la única
  * respuesta coherente con "nunca encima del footer" es que se desvanezca; se
- * recupera solo al subir.
+ * recupera solo al subir. Ese ocultado va con HISTÉRESIS: ver `medir`.
+ *
+ * NO HAY BUCLE DE RETROALIMENTACIÓN, y conviene dejarlo escrito porque es el
+ * primer sospechoso. Ocultar el botón NO altera nada de lo que se mide:
+ *   - es `position: fixed`, así que no entra en el alto del documento ni mueve
+ *     el borde superior del footer, que es lo único que se observa;
+ *   - se oculta con `invisible` (`visibility: hidden`) y NO con `hidden`
+ *     (`display: none`). La diferencia es crítica: `visibility` conserva la caja
+ *     de layout, así que `boton.offsetHeight` sigue valiendo 56 estando oculto.
+ *     Con `display: none` valdría 0, el umbral se relajaría en esos mismos 56px,
+ *     el botón volvería a mostrarse, `offsetHeight` recuperaría sus 56 y se
+ *     ocultaría otra vez: ESE sí sería un bucle infinito. Si algún día se cambia
+ *     `invisible` por `hidden`, hay que sacar `offsetHeight` de la fórmula.
+ * El parpadeo venía de fuera: una entrada que cruzaba una frontera única de ida
+ * y vuelta. Ver los dos comentarios de `medir`.
  */
 function useAnclajeSobreFooter(
   botonRef: React.RefObject<HTMLButtonElement | null>,
@@ -60,8 +89,28 @@ function useAnclajeSobreFooter(
       const { top } = footer.getBoundingClientRect();
       const alturaBoton = boton.offsetHeight;
 
+      /* `documentElement.clientHeight` Y NO `window.innerHeight`, y ésta es la
+         mitad del arreglo.
+
+         Las dos devuelven "el alto del viewport", pero de viewports DISTINTOS
+         en cuanto hay una barra de direcciones que se repliega:
+           - `innerHeight`          sigue al viewport VISUAL: encoge y crece con
+                                    la barra, a mitad de scroll y sin que la
+                                    página se haya movido;
+           - `clientHeight` de <html> sigue al viewport de MAQUETACIÓN, que es el
+                                    que dimensiona `vh` y el bloque contenedor de
+                                    un `position: fixed` — o sea el mismo contra
+                                    el que se resuelve el `bottom-6` de este
+                                    botón, y que no se inmuta con la barra.
+         Mezclarlos era medir el hueco con una regla y colocar el botón con otra:
+         cada vez que la barra aparecía o se iba, `invasion` saltaba de golpe la
+         altura de la barra y el desplazamiento daba un tirón. En escritorio las
+         dos coinciden —no hay barra de scroll horizontal que las separe, lo
+         impide el `overflow-x: clip` de <html>—, así que ahí no cambia nada. */
+      const alturaViewport = document.documentElement.clientHeight;
+
       // Cuánto del footer se ve, medido desde el borde inferior del viewport.
-      const invasion = window.innerHeight - top;
+      const invasion = alturaViewport - top;
       // Lo que hay que subir el botón —cuyo borde inferior está a
       // BASE_BOTTOM_PX del fondo— para que quede por encima de esa línea.
       const desplazamiento = Math.max(
@@ -73,7 +122,20 @@ function useAnclajeSobreFooter(
       // Con ese desplazamiento el borde SUPERIOR del botón queda en
       // `top - MARGEN - alturaBoton`. Si eso ya no llega a la zona libre bajo
       // el header, es que no hay hueco entre el header y el footer.
-      setSinEspacio(top - MARGEN_FOOTER_PX - alturaBoton < ZONA_HEADER_PX);
+      //
+      // DOS UMBRALES, NO UNO, y ésta es la otra mitad del arreglo. Con un solo
+      // valor de corte, cualquier temblor de `holgura` alrededor de él volteaba
+      // el booleano en cada frame, y cada volteo reiniciaba la transición de
+      // opacidad de 200ms: eso era el parpadeo. Y temblar tiembla siempre —
+      // `getBoundingClientRect` devuelve fracciones, y el lerp de Lenis se
+      // acerca a su destino de forma asintótica, así que al frenar pasa muchos
+      // frames moviéndose décimas de píxel justo donde está la frontera.
+      const holgura = top - MARGEN_FOOTER_PX - alturaBoton;
+      setSinEspacio((oculto) =>
+        oculto
+          ? holgura < ZONA_HEADER_PX + HISTERESIS_PX
+          : holgura < ZONA_HEADER_PX,
+      );
     };
 
     // Siempre a través de rAF: el scroll dispara muchas veces por frame y

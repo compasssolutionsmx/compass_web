@@ -84,7 +84,24 @@ export default function Proveedores() {
                 de DOM, que es el que corresponde: primero se explica qué es esto
                 y luego se pide llenarlo. */}
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
-              <div>
+              {/* CENTRADO EN MÓVIL, alineado a la izquierda de `lg` en adelante.
+                  El corte es `lg` y no `md` porque es donde ESTA página abre sus
+                  dos columnas (`lg:grid-cols-2`): por debajo, el texto va apilado
+                  encima del formulario y centrado se lee como la entrada de la
+                  sección; a partir de ahí es la columna izquierda de un par y
+                  tiene que arrancar en la misma vertical que la tarjeta.
+
+                  Va en el contenedor y no en cada elemento: `text-align` se
+                  hereda, así que una clase cubre el <h2> y los dos párrafos.
+
+                  NO HACE FALTA `mx-auto` EN NINGUNO: revisado el bloque entero,
+                  ninguno de los tres lleva `max-w-*` propio, así que sus cajas ya
+                  ocupan el ancho completo de la celda y centrar el texto los
+                  centra de verdad. Si algún día se le pone un tope de medida a
+                  los párrafos —como el `max-w-[42ch]` de <ImportStats>—, ese
+                  elemento necesitará además su `mx-auto` o quedará el texto
+                  centrado dentro de una caja pegada a la izquierda. */}
+              <div className="text-center lg:text-left">
                 {/* El <h2> mantiene la jerarquía h1 -> h2 -> (h3 de la pantalla
                     de confirmación, cuando aparece) -> h4 del footer, sin
                     saltos. Nombra la sección entera, formulario incluido, y por

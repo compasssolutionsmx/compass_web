@@ -151,7 +151,23 @@ export default function VacantesBoard({ vacantes }: { vacantes: Vacante[] }) {
             llenarlo. El `gap-12` pasa a ser separación vertical entre los dos
             bloques. */}
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <div>
+          {/* CENTRADO EN MÓVIL, a la izquierda de `lg` en adelante — el mismo
+              corte que /proveedores y por el mismo motivo: `lg:grid-cols-2` es
+              donde esta sección abre sus dos columnas. Por debajo, el texto va
+              apilado encima del formulario y centrado se lee como la entrada de
+              la sección; a partir de ahí es la columna izquierda de un par y
+              tiene que arrancar en la misma vertical que la tarjeta.
+
+              Va en el contenedor porque `text-align` se hereda: una clase cubre
+              el <h2>, los dos párrafos y el enlace. Ese enlace es `inline-block`,
+              así que el centrado lo alcanza sin ayuda —una caja de nivel inline
+              la centra `text-align`, no hace falta `mx-auto`—.
+
+              NINGUNO DE LOS CUATRO LLEVA `max-w-*` propio, revisado uno por uno,
+              así que sus cajas ya ocupan el ancho completo de la celda y centrar
+              el texto los centra de verdad. La única excepción de alineación es
+              el aviso de origen, que se explica en su sitio. */}
+          <div className="text-center lg:text-left">
             {/* Nombra la sección entera, formulario incluido, y por eso es el
                 destino del `aria-labelledby`. Jerarquía: h1 del hero -> este h2
                 -> h3 (los puestos de abajo y la pantalla de confirmación de la
@@ -224,8 +240,20 @@ export default function VacantesBoard({ vacantes }: { vacantes: Vacante[] }) {
                 El contraste no cambia al mudarse: el fondo de debajo era el
                 blanco de la tarjeta y ahora es el blanco de la página, así que
                 la composición es la misma. Sobre brand-100/60 encima de blanco,
-                texto slate-600 6.88:1 y enlaces brand-900 13.69:1. */}
-            <p className="mt-8 rounded-2xl border border-brand-900/15 bg-brand-100/60 p-4 text-sm leading-relaxed text-slate-600">
+                texto slate-600 6.88:1 y enlaces brand-900 13.69:1.
+
+                SE QUEDA ALINEADO A LA IZQUIERDA, es el único del bloque que se
+                sale del centrado de móvil, y `text-left` está aquí para
+                cancelar la herencia del contenedor. La caja SÍ queda centrada
+                —no lleva `max-w`, ocupa el ancho completo de la celda—; lo que
+                no se centra es el texto de dentro, y a propósito: son dos
+                frases que ocupan cinco líneas a 375px y llevan dos enlaces
+                incrustados. Centradas quedan dentadas por los dos lados y los
+                enlaces caen en sitios distintos en cada línea, que es justo lo
+                que un aviso no puede permitirse. Además el cambio de alineación
+                ayuda a leerlo como lo que es: un apunte al margen, no la
+                continuación del texto de arriba. */}
+            <p className="mt-8 rounded-2xl border border-brand-900/15 bg-brand-100/60 p-4 text-left text-sm leading-relaxed text-slate-600">
               Este formulario es exclusivo para postulaciones de empleo. Si
               busca una cotización, use el{" "}
               {/* Abre el modal del cotizador en esta misma página, en vez de
@@ -275,9 +303,20 @@ export default function VacantesBoard({ vacantes }: { vacantes: Vacante[] }) {
         aria-labelledby="vacantes-disponibles"
         className="mx-auto max-w-7xl px-6 pb-16 md:pb-24"
       >
+        {/* MISMO CORTE EN `lg` que el titular de la sección de arriba, aunque
+            aquí no haya dos columnas que separar: la página entera cambia de
+            alineación en el mismo ancho, y ver dos titulares de la misma página
+            volver a la izquierda en momentos distintos se notaría. Debajo van
+            las tarjetas a ancho completo con su contenido alineado a la
+            izquierda, que es la composición de siempre —rótulo centrado sobre
+            bloques alineados—.
+
+            Sin `max-w` propio, así que no necesita `mx-auto`. El `id` es el
+            destino del ancla "Vea las vacantes disponibles" y del
+            `aria-labelledby` de la sección; la alineación no lo afecta. */}
         <h2
           id="vacantes-disponibles"
-          className="mb-6 font-heading text-2xl font-bold text-brand-900 md:text-3xl"
+          className="mb-6 text-center font-heading text-2xl font-bold text-brand-900 md:text-3xl lg:text-left"
         >
           Vacantes disponibles
         </h2>

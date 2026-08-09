@@ -209,7 +209,34 @@ export default function BlogIndex() {
                       y antes de eso decía "Blog de logística" aquí arriba.
                       Ahora dice qué ofrece la página y lo dice en el hero, que
                       es donde un <h1> se espera. */}
-                  <h1 className="font-heading text-4xl font-bold leading-tight text-white md:text-5xl">
+                  {/* CENTRADO Y MÁS CHICO SÓLO EN MÓVIL, y las dos cosas
+                      vuelven a lo de siempre en `md`: de 768px en adelante no
+                      cambia ni un píxel — `md:text-5xl` y `md:text-left` son
+                      exactamente el tamaño y la alineación que ya tenía.
+
+                      El corte va en `md` y no en `lg`, que es donde el grid
+                      abre sus dos columnas: entre 768 y 1023 el bloque sigue
+                      apilado, pero ahí ya cabe holgado a 48px y alineado a la
+                      izquierda, tal cual está hoy. Mover el corte a `lg` habría
+                      cambiado esa franja sin necesidad.
+
+                      1.75rem (28px) y no un escalón de la escala: es el tamaño
+                      MÁS GRANDE que deja el titular en dos líneas de 375px en
+                      adelante. `text-3xl` (30px) todavía se va a tres a 375.
+                      Medido sobre Archivo bold con su `wdth` 112.5.
+
+                      A 320 y 360px se queda en TRES líneas, y no se baja más a
+                      propósito: para dos harían falta 22px, y el <h2> de la
+                      tarjeta que va justo debajo mide 24px — el titular de la
+                      página acabaría siendo más chico que el del artículo que
+                      anuncia. Aun así se gana una línea: hoy a 320px son
+                      cuatro.
+
+                      El `text-center` va en el propio <h1>, que es hermano de
+                      la tarjeta dentro del grid, no su contenedor: la tarjeta y
+                      todo su contenido siguen alineados a la izquierda sin que
+                      haya que reponérselo. */}
+                  <h1 className="text-center font-heading text-[1.75rem] font-bold leading-tight text-white md:text-left md:text-5xl">
                     {bindTail("Guías y análisis para mover su carga mejor")}
                   </h1>
 

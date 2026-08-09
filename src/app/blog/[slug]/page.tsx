@@ -212,17 +212,51 @@ export default async function ArticlePage({
                 comportamiento por debajo de ~1145px: ahí el texto todavía no
                 llega a sus 68ch y es la pista quien lo limita, exactamente como
                 antes. */}
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,68ch)_minmax(18rem,1fr)] lg:gap-16">
+            {/* `grid-cols-1` en la base es preventivo, no correctivo: sin
+                columnas declaradas, por debajo de `lg` la pista implícita es
+                `auto` y se dimensiona por el max-content de su contenido — y
+                aquí el contenido es el cuerpo del artículo, con sus tablas y
+                sus bloques de código. Es el mismo desbordamiento que ya mordió
+                en <SuccessStories> y en <BlogPreview>. `repeat(1, minmax(0,1fr))`
+                lo cierra. */}
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,68ch)_minmax(18rem,1fr)] lg:gap-16">
+              {/* ÍNDICE EN MÓVIL, ARRIBA DEL CUERPO. Antes sólo existía dentro
+                  del <aside>, y al colapsar a una columna el <aside> cae después
+                  del artículo: el índice aparecía al final, cuando ya no sirve
+                  para navegar.
+
+                  SIN `order` Y SIN RECOLOCAR NADA CON GRID, que es lo que rompe
+                  la correspondencia entre el orden visual y el de lectura. Lo
+                  resuelve el propio `lg:hidden` de esta variante: `display: none`
+                  no genera caja, así que de `lg` para arriba este elemento NO ES
+                  UN ELEMENTO DE LA REJILLA y el autoposicionamiento deja los dos
+                  de siempre —cuerpo a la izquierda, <aside> a la derecha—,
+                  exactamente como estaba. Y por debajo de `lg` la rejilla es de
+                  una columna y reparte en el orden del DOM: índice, cuerpo,
+                  tarjeta.
+
+                  Resultado: en los dos anchos el orden del DOM ES el orden
+                  visual, así que el tabulador y el lector de pantalla recorren
+                  lo mismo que se ve. */}
+              <ArticleToc headings={headings} variant="movil" />
+
               <article>
                 <ArticleBody source={post.content} />
               </article>
 
-              {/* En móvil la barra va PRIMERO en el DOM pero se pinta después
-                  del cuerpo con `order`, para que el índice colapsado quede
-                  arriba y la tarjeta de contacto al final. */}
+              {/* En móvil este <aside> queda al final y contiene SÓLO la tarjeta
+                  de contacto: su índice es la variante `escritorio`, que ahí va
+                  en `display: none`. Es lo que corresponde — un CTA es el cierre
+                  natural de una lectura, y metido entre el índice y el primer
+                  párrafo interrumpiría el artículo antes de empezarlo.
+
+                  El `lg:sticky` sigue envolviendo a las DOS piezas, así que en
+                  escritorio índice y tarjeta se quedan fijos como un solo bloque,
+                  igual que hasta ahora. En móvil no hay sticky, y tampoco lo
+                  había: la clase siempre fue `lg:`. */}
               <aside className="lg:sticky lg:top-28 lg:self-start">
                 <div className="space-y-8">
-                  <ArticleToc headings={headings} />
+                  <ArticleToc headings={headings} variant="escritorio" />
 
                   <div className="brand-gradient rounded-2xl p-6">
                     <p className="font-heading text-lg font-bold text-white">
