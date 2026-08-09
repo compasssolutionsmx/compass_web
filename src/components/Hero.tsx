@@ -41,13 +41,40 @@ export default function Hero() {
     //
     // De paso encoge el hueco que el `items-start` había abierto entre el
     // párrafo y la tarjeta: de ~230px a ~155px.
+    //
+    // EN MÓVIL NO HAY ALTURA POR VIEWPORT, y ése era el problema: `h-[75vh]` y
+    // `min-h-[560px]` valían para todos los anchos, pero abajo de `md` el
+    // contenido no tiene nada que ver con el alto de la pantalla. Como el
+    // bloque se ancla arriba, todo el sobrante caía ENTRE EL PÁRRAFO Y LA
+    // TARJETA, y ese sobrante lo fijaba el alto del teléfono: 33px en un 375x667
+    // pero 190px en un 414x896. Y en el otro extremo, a 320px de ancho el
+    // bloque mide 440px y ya no cabía en los 560 del `min-h`: la tarjeta,
+    // colgada del borde inferior con el `-mt-16` de <QuoteSection>, se montaba
+    // 40px SOBRE la última línea del párrafo.
+    //
+    // Abajo de `md` el alto lo pone el contenido, así que el hueco de abajo es
+    // siempre `pb` menos el `-mt-16` de la tarjeta = 32px, en cualquier
+    // teléfono, y la tarjeta sube todo lo que el contenido permita. El `vh` y su
+    // `min-h` siguen mandando de `md` para arriba, que es donde se calibraron.
+    //
+    // REPARTO VERTICAL EN MÓVIL: `pt-28` (112px) y `pb-24` (96px). El aire real
+    // sobre el eyebrow es `pt` menos lo que ocupa el header —fixed a 16px del
+    // borde y ~44px de alto sin condensar, o sea que termina hacia los 60px—:
+    // pasa de 36px a 52px. Antes el reparto era 36px arriba contra 33-190px
+    // abajo; ahora es 52 contra 32.
+    //
     // `rounded-b-[2rem]`: el mismo lenguaje que el `rounded-3xl` (1.5rem) de la
     // tarjeta, un punto más abierto por ser un elemento a sangre. El
     // `overflow-hidden` que ya estaba por el video es lo que recorta el video y
     // el gradiente contra esa curva.
+    //
+    // EN MÓVIL BAJA A `rounded-b-2xl` (1rem): el radio es una medida absoluta y
+    // el ancho no. 32px sobre 1440px de hero son el 2,2% de su ancho; sobre
+    // 375px son el 8,5%, y la curva deja de leerse como un remate para
+    // convertirse en el borde entero. 16px devuelve la proporción.
     <section
       id="hero"
-      className="relative flex h-[75vh] min-h-[560px] items-start overflow-hidden rounded-b-[2rem] pb-16 pt-24 md:pb-32 md:pt-36"
+      className="relative flex items-start overflow-hidden rounded-b-2xl pb-24 pt-28 md:h-[75vh] md:min-h-[560px] md:rounded-b-[2rem] md:pb-32 md:pt-36"
     >
       <HeroBackdrop />
 

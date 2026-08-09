@@ -28,8 +28,33 @@ export default function BlogPreview() {
     // del carrusel quedaban casi pegadas a esa banda oscura.
     <section className="mx-auto max-w-7xl px-6 pb-28 pt-10 md:pb-32 md:pt-12">
       {/* Columna izquierda fija + carrusel a la derecha. En móvil se apilan:
-          primero el encabezado, luego las tarjetas. */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-12">
+          primero el encabezado, luego las tarjetas.
+
+          `grid-cols-1` NO ES DECORATIVO, arregla dos fallos a la vez y los dos
+          son el mismo. Sin él, por debajo de `lg` este grid no declara columnas
+          y cae en una pista implícita `auto`, que se dimensiona por el
+          max-content de su contenido. Y el contenido de la segunda celda es un
+          carrusel cuyo track mide varias veces la vista, así que la pista se
+          inflaba muy por encima del contenedor:
+
+            1. la página se ensanchaba y aparecía el scroll horizontal — el
+               `overflow-x: clip` de <html> recorta lo que se sale, pero no
+               impide que el bloque se MAQUETE más ancho: el titular, el párrafo
+               y las tarjetas quedaban colocados fuera de la pantalla;
+            2. y el viewport de Embla, que es un bloque dentro de esa celda,
+               crecía con ella hasta caber los cuatro slides enteros. Ahí Embla
+               colapsa a un único snap y desactiva el arrastre: por eso ni se
+               deslizaba ni respondían las flechas.
+
+          `grid-cols-1` emite `repeat(1, minmax(0,1fr))`, y ese `min` en 0 es lo
+          que impide que el contenido infle la pista — el mismo motivo por el que
+          la fila de `lg` usa `minmax(0,...)`.
+
+          ES EXACTAMENTE EL MISMO FALLO que ya se diagnosticó y se corrigió en
+          <SuccessStories>, el otro sitio con un carrusel dentro de un grid; ver
+          la nota de su propio `grid-cols-1`. Este quedó sin arreglar. Al añadir
+          un carrusel dentro de un grid, declarar siempre las columnas. */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-12">
         <div>
           <Eyebrow className="mb-3">Blog</Eyebrow>
           {/* Dos líneas en pantalla, UNA sola cadena para quien no la ve. El

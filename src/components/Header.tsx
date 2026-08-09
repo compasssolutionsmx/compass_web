@@ -345,49 +345,124 @@ export default function Header({
         </div>
       </header>
 
-      {/* ---- Menú móvil: panel deslizante ---- */}
-      {isMenuOpen && hayNav && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50 motion-safe:animate-fade-in"
-            onClick={() => setIsMenuOpen(false)}
-            aria-hidden="true"
-          />
-          <div
-            ref={panelRef}
-            id={MOBILE_PANEL_ID}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menú"
-            className="absolute inset-y-0 right-0 flex w-72 max-w-[85%] flex-col bg-white shadow-xl motion-safe:animate-slide-in-right"
-          >
-            <div className="flex h-20 shrink-0 items-center justify-end px-6">
-              <button
-                ref={closeButtonRef}
-                type="button"
-                onClick={() => setIsMenuOpen(false)}
-                aria-label="Cerrar menú"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
-              >
-                <X className="h-6 w-6" aria-hidden="true" />
-              </button>
-            </div>
+      {/* ---- Menú móvil: panel a pantalla completa ----
 
+          SIN VELO Y SIN CAPA EXTERIOR. Antes eran dos elementos: un `fixed
+          inset-0` que sostenía el `bg-black/50` clicable y, dentro, un panel de
+          288px pegado a la derecha. Con el panel cubriendo la pantalla entera ya
+          no hay un "fuera" que oscurecer ni al que se pueda hacer clic, así que
+          el velo desapareció y el panel ES el elemento fijo.
+
+          CUBRE TAMBIÉN AL <header>, que va en z-40: de ahí que el logo y el
+          botón de cerrar tengan que vivir aquí dentro. Antes el logo que se veía
+          arriba a la izquierda era el del header asomando junto al panel
+          estrecho; ahora queda tapado y hay que ponerlo. */}
+      {isMenuOpen && hayNav && (
+        <div
+          ref={panelRef}
+          id={MOBILE_PANEL_ID}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menú"
+          className="fixed inset-0 z-50 flex flex-col bg-white motion-safe:animate-slide-in-right lg:hidden"
+        >
+          <div className="flex h-20 shrink-0 items-center justify-between px-6">
+            {/* Mismo destino y mismo tamaño que el logo del header, y sin el
+                `brightness-0 invert`: aquí el fondo es siempre blanco, así que
+                va en su color natural. A 320px mide 161px de ancho y convive de
+                sobra con el botón de cerrar. */}
+            <Link
+              href="/"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex shrink-0 items-center"
+            >
+              <Image
+                src="/brand/logotipo.svg"
+                alt="Compass Solutions"
+                width={1617}
+                height={362}
+                unoptimized
+                className="h-9 w-auto"
+              />
+            </Link>
+
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={() => setIsMenuOpen(false)}
+              aria-label="Cerrar menú"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+            >
+              <X className="h-6 w-6" aria-hidden="true" />
+            </button>
+          </div>
+
+          {/* El bloque se pega ABAJO y todo el aire sobrante queda entre la
+              cabecera y los enlaces, que es lo que pide un menú a pantalla
+              completa.
+
+              CON `mt-auto` EN EL <nav>, NO CON `justify-end` EN ESTE
+              CONTENEDOR: hacen lo mismo mientras el contenido quepa, pero si
+              algún día no cupiera, `justify-end` deja el principio del contenido
+              FUERA del área desplazable y no hay forma de llegar a él —el
+              desbordamiento por el borde de inicio no genera scroll—. El margen
+              automático se resuelve a cero en cuanto falta sitio y el contenedor
+              se desplaza con normalidad desde arriba.
+
+              `overflow-y-auto` es la red de seguridad de eso mismo, no algo que
+              hoy haga falta: medido, el caso más apretado (320x568) ocupa 470px
+              de los 568 disponibles. Si mañana se añaden enlaces, se desplaza en
+              vez de recortarse. No necesita `data-lenis-prevent` porque el menú
+              pausa Lenis mientras está abierto. */}
+          <div className="flex flex-1 flex-col overflow-y-auto px-6 pb-10">
             <nav
               aria-label="Principal (móvil)"
-              className="flex flex-col gap-1 px-6"
+              className="mt-auto flex flex-col gap-1"
             >
               {enlaces.map((link) => (
+                /* TIPOGRAFÍA DE MENÚ, no de lista: `font-heading` (Archivo) a
+                   text-3xl en teléfono y text-4xl de 640px en adelante — el
+                   panel llega hasta 1023px, así que esa segunda talla es para
+                   tableta. Eran 16px en peso medium con la fuente de cuerpo.
+
+                   El `py-2` no es decorativo: la línea a 30px mide 37.5px de
+                   alto y el mínimo táctil cómodo son 44px. Con él cada enlace
+                   ocupa 53.5px de alto real. */
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="rounded-lg py-3 text-base font-medium text-slate-700 transition-colors hover:text-brand-900"
+                  className="py-2 font-heading text-3xl font-bold leading-tight text-brand-900 transition-colors hover:text-brand-700 sm:text-4xl"
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
+
+            {/* MISMO BOTÓN QUE EL DEL HEADER, y no por parecido: el panel tapa
+                el header, así que este CTA ES el "Contáctenos" de arriba
+                mientras el menú está abierto. Repite su `.glass-cta`, su
+                tipografía y su flecha; sólo cambia a ancho completo y con el
+                contenido centrado, que es lo que corresponde al pie de un menú
+                de pantalla completa.
+
+                CIERRA EL MENÚ AL ABRIR EL MODAL. Dejarlo abierto detrás
+                apilaría dos diálogos `aria-modal` con dos trampas de foco y dos
+                bloqueos del scroll del body peleándose. React procesa el cierre
+                y la apertura en el mismo commit —primero las limpiezas, después
+                los efectos nuevos—, así que el menú restituye el scroll y el
+                foco justo antes de que el modal se los quede. El foco acaba en
+                el modal, que es donde debe estar. */}
+            <QuoteButton
+              onClick={() => setIsMenuOpen(false)}
+              className="glass-cta group mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 font-heading text-sm font-semibold text-white transition-all duration-300 motion-reduce:transition-none"
+            >
+              Contáctenos
+              <ArrowUpRight
+                aria-hidden="true"
+                className="h-4 w-4 transition-transform duration-250 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:group-hover:-translate-y-[3px] motion-safe:group-hover:translate-x-[3px]"
+              />
+            </QuoteButton>
           </div>
         </div>
       )}

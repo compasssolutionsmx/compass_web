@@ -72,14 +72,32 @@ export function QuoteModalProvider({ children }: { children: ReactNode }) {
 export function QuoteButton({
   className,
   children,
+  onClick,
 }: {
   className?: string;
   children: ReactNode;
+  /**
+   * Se ejecuta ANTES de abrir el modal. Existe para quien tiene que recoger algo
+   * suyo al ceder la pantalla — hoy sólo el panel del menú móvil, que se cierra
+   * a sí mismo para no dejar dos diálogos `aria-modal` apilados.
+   *
+   * El orden importa: si se llamara después de `openModal`, quien lo use vería
+   * su cierre y la apertura del modal en el mismo commit pero con las limpiezas
+   * al revés, y el foco podría acabar en el elemento que se está desmontando.
+   */
+  onClick?: () => void;
 }) {
   const { openModal } = useQuoteModal();
 
   return (
-    <button type="button" className={className} onClick={openModal}>
+    <button
+      type="button"
+      className={className}
+      onClick={() => {
+        onClick?.();
+        openModal();
+      }}
+    >
       {children}
     </button>
   );

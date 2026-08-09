@@ -32,6 +32,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { REQUEST_TYPES, useQuoteRequest } from "./useQuoteRequest";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
+import OptionSelect from "./OptionSelect";
 import { useSmoothScroll } from "./SmoothScroll";
 
 type TypeValue = (typeof REQUEST_TYPES)[number]["value"];
@@ -263,7 +264,12 @@ function Chip({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`rounded-xl border text-sm font-medium transition-colors ${
+      /* `break-words` es una RED DE SEGURIDAD, no un efecto buscado: las
+         etiquetas son palabras sueltas ("Especializado", "Guadalajara") y una
+         palabra que no cabe no se parte sola — se sale de la caja y pisa al chip
+         vecino. Con esto, en el peor ancho se parte en vez de desbordarse.
+         Medido, no debería llegar a activarse en ningún ancho ≥320px. */
+      className={`rounded-xl border text-sm font-medium break-words transition-colors ${
         selected
           ? "border-brand-900 bg-brand-900/5 text-brand-900"
           : "border-slate-200 text-slate-600 hover:border-brand-900 hover:text-brand-900"
@@ -329,19 +335,46 @@ function OtroTextoLibre({
           clic o se tecleó. Hoy sólo Marítimo trae sugerencias; donde la lista
           está vacía el bloque simplemente no se monta. */}
       {suggestions.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">O elija uno de estos:</span>
-          {suggestions.map((sugerencia) => (
-            <Chip
-              key={sugerencia}
-              selected={value.trim() === sugerencia}
-              onClick={() => onPickSuggestion(sugerencia)}
-              className="px-3 py-1.5"
-            >
-              {sugerencia}
-            </Chip>
-          ))}
-        </div>
+        <>
+          {/* MÓVIL: los atajos también pasan a desplegable, por coherencia con
+              el resto del cotizador.
+
+              OJO CON EL VALOR: estos atajos no tienen estado propio — escriben
+              en el campo de texto de arriba, que es el único dato real. Por eso
+              el `value` del desplegable se DERIVA de lo escrito y sólo se marca
+              como elegida la plaza si el texto coincide exactamente con una de
+              la lista. Si la persona escribe otra cosa, el desplegable vuelve
+              solo a su estado sin marcar, que es la verdad: lo que vale es lo
+              que está escrito arriba. */}
+          <div className="mt-3 sm:hidden">
+            <OptionSelect
+              label="Otras plazas que operamos"
+              placeholder="O elija una de estas"
+              value={suggestions.includes(value.trim()) ? value.trim() : ""}
+              onChange={onPickSuggestion}
+              options={suggestions.map((sugerencia) => ({
+                value: sugerencia,
+                label: sugerencia,
+              }))}
+            />
+          </div>
+
+          <div className="mt-2 hidden flex-wrap items-center gap-2 sm:flex">
+            <span className="text-xs text-slate-500">
+              O elija uno de estos:
+            </span>
+            {suggestions.map((sugerencia) => (
+              <Chip
+                key={sugerencia}
+                selected={value.trim() === sugerencia}
+                onClick={() => onPickSuggestion(sugerencia)}
+                className="px-3 py-1.5"
+              >
+                {sugerencia}
+              </Chip>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -647,7 +680,7 @@ export default function QuoteWizard({
   // pierda el contexto ni salga del sitio.
   if (status === "success" || status === "error") {
     return (
-      <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10">
+      <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10">
         {status === "success" ? (
           <LeadSuccess
             whatsappUrl={whatsappUrl}
@@ -667,9 +700,14 @@ export default function QuoteWizard({
   }
 
   return (
+    // `p-8` (32px) en móvil, era `p-6` (24px): el contenido quedaba pegado al
+    // borde de una tarjeta que en un teléfono ya es casi todo el ancho de la
+    // pantalla. El `md:p-10` de escritorio no se toca. Los 8px que se comen por
+    // lado salen del ancho de los chips, y eso obligó a soltarles el suyo — ver
+    // la rejilla del paso 1.
     <div
       ref={wizardRef}
-      className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10"
+      className="rounded-3xl bg-white p-8 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10"
     >
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         {showHeading ? (
@@ -745,10 +783,22 @@ export default function QuoteWizard({
             `flex-wrap`: en pantallas angostas el botón cae bajo la pregunta en
             vez de estrujarla. */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          {/* TAMAÑO PROPIO EN MÓVIL. A `text-lg` con el interlineado que trae
+              de fábrica (18/28px, factor 1.56) y el ancho semiexpandido de
+              Archivo, la pregunta más larga —"Seleccione el tipo de transporte
+              que está buscando"— ocupaba 3 líneas y 84px de alto a 320px, y se
+              leía como un segundo titular compitiendo con "Solicite una
+              cotización" a dos dedos por encima.
+
+              A 16px con `leading-snug` (1.375 -> 22px) y `tracking-tight` baja a
+              66px a 320px y a 44px de 375 en adelante, sin ganar ninguna línea.
+              De `md` para arriba se restituye lo de siempre: `md:leading-7` son
+              los mismos 28px que `text-lg` aplica por defecto, así que en
+              escritorio no cambia ni un píxel. */}
           <p
             ref={stepHeadingRef}
             tabIndex={-1}
-            className="font-heading text-lg font-semibold text-brand-900 outline-none"
+            className="font-heading text-base font-semibold leading-snug tracking-tight text-brand-900 outline-none md:text-lg md:leading-7 md:tracking-normal"
           >
             {currentStep.prompt}
           </p>
@@ -787,26 +837,52 @@ export default function QuoteWizard({
           /* Sin encabezado propio: la pregunta de arriba ya dice qué elegir, y
              el nombre del grupo para lectores de pantalla lo pone `aria-label`
              —invisible, sin repetir nada en pantalla. */
-          <div
-            role="group"
-            aria-label="Tipo de servicio"
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3"
-          >
-            {REQUEST_TYPES.map((type) => {
-              const Icon = TYPE_ICONS[type.value];
-              return (
-                <Chip
-                  key={type.value}
-                  selected={tipo === type.value}
-                  onClick={() => pickTipo(type.value)}
-                  className="flex items-center justify-center gap-2 px-3 py-3"
-                >
-                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
-                  {type.label}
-                </Chip>
-              );
-            })}
-          </div>
+          <>
+            {/* MÓVIL: desplegable. Las seis tarjetas en rejilla de dos columnas
+                ocupaban ~150px de alto y a 320px la etiqueta "Especializado" ni
+                siquiera cabía en su chip. Ver <OptionSelect> para el patrón
+                ARIA y por qué no es un <select> nativo: estas opciones llevan
+                ícono. */}
+            <div className="sm:hidden">
+              <OptionSelect
+                label="Tipo de servicio"
+                placeholder="Seleccione un tipo de servicio"
+                value={tipo}
+                onChange={(valor) => pickTipo(valor as TypeValue)}
+                options={REQUEST_TYPES.map((type) => ({
+                  value: type.value,
+                  label: type.label,
+                  Icon: TYPE_ICONS[type.value],
+                }))}
+              />
+            </div>
+
+            {/* DESKTOP: la rejilla de siempre, intacta. `hidden` la deja fuera
+                del DOM accesible por debajo de `sm`, así que no hay dos
+                controles anunciando lo mismo. Los ajustes de `gap` y `px` que
+                se le habían hecho para móvil se revirtieron: por debajo de 640px
+                ya no se ve. */}
+            <div
+              role="group"
+              aria-label="Tipo de servicio"
+              className="hidden gap-3 sm:grid sm:grid-cols-3"
+            >
+              {REQUEST_TYPES.map((type) => {
+                const Icon = TYPE_ICONS[type.value];
+                return (
+                  <Chip
+                    key={type.value}
+                    selected={tipo === type.value}
+                    onClick={() => pickTipo(type.value)}
+                    className="flex items-center justify-center gap-2 px-3 py-3"
+                  >
+                    <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
+                    {type.label}
+                  </Chip>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* ---------- PASO 2 · Ruta / Modalidad (condicional) ---------- */}
@@ -841,8 +917,26 @@ export default function QuoteWizard({
                 {/* La rejilla se ajusta al número de chips: con 4 caben en una
                     fila a partir de `sm` sin dejar huecos, y una lista más
                     larga vuelve a repartirse en 3 y 6 columnas. */}
+                {/* MÓVIL: desplegable. `route.legend` —"Puerto de operación",
+                    "Aeropuerto de operación"— es el nombre accesible; en
+                    escritorio ese mismo texto es el <legend> sr-only del
+                    fieldset, así que el control se nombra igual en las dos
+                    versiones. */}
+                <div className="sm:hidden">
+                  <OptionSelect
+                    label={route.legend}
+                    placeholder="Seleccione una opción"
+                    value={sub}
+                    onChange={pickSub}
+                    options={route.options.map((option) => ({
+                      value: option,
+                      label: option,
+                    }))}
+                  />
+                </div>
+
                 <div
-                  className={`grid grid-cols-2 gap-3 ${
+                  className={`hidden gap-3 sm:grid ${
                     route.options.length <= 4
                       ? "sm:grid-cols-4"
                       : "sm:grid-cols-3 lg:grid-cols-6"
@@ -887,7 +981,26 @@ export default function QuoteWizard({
                     sr-only ya agrupa y nombra estos chips. Anidar un segundo
                     grupo con casi el mismo nombre los haría anunciarse dos
                     veces. */}
-                <div className="grid gap-3 sm:grid-cols-3">
+                {/* MÓVIL: desplegable. La explicación de cada modalidad viaja
+                    como `hint` y se pinta bajo su etiqueta dentro de la opción,
+                    que es justo lo que un <select> nativo no permite y por lo
+                    que este control existe. En el disparador sólo se ve la sigla
+                    elegida: los hints son de dos líneas y no caben ahí. */}
+                <div className="sm:hidden">
+                  <OptionSelect
+                    label={route.legend}
+                    placeholder="Seleccione una modalidad"
+                    value={sub}
+                    onChange={pickSub}
+                    options={route.options.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                      hint: option.hint,
+                    }))}
+                  />
+                </div>
+
+                <div className="hidden gap-3 sm:grid sm:grid-cols-3">
                   {route.options.map((option) => (
                     <Chip
                       key={option.value}
@@ -1128,10 +1241,34 @@ export default function QuoteWizard({
                 ¿Cómo prefiere que lo contactemos?{" "}
                 <span className="font-normal text-slate-500">(opcional)</span>
               </span>
+              {/* MÓVIL: desplegable, con "Sin preferencia" COMO OPCIÓN.
+                  Los chips se deseleccionan volviendo a pulsar el que ya estaba
+                  marcado, y eso en un listbox no existe: una lista de opciones
+                  no se "despulsa". Como el campo es opcional, hacía falta un
+                  camino de vuelta a vacío, y una entrada explícita lo dice mejor
+                  de lo que lo diría un gesto escondido. Su `value` es la cadena
+                  vacía, o sea exactamente el estado inicial: sin elegir nada, el
+                  disparador ya muestra "Sin preferencia" y no un hueco. */}
+              <div className="sm:hidden">
+                <OptionSelect
+                  label="Medio de contacto preferido"
+                  placeholder="Sin preferencia"
+                  value={contactoPreferido}
+                  onChange={setContactoPreferido}
+                  options={[
+                    { value: "", label: "Sin preferencia" },
+                    ...CONTACT_PREFERENCES.map((medio) => ({
+                      value: medio,
+                      label: medio,
+                    })),
+                  ]}
+                />
+              </div>
+
               <div
                 role="group"
                 aria-label="Medio de contacto preferido"
-                className="flex flex-wrap gap-3"
+                className="hidden flex-wrap gap-3 sm:flex"
               >
                 {CONTACT_PREFERENCES.map((medio) => (
                   <Chip
@@ -1184,7 +1321,12 @@ export default function QuoteWizard({
                 type="button"
                 onClick={goNext}
                 aria-describedby={error ? errorId : undefined}
-                className="rounded-full bg-brand-900 px-12 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                /* Mismo `px-8 sm:px-12` que el botón de envío de al lado, por
+                   simetría: los dos ocupan el mismo sitio de la fila y uno
+                   sustituye al otro en el último paso. Aquí el ancho nunca
+                   apretó —"Continuar" son 70px—, pero verlos con padding
+                   distinto al pasar de un paso a otro sí se nota. */
+                className="rounded-full bg-brand-900 px-8 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 sm:px-12"
               >
                 Continuar
               </button>
@@ -1193,7 +1335,13 @@ export default function QuoteWizard({
                 type="submit"
                 disabled={isSubmitting}
                 aria-describedby={error ? errorId : undefined}
-                className="rounded-full bg-brand-900 px-12 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                /* `px-8` en móvil, `px-12` desde `sm`. "Solicitar cotización"
+                   mide 138px a text-sm: con los 96px de `px-12` el botón pedía
+                   234px y, tras subir la tarjeta a `p-8`, a 320px sólo quedan
+                   224 de contenido — se salía 10px por la derecha. Con 64px de
+                   padding pide 202 y entra con 22 de margen. De `sm` para
+                   arriba nada cambia. */
+                className="rounded-full bg-brand-900 px-8 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 sm:px-12 disabled:opacity-60"
               >
                 {isSubmitting ? "Enviando…" : "Solicitar cotización"}
               </button>
