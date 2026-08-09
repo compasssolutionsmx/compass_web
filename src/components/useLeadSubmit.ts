@@ -19,9 +19,10 @@
  * pantalla y abriéndose en pestaña nueva, no como destino forzoso.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildWhatsAppUrl } from "@/lib/site";
 import { pushEvent } from "@/lib/analytics";
+import { MIN_FILL_MS } from "@/lib/bot-trap";
 // SÓLO EL TIPO. `lead-email` es un módulo `server-only`; un `import type` se
 // borra al compilar, así que nada de ese archivo —ni su configuración, ni por
 // arrastre la clave de Resend— acaba en el bundle del navegador.
@@ -50,13 +51,16 @@ const TIMEOUT_CORREO_MS = 10_000;
 async function postLeadEmail(
   formulario: LeadSource,
   datos: LeadPayload,
+  trampas: { website: string; elapsedMs: number },
 ): Promise<void> {
   const response = await fetch("/api/lead", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // `hp` es el honeypot: desde aquí va siempre vacío. Lo comprueba el
-    // servidor, donde un bot que rellene todos los campos se delata solo.
-    body: JSON.stringify({ formulario, datos, hp: "" }),
+    // Las dos trampas viajan FUERA de `datos`, al mismo nivel que `formulario`.
+    // Si fueran dentro acabarían en el correo: `orderedFields` pinta al final
+    // cualquier clave que no reconozca, así que el equipo comercial recibiría
+    // un "website:" vacío y un "elapsedMs: 8123" en cada aviso.
+    body: JSON.stringify({ formulario, datos, ...trampas }),
     keepalive: true,
     signal: AbortSignal.timeout(TIMEOUT_CORREO_MS),
   });
@@ -107,7 +111,32 @@ export function useLeadSubmit() {
     payload: LeadPayload;
     whatsappMessage: string | null;
     formulario: LeadSource;
+    website: string;
   } | null>(null);
+
+  /**
+   * TIME-TRAP, mitad cliente. Momento en que el formulario apareció en
+   * pantalla; el hook se monta con él, así que este ref lo fecha sin que cada
+   * formulario tenga que acordarse de nada.
+   *
+   * NO SE REINICIA con "Hacer otra cotización" ni con un reintento, y es
+   * deliberado: el tiempo sólo puede crecer, así que quien ya lleva un rato en
+   * la página nunca vuelve a acercarse al umbral. Reiniciarlo obligaría a
+   * esperar otros tres segundos por cada envío adicional, castigando justo al
+   * usuario que más está usando el sitio.
+   *
+   * SE FECHA EN UN EFECTO, no en el valor inicial del ref. Dos razones, y la
+   * primera es que `useRef(Date.now())` es una llamada impura en render y la
+   * regla `react-hooks/purity` la rechaza. La segunda es que así se mide mejor:
+   * el efecto corre después del primer pintado en el navegador, o sea cuando el
+   * formulario existe de verdad para el usuario, en vez de cuando el servidor
+   * generó el HTML.
+   */
+  const montadoEn = useRef<number | null>(null);
+
+  useEffect(() => {
+    montadoEn.current = Date.now();
+  }, []);
 
   const submitLead = useCallback(
     async (
@@ -122,19 +151,52 @@ export function useLeadSubmit() {
        */
       whatsappMessage: string | null,
       formulario: LeadSource,
+      /**
+       * Contenido del campo trampa, leído del <form> con `readHoneypot`. Los
+       * cuatro formularios lo pasan; va vacío salvo que algo no humano lo haya
+       * rellenado.
+       */
+      website: string,
     ) => {
-      ultimoEnvio.current = { payload, whatsappMessage, formulario };
+      ultimoEnvio.current = { payload, whatsappMessage, formulario, website };
       setWhatsappUrl(
         whatsappMessage ? buildWhatsAppUrl(whatsappMessage) : null,
       );
       setStatus("submitting");
+
+      /**
+       * TIME-TRAP, la otra mitad: si el envío llega antes del umbral, el
+       * cliente ESPERA lo que falte en vez de dejar que el servidor lo rechace.
+       *
+       * Es la diferencia entre una trampa que sólo pilla bots y una que además
+       * roza a personas. Quien usa el autorrelleno del navegador puede llenar
+       * el modal corto y pulsar enviar en menos de dos segundos, y ése es un
+       * cliente, no un atacante: lo único que ve es el botón en "Enviando…" un
+       * momento más. El servidor sigue exigiendo el mínimo sin ceder nada,
+       * porque a él llegan también los POST que nunca pasaron por este código.
+       *
+       * El tope de espera es el propio umbral, así que en el peor caso son 3 s.
+       */
+      // Si el efecto no llegó a correr —no debería, pero un ref nulo no puede
+      // decidir nada— se toma este instante como origen: la espera de abajo
+      // sale entonces completa y el envío cumple el mínimo igual. El fallo, si
+      // lo hay, cae del lado de esperar de más y nunca del de rechazar a nadie.
+      const desde = montadoEn.current ?? Date.now();
+
+      const falta = MIN_FILL_MS - (Date.now() - desde);
+      if (falta > 0) {
+        await new Promise((resolve) => setTimeout(resolve, falta));
+      }
 
       // EL CORREO ES LO QUE DECIDE. Antes daba igual que fallara porque el
       // usuario se iba a WhatsApp de todos modos; ahora la pantalla de éxito
       // afirma que la solicitud "quedó registrada", y eso sólo es cierto si
       // este POST salió bien. Si falla, se muestra el error con reintento.
       try {
-        await postLeadEmail(formulario, payload);
+        await postLeadEmail(formulario, payload, {
+          website,
+          elapsedMs: Date.now() - desde,
+        });
       } catch (emailError) {
         console.error("[lead] falló el correo de respaldo:", emailError);
         setStatus("error");
@@ -187,7 +249,15 @@ export function useLeadSubmit() {
   const retryLead = useCallback(() => {
     const ultimo = ultimoEnvio.current;
     if (!ultimo) return;
-    void submitLead(ultimo.payload, ultimo.whatsappMessage, ultimo.formulario);
+    // Se reenvía el honeypot TAL CUAL, sin limpiarlo. Si un bot cayó, sigue
+    // cayendo; y si algo lo rellenó por error, el reintento falla igual y queda
+    // en el log en vez de colarse por la puerta de atrás.
+    void submitLead(
+      ultimo.payload,
+      ultimo.whatsappMessage,
+      ultimo.formulario,
+      ultimo.website,
+    );
   }, [submitLead]);
 
   /** Vuelve al formulario en blanco ("hacer otra cotización"). */

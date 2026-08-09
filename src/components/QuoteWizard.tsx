@@ -34,6 +34,8 @@ import { REQUEST_TYPES, useQuoteRequest } from "./useQuoteRequest";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
 import OptionSelect from "./OptionSelect";
 import { useSmoothScroll } from "./SmoothScroll";
+import HoneypotField from "./HoneypotField";
+import { readHoneypot } from "@/lib/bot-trap";
 
 type TypeValue = (typeof REQUEST_TYPES)[number]["value"];
 
@@ -632,6 +634,7 @@ export default function QuoteWizard({
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const website = readHoneypot(event.currentTarget);
     if (!selectedType) {
       setError("Seleccione un tipo de servicio para continuar.");
       setStep(1);
@@ -671,6 +674,7 @@ export default function QuoteWizard({
         contactoPreferido: contactoPreferido || undefined,
       },
       selectedType.label,
+      website,
     );
   }
 
@@ -773,6 +777,11 @@ export default function QuoteWizard({
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
+        {/* Va aquí arriba y no en el paso final: el cotizador desmonta los
+            pasos que no se ven, y el campo trampa tiene que estar en el DOM
+            desde la primera pantalla para que un bot lo encuentre al leer el
+            HTML. Fuera de los pasos, dentro del <form>. */}
+        <HoneypotField />
         {/* La pregunta del paso y, sólo en el paso 1, la salida a proveedores
             en el extremo opuesto de la misma fila. Sustituye al enlace de texto
             "¿Busca ser proveedor o trabajar con nosotros?" que iba al pie de

@@ -1,5 +1,8 @@
 import { Resend } from "resend";
 import {
+  ACK_SUBJECT,
+  buildAckHtml,
+  buildAckText,
   buildHtml,
   buildReplyTo,
   buildSubject,
@@ -7,7 +10,10 @@ import {
   leadFrom,
   leadRecipients,
   parseLead,
+  type Lead,
 } from "@/lib/lead-email";
+import { inspectSubmission } from "@/lib/bot-trap";
+import { checkLeadRate, clientIp } from "@/lib/rate-limit";
 
 /**
  * POST /api/lead — manda el correo de aviso con los datos del formulario.
@@ -23,71 +29,168 @@ import {
  * cuesta el lead a nadie; que bloquee, sí. De ahí que los errores se registren
  * en el servidor y se respondan rápido.
  *
- * TODO(seguridad): falta el reCAPTCHA — sigue pendiente su site key. Hasta que
- * llegue, lo único que protege este endpoint es el honeypot de `parseLead` y el
- * limitador de abajo, y ninguno de los dos frena a alguien que se lo proponga.
- * Cuando esté la key, verificar aquí el token antes de mandar nada.
+ * PROTECCIÓN ANTI-BOT, en tres capas y sin dependencias externas:
+ *   1. honeypot   campo trampa, en `lib/bot-trap`
+ *   2. time-trap  mínimo de segundos entre montar el formulario y enviarlo,
+ *                 mismo módulo
+ *   3. rate limit por IP, en `lib/rate-limit`, donde está explicado por qué en
+ *                 serverless hacen falta dos contadores y qué se le escapa a
+ *                 cada uno
+ * Las tres registran en el log lo que descartan, con motivo, para poder medir
+ * si están parando bots o personas. Buscar `[lead] descartado`.
  */
 
 /** Sin caché y siempre en el servidor: cada envío es un efecto secundario. */
 export const dynamic = "force-dynamic";
 
-const VENTANA_MS = 60_000;
-const MAX_POR_VENTANA = 5;
-
 /**
- * Limitador por IP, en memoria del proceso.
+ * Acuse de recibo al cliente. SÓLO cotizador, y NUNCA lanza.
  *
- * ES BEST-EFFORT Y HAY QUE SABERLO: en serverless cada instancia tiene su
- * propio Map, así que el límite real es "5 por minuto POR INSTANCIA", y se
- * reinicia en cada arranque en frío. Frena el goteo tonto y los envíos
- * repetidos por doble clic, no un ataque distribuido. Para eso hace falta un
- * almacén compartido (Upstash/Redis) o el WAF de Vercel, y sobre todo el
- * reCAPTCHA del TODO de arriba.
+ * NO PUEDE ROMPER NADA, que es su requisito principal: el aviso interno es el
+ * registro del lead y la pantalla de confirmación del usuario depende de aquél,
+ * no de éste. Si Resend rechaza este correo —dirección que rebota, cuota,
+ * cualquier cosa— se anota en el log y el flujo sigue como si no existiera.
+ *
+ * NO SE LLEGA AQUÍ CON UN ENVÍO DESCARTADO. Esta función se llama al final del
+ * handler, después de que el honeypot, el time-trap y `parseLead` hayan
+ * devuelto por su cuenta; un envío que caiga en cualquiera de los tres sale del
+ * handler antes, así que jamás se manda un acuse a la dirección inventada de un
+ * bot. El `buildReplyTo` de abajo es el último filtro: sin correo válido no hay
+ * a quién escribir y no se intenta.
  */
-const HITS = new Map<string, number[]>();
+async function enviarAcuse(resend: Resend, lead: Lead): Promise<void> {
+  if (lead.formulario !== "cotizador") return;
 
-function rateLimited(ip: string): boolean {
-  const ahora = Date.now();
-  const recientes = (HITS.get(ip) ?? []).filter(
-    (marca) => ahora - marca < VENTANA_MS,
-  );
-
-  if (recientes.length >= MAX_POR_VENTANA) {
-    HITS.set(ip, recientes);
-    return true;
+  /**
+   * UN LEAD MARCADO NO RECIBE ACUSE, y esto es una decisión aparte de "marcar
+   * en vez de descartar", no una consecuencia de ella.
+   *
+   * El aviso interno llega igual porque lo lee una persona que puede juzgar. El
+   * acuse es distinto: es correo SALIENTE hacia una dirección que, si el envío
+   * era de un bot, probablemente sea falsa, robada o una trampa de spam. Mandar
+   * ahí desde el dominio verificado castiga su reputación de envío, o sea la
+   * entregabilidad de TODOS los correos del sitio, incluidos los avisos que sí
+   * importan.
+   *
+   * Lo que se pierde si el marcado era un cliente real: se queda sin el correo
+   * automático. No sin respuesta — el equipo tiene su solicitud delante y la
+   * nota del cuerpo le dice justamente que lo contacte si el lead tiene sentido.
+   */
+  if (lead.flagged) {
+    console.info(
+      "[lead] acuse omitido: el envío está marcado por el filtro anti-bot.",
+    );
+    return;
   }
 
-  recientes.push(ahora);
-  HITS.set(ip, recientes);
+  const destino = buildReplyTo(lead);
+  if (!destino) return;
 
-  // Poda: sin esto el Map crece con cada IP que pase por aquí y no baja nunca.
-  if (HITS.size > 500) {
-    for (const [clave, marcas] of HITS) {
-      if (marcas.every((marca) => ahora - marca >= VENTANA_MS)) {
-        HITS.delete(clave);
-      }
+  try {
+    const { error } = await resend.emails.send({
+      from: leadFrom(),
+      to: destino,
+      /**
+       * RESPONDER LE ESCRIBE A VENTAS, no a este buzón. Es la misma lista que
+       * acaba de recibir el aviso interno, así que si el cliente contesta el
+       * acuse —y contestan— la respuesta cae en la bandeja de la gente que ya
+       * tiene su solicitud delante, en vez de en `leads@`, que nadie lee.
+       *
+       * Va la lista ENTERA y no una sola dirección a propósito: quien conteste
+       * llega a las mismas personas que el aviso original, sin depender de que
+       * una concreta esté disponible.
+       */
+      replyTo: leadRecipients("cotizador"),
+      subject: ACK_SUBJECT,
+      html: buildAckHtml(lead),
+      text: buildAckText(lead),
+    });
+
+    if (error) {
+      console.error("[lead] no se pudo enviar el acuse al cliente:", error);
+      return;
     }
-  }
 
-  return false;
+    console.info("[lead] acuse enviado al cliente");
+  } catch (thrown) {
+    console.error("[lead] error inesperado al enviar el acuse:", thrown);
+  }
 }
 
-function clientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() || "desconocida";
+/** Respuesta con la cookie del limitador adjunta, si la hay. */
+function respond(
+  body: Record<string, unknown>,
+  status: number,
+  setCookie?: string,
+): Response {
+  const headers = new Headers();
+  if (setCookie) headers.set("Set-Cookie", setCookie);
+  return Response.json(body, { status, headers });
 }
 
 export async function POST(request: Request) {
-  if (rateLimited(clientIp(request))) {
-    return Response.json({ error: "Demasiados envíos." }, { status: 429 });
+  const ip = clientIp(request);
+
+  // VA PRIMERO porque es lo más barato que hay: una comparación de números
+  // antes de leer el cuerpo. A quien está en bucle no se le parsea el JSON.
+  const rate = checkLeadRate(request, ip);
+  if (rate.limited) {
+    console.warn(`[lead] descartado (rate-limit) ip=${ip}: ${rate.reason}`);
+    return respond({ error: "Demasiados envíos." }, 429, rate.setCookie);
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "JSON inválido." }, { status: 400 });
+    return respond({ error: "JSON inválido." }, 400, rate.setCookie);
+  }
+
+  const campos = (body ?? {}) as Record<string, unknown>;
+  const trampa = inspectSubmission({
+    honeypot: campos.website,
+    elapsedMs: campos.elapsedMs,
+  });
+
+  const origen =
+    typeof campos.formulario === "string" ? campos.formulario : "desconocido";
+
+  /**
+   * TIME-TRAP -> DESCARTA. No hay falso positivo que temer: el cliente espera
+   * lo que falte antes de enviar (ver `useLeadSubmit`), así que una persona no
+   * llega aquí por rápida. Se devuelve un 400 de verdad y no un 200 fingido
+   * porque si algún caso raro rozara a alguien —un reloj imposible, un
+   * `elapsedMs` que se pierde—, fingir éxito significaría tragarse su solicitud
+   * sin que nadie se entere jamás. Con el error, el formulario pinta su
+   * pantalla de "no pudimos registrar su solicitud" con el botón de reintentar,
+   * y el reintento SÍ pasa: el tiempo se mide desde que se montó el formulario.
+   */
+  if (trampa.discard) {
+    console.warn(
+      `[lead] descartado (${trampa.discard.reason}) formulario=${origen} ip=${ip}: ${trampa.discard.detail}`,
+    );
+    return respond({ error: "Envío no válido." }, 400, rate.setCookie);
+  }
+
+  /**
+   * HONEYPOT -> MARCA, y el envío sigue su curso.
+   *
+   * Antes esto respondía un 200 fingido y tiraba el lead. El razonamiento era
+   * que sólo un bot puede rellenar un campo invisible, no tabulable y fuera del
+   * árbol de accesibilidad, y sigue siendo cierto EN CASI TODOS LOS CASOS. El
+   * problema es el caso que falta: un gestor de contraseñas autorrellenando el
+   * campo de un cliente real. Ahí el coste de equivocarse no era simétrico —un
+   * correo de spam que alguien borra frente a una venta perdida sin rastro— así
+   * que ahora el lead llega igual, con el asunto marcado y una nota en el
+   * cuerpo que le explica al equipo qué mirar antes de borrarlo.
+   *
+   * El log NO cambia: mismo motivo, mismo formulario de origen y el LARGO del
+   * contenido, nunca el contenido.
+   */
+  if (trampa.flagged) {
+    console.warn(
+      `[lead] marcado (honeypot) formulario=${origen} ip=${ip}: ${trampa.flagged.detail}`,
+    );
   }
 
   const parsed = parseLead(body);
@@ -95,7 +198,7 @@ export async function POST(request: Request) {
     // Se registra pero no se detalla en la respuesta más de lo necesario: al
     // cliente le da igual y al abusador no hay por qué darle pistas.
     console.warn("[lead] payload rechazado:", parsed.error);
-    return Response.json({ error: parsed.error }, { status: 400 });
+    return respond({ error: parsed.error }, 400, rate.setCookie);
   }
 
   const apiKey = process.env.RESEND_KEY;
@@ -104,13 +207,33 @@ export async function POST(request: Request) {
     console.error(
       "[lead] falta RESEND_KEY en el entorno; no se envió el correo de respaldo.",
     );
-    return Response.json({ error: "Envío no configurado." }, { status: 503 });
+    return respond({ error: "Envío no configurado." }, 503, rate.setCookie);
   }
 
   // El cliente se instancia aquí y no en el módulo para que la ausencia de la
   // clave no reviente en tiempo de build ni en el arranque del proceso.
   const resend = new Resend(apiKey);
-  const { lead } = parsed;
+
+  // La marca se pega aquí y no en `parseLead`: esa función valida la forma de
+  // los datos y no sabe nada de trampas. Desde este punto, el asunto y el
+  // cuerpo se marcan solos.
+  const lead: Lead = trampa.flagged
+    ? { ...parsed.lead, flagged: true }
+    : parsed.lead;
+
+  /**
+   * EL ACUSE ARRANCA EN PARALELO con el aviso interno, no después. Son dos
+   * correos independientes y encadenarlos le sumaría al usuario el tiempo de
+   * los dos mientras mira "Enviando…"; así el envío cuesta lo que el más lento
+   * de los dos y no la suma.
+   *
+   * La promesa NO se espera aquí sino en el `finally`, y esa parte no es
+   * estética: en serverless la función puede congelarse en cuanto se devuelve
+   * la respuesta, así que un correo lanzado y no esperado es un correo que a
+   * veces sale y a veces no. Esperarlo en `finally` garantiza que termina pase
+   * lo que pase con el interno, sin que su resultado toque la respuesta.
+   */
+  const acuse = enviarAcuse(resend, lead);
 
   try {
     const { data, error } = await resend.emails.send({
@@ -129,13 +252,18 @@ export async function POST(request: Request) {
       // El SDK devuelve el fallo en `error` en vez de lanzarlo. El caso más
       // probable aquí es un 403 por dominio sin verificar en Resend.
       console.error("[lead] Resend rechazó el envío:", error);
-      return Response.json({ error: "No se pudo enviar." }, { status: 502 });
+      return respond({ error: "No se pudo enviar." }, 502, rate.setCookie);
     }
 
     console.info("[lead] correo de respaldo enviado:", data?.id);
-    return Response.json({ ok: true, id: data?.id });
+    return respond({ ok: true, id: data?.id }, 200, rate.setCookie);
   } catch (thrown) {
     console.error("[lead] error inesperado al enviar el correo:", thrown);
-    return Response.json({ error: "No se pudo enviar." }, { status: 500 });
+    return respond({ error: "No se pudo enviar." }, 500, rate.setCookie);
+  } finally {
+    // `enviarAcuse` no lanza nunca, así que este await no puede convertir un
+    // 200 en una excepción ni pisar el `return` de ninguna rama: sólo retrasa
+    // la respuesta lo que falte para que el correo salga de verdad.
+    await acuse;
   }
 }

@@ -28,6 +28,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
 import { useLeadSubmit } from "./useLeadSubmit";
+import HoneypotField from "./HoneypotField";
+import { readHoneypot } from "@/lib/bot-trap";
 
 /** Mismos estilos de campo que el cotizador y el modal corto. */
 const FIELD =
@@ -69,6 +71,7 @@ export default function ProviderForm() {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const website = readHoneypot(event.currentTarget);
 
     if (!nombre.trim() || !empresa.trim() || !correo.trim()) {
       setError("Nombre, empresa y correo son obligatorios.");
@@ -107,6 +110,7 @@ export default function ProviderForm() {
       // Sin salida por WhatsApp: ver la nota 2 de la cabecera.
       null,
       "proveedor",
+      website,
     );
   }
 
@@ -135,6 +139,7 @@ export default function ProviderForm() {
   return (
     <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-950/25 ring-1 ring-slate-900/5 md:p-10">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <HoneypotField />
         {/* La nota de obligatorios vive DENTRO de la tarjeta y pegada a los
             campos que describe. Estaba fuera, encima de la tarjeta, donde se
             leía como parte de la introducción de la página y no como una

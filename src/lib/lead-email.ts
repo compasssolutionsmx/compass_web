@@ -33,6 +33,7 @@ import "server-only";
  */
 
 import { requestTypeLabel } from "./request-types";
+import { buildWhatsAppUrl } from "./site";
 
 /**
  * Lista de RESPALDO comercial, para que un entorno mal configurado no se trague
@@ -171,7 +172,40 @@ export type LeadSource = "cotizador" | "whatsapp" | "proveedor" | "vacante";
 export type Lead = {
   formulario: LeadSource;
   datos: Record<string, string>;
+  /**
+   * El envío activó el honeypot. NO lo pone `parseLead` —que sólo valida la
+   * forma de los datos— sino la ruta, que es quien consulta las trampas. Al
+   * viajar dentro del `Lead`, el asunto y el cuerpo se marcan solos sin que
+   * haya que pasar la bandera por separado a cada `build*`.
+   */
+  flagged?: boolean;
 };
+
+/**
+ * MARCADOR DEL ASUNTO para un lead que activó el honeypot.
+ *
+ * Va DELANTE de todo, en mayúsculas y entre corchetes, porque el asunto es lo
+ * único que se ve en la bandeja antes de abrir: quien mira la lista tiene que
+ * poder saltarse estos correos de un vistazo, o atenderlos primero si anda
+ * cazando spam. Los corchetes además lo hacen filtrable — una regla de Gmail
+ * sobre esta cadena exacta los manda a su propia etiqueta.
+ *
+ * Sin emoji a propósito: algunos filtros los penalizan, y este correo ya viaja
+ * con una señal de "posible bot" encima. No conviene darle más motivos.
+ */
+export const FLAGGED_SUBJECT_PREFIX = "[REVISAR: posible bot]";
+
+/**
+ * Nota del cuerpo. Tiene que responder tres preguntas en el orden en que se las
+ * hace quien abre el correo: qué pasó, por qué puede no ser spam, y qué hacer.
+ *
+ * La segunda es la importante y es la razón de que este correo exista: sin ella
+ * el equipo leería "posible bot" y borraría, que es exactamente el falso
+ * negativo que marcar en vez de descartar viene a evitar.
+ */
+const FLAGGED_NOTE_TITLE = "Este envío activó el filtro anti-bot";
+const FLAGGED_NOTE_BODY =
+  "Se rellenó un campo oculto del formulario que las personas no ven ni pueden tabular. Suele ser spam automatizado, pero también puede ser un cliente real cuyo gestor de contraseñas rellenó ese campo por su cuenta. Revise los datos antes de descartarlo: si el contacto tiene sentido, trátelo como un lead normal.";
 
 /** Tope de tamaño por campo. Un lead legítimo no se acerca ni de lejos. */
 const MAX_LARGO_VALOR = 2000;
@@ -320,12 +354,12 @@ export function parseLead(
 
   const raw = body as Record<string, unknown>;
 
-  // Honeypot: un campo que ningún humano ve ni llena. Si viene con algo, es un
-  // bot rellenando todos los inputs del formulario.
-  if (typeof raw.hp === "string" && raw.hp.trim() !== "") {
-    return { ok: false, error: "Descartado." };
-  }
-
+  // EL HONEYPOT YA NO SE MIRA AQUÍ. Estaba en este punto como campo `hp`, y se
+  // mudó a `lib/bot-trap` junto al time-trap: son sensores anti-bot, no forma
+  // del payload, y la ruta los consulta ANTES de llegar a esta validación para
+  // poder responderles distinto (200 fingido al honeypot, 400 al time-trap).
+  // Esta función vuelve a ocuparse de una sola cosa: que los datos del lead
+  // tengan la forma que dicen tener.
   const formulario = raw.formulario;
   if (
     formulario !== "cotizador" &&
@@ -416,6 +450,11 @@ function orderedFields(lead: Lead): [string, string][] {
  * proveedor de un lead comercial sin tener que leer el cuerpo.
  */
 export function buildSubject(lead: Lead): string {
+  const base = subjectBase(lead);
+  return lead.flagged ? `${FLAGGED_SUBJECT_PREFIX} ${base}` : base;
+}
+
+function subjectBase(lead: Lead): string {
   if (lead.formulario === "cotizador") {
     const tipo = requestTypeLabel(lead.datos.tipo) ?? "Sin tipo";
     return `Nueva cotización — ${tipo}`;
@@ -468,6 +507,30 @@ function escapeHtml(value: string): string {
  * Outlook no existen. Es feo de escribir y es lo que se ve bien en todas partes.
  */
 export function buildHtml(lead: Lead): string {
+  /**
+   * La nota va ARRIBA DEL TODO, antes de los datos: si fuera al pie, quien
+   * abre el correo ya habría leído la solicitud como si fuera normal. Ámbar y
+   * no rojo — no es un error, es algo que hay que mirar.
+   *
+   * El borde de aviso se pinta con `border-left` sobre el <td>, que es lo que
+   * Outlook respeta; un <div> con borde dentro de la celda se descuadra.
+   */
+  const aviso = lead.flagged
+    ? `
+    <tr>
+      <td style="padding:16px 28px 0;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background:#fef3c7;border-left:4px solid #d97706;border-radius:6px;">
+          <tr>
+            <td style="padding:14px 16px;color:#78350f;font-size:13px;line-height:1.5;">
+              <strong style="display:block;margin-bottom:4px;font-size:13px;">${escapeHtml(FLAGGED_NOTE_TITLE)}</strong>
+              ${escapeHtml(FLAGGED_NOTE_BODY)}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`
+    : "";
+
   const rows = orderedFields(lead)
     .map(
       ([label, value]) => `
@@ -487,7 +550,7 @@ export function buildHtml(lead: Lead): string {
         <div style="color:#ffffff;font-size:18px;font-weight:700;">${escapeHtml(buildSubject(lead))}</div>
         <div style="color:#b3d0dc;font-size:13px;margin-top:6px;">${escapeHtml(SOURCE_LABELS[lead.formulario])} · ${escapeHtml(stamp())}</div>
       </td>
-    </tr>
+    </tr>${aviso}
     <tr>
       <td style="padding:12px 28px 24px;">
         <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">${rows}</table>
@@ -503,15 +566,192 @@ export function buildHtml(lead: Lead): string {
 </html>`;
 }
 
+/* ──────────────── Acuse de recibo AL CLIENTE (sólo cotizador) ───────────── */
+
+/**
+ * Correo automático que recibe QUIEN LLENÓ EL FORMULARIO, no el equipo.
+ *
+ * SÓLO PARA `cotizador`. Los otros tres orígenes no lo mandan, y cada uno por
+ * su motivo: el modal de WhatsApp ya abre la conversación en el mismo clic, así
+ * que un correo diciendo "nos pondremos en contacto" llegaría después de que el
+ * contacto ya empezó; y proveedores y vacantes no son solicitudes de servicio,
+ * así que prometerles seguimiento comercial sería un compromiso que nadie ha
+ * confirmado. Quien decide es la ruta, no este módulo.
+ *
+ * ─── QUÉ SE ADAPTÓ RESPECTO DE LA PLANTILLA INTERNA ───────────────────────
+ *
+ * Se conserva el chasis: fondo slate, tarjeta blanca de 640px con borde y
+ * esquinas redondeadas, cabecera navy (#012a3a) con el texto en blanco, estilos
+ * EN LÍNEA y tablas en vez de flex o grid, que es lo único que Outlook renderiza
+ * igual que el resto.
+ *
+ * Y se quita todo lo que era instrumental de la bandeja interna:
+ *   - LA LÍNEA DE ORIGEN Y HORA de la cabecera ("Cotizador (formulario de 4
+ *     pasos) · viernes, 9 de agosto..."). Es metadato de triaje: le dice a
+ *     ventas por qué formulario entró el lead. Al cliente le diría que lo
+ *     estamos clasificando.
+ *   - LA TABLA DE CAMPOS CRUDOS. El interno existe para volcar datos; éste
+ *     existe para tranquilizar. Devolverle a la persona sus propios datos en
+ *     una tabla de dos columnas convierte un acuse en un formulario.
+ *   - EL PIE DE ORIGEN (`SOURCE_FOOTNOTES`), que está escrito para el equipo
+ *     ("NO ES UNA COTIZACIÓN", "es un respaldo…").
+ *
+ * LA TIPOGRAFÍA NO ES LA DE LA MARCA, y no puede serlo: Archivo y DM Sans son
+ * fuentes web, y Gmail y Outlook eliminan los `@font-face` y los <link> a
+ * Google Fonts. Se usa la misma pila de sistema que ya usaba el correo interno,
+ * que es lo que de verdad se ve igual en todas partes. La identidad la sostiene
+ * el color, no la letra.
+ */
+export const ACK_SUBJECT = "Recibimos su solicitud de cotización";
+
+/**
+ * Mensaje con el que se abre WhatsApp desde el enlace del correo. Va
+ * prellenado para que el equipo sepa de dónde viene la conversación: quien
+ * llega por aquí ya mandó una solicitud, y sin esta pista arranca como
+ * cualquier otro contacto en frío.
+ */
+const ACK_WHATSAPP_MESSAGE =
+  "Hola Compass Solutions, envié una solicitud de cotización desde el sitio y quisiera dar seguimiento.";
+
+/** Tope de largo de un nombre de pila. Más allá de esto no es un nombre. */
+const MAX_LARGO_NOMBRE = 40;
+
+/**
+ * Primer nombre listo para un saludo, o `null` si no hay nada usable.
+ *
+ * SÓLO EL PRIMER NOMBRE. "Gracias por contactar a Compass Solutions, Ana" es
+ * cómo se dirige a alguien una persona; con el nombre completo —"…, Ana María
+ * Ruiz de la Torre"— el correo deja de sonar a mensaje y suena a notificación
+ * bancaria. Además, cuanto más texto libre entra en la frase, más formas hay de
+ * que quede raro.
+ *
+ * Se toma el primer token QUE CONTENGA UNA LETRA, no el primero a secas: así un
+ * "😀 Ana" o un " - Ana" sigue saludando a Ana en vez de rendirse.
+ *
+ * DEVUELVE `null` —y el saludo cae al texto sin nombre— cuando:
+ *   - el campo viene vacío o sólo con espacios;
+ *   - ningún token tiene una sola letra (por ejemplo "12345"), porque saludar a
+ *     un número es peor que no saludar a nadie;
+ *   - el token pasa de `MAX_LARGO_NOMBRE`, que no es un nombre de pila sino un
+ *     pegote y rompería la línea del correo.
+ */
+export function primerNombre(raw: string | undefined): string | null {
+  const token = (raw ?? "")
+    .trim()
+    .split(/\s+/)
+    .find((parte) => /\p{L}/u.test(parte));
+
+  if (!token || token.length > MAX_LARGO_NOMBRE) return null;
+
+  /**
+   * SÓLO SE TOCA LA CAPITALIZACIÓN SI NO HAY MEZCLA. Quien escribió "ANA" o
+   * "ana" no eligió esas mayúsculas, escribió rápido; quien escribió "McCarthy"
+   * o "DeShawn" SÍ las eligió, y "corregirlo" a "Mccarthy" sería estropear el
+   * nombre de alguien. La mezcla de cajas es la señal de que hubo intención.
+   */
+  const soloMayusculas = token === token.toLocaleUpperCase("es");
+  const soloMinusculas = token === token.toLocaleLowerCase("es");
+  if (!soloMayusculas && !soloMinusculas) return token;
+
+  /**
+   * Capitaliza tras el inicio, un guion o un apóstrofo: "ana-maría" -> "Ana-
+   * María", "o'brien" -> "O'Brien". Se contemplan las dos comillas simples
+   * porque el teclado de iOS escribe la tipográfica (’) sin avisar.
+   *
+   * `\p{L}` con la bandera `u` y `toLocale*("es")` en vez de las versiones sin
+   * locale: los acentos y la ñ son letras como cualquier otra y tienen que
+   * sobrevivir el viaje de ida y vuelta. "JOSÉ" sale "José", "MUÑOZ" sale
+   * "Muñoz". No se quitan tildes, no se transliteran, no se filtran caracteres.
+   */
+  return token
+    .toLocaleLowerCase("es")
+    .replace(/(^|[-'’])(\p{L})/gu, (_, separador: string, letra: string) =>
+      separador === undefined
+        ? letra.toLocaleUpperCase("es")
+        : separador + letra.toLocaleUpperCase("es"),
+    );
+}
+
+/**
+ * Saludo del acuse. El nombre entra dentro de la frase, así que el fallback no
+ * es "quitar el nombre" sino OTRA FRASE ENTERA: si sólo se omitiera la
+ * variable, quedaría "Gracias por contactar a Compass Solutions, ." Por eso las
+ * dos versiones se escriben completas y se elige una.
+ */
+function ackGreeting(nombre: string | null): string {
+  return nombre
+    ? `Gracias por contactar a Compass Solutions, ${nombre}.`
+    : "Gracias por contactar a Compass Solutions.";
+}
+
+const ACK_SEGUIMIENTO =
+  "Su solicitud ya está en manos de nuestro equipo. Un especialista la está revisando y se pondrá en contacto con usted a la brevedad para darle seguimiento.";
+
+function ackParagraphs(lead: Lead): string[] {
+  return [ackGreeting(primerNombre(lead.datos.nombre)), ACK_SEGUIMIENTO];
+}
+
+export function buildAckHtml(lead: Lead): string {
+  const whatsappUrl = buildWhatsAppUrl(ACK_WHATSAPP_MESSAGE);
+
+  // `escapeHtml` envuelve la frase ENTERA, y con ella el nombre: es entrada de
+  // usuario y va a parar a un documento HTML. Un nombre con `&` o con `<` se
+  // pinta tal cual en vez de romper el marcado.
+  const parrafos = ackParagraphs(lead).map(
+    (texto) =>
+      `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.6;">${escapeHtml(texto)}</p>`,
+  ).join("");
+
+  return `<!doctype html>
+<html lang="es">
+<body style="margin:0;padding:24px;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;">
+    <tr>
+      <td style="padding:24px 28px;background:#012a3a;border-radius:12px 12px 0 0;">
+        <div style="color:#ffffff;font-size:18px;font-weight:700;">${escapeHtml(ACK_SUBJECT)}</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px;">
+        ${parrafos}
+        <p style="margin:0;color:#334155;font-size:15px;line-height:1.6;">
+          Si necesita algo antes, puede escribirnos por
+          <a href="${whatsappUrl}" style="color:#012a3a;font-weight:600;text-decoration:underline;">WhatsApp</a>.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export function buildAckText(lead: Lead): string {
+  return [
+    ACK_SUBJECT,
+    "",
+    // Sin escapar: aquí el nombre va a un correo de texto plano, donde no hay
+    // marcado que romper. Escaparlo convertiría un "Ana & Co" en "Ana &amp; Co".
+    ...ackParagraphs(lead),
+    "",
+    `Si necesita algo antes, puede escribirnos por WhatsApp: ${buildWhatsAppUrl(ACK_WHATSAPP_MESSAGE)}`,
+  ].join("\n");
+}
+
 /** Alternativa en texto plano. Va siempre: mejora la entregabilidad. */
 export function buildText(lead: Lead): string {
   const rows = orderedFields(lead)
     .map(([label, value]) => `${label}: ${value}`)
     .join("\n");
 
+  // Mismo orden que en el HTML: el aviso antes de los datos, nunca después.
+  const aviso = lead.flagged
+    ? ["", `** ${FLAGGED_NOTE_TITLE} **`, FLAGGED_NOTE_BODY]
+    : [];
+
   return [
     buildSubject(lead),
     `${SOURCE_LABELS[lead.formulario]} · ${stamp()}`,
+    ...aviso,
     "",
     rows,
     "",

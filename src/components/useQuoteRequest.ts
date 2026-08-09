@@ -86,12 +86,16 @@ export function useQuoteRequest() {
    * hace <QuoteWizard> antes de llamar aquí.
    */
   const submitQuote = useCallback(
-    async (payload: QuoteFormData, tipoLabel: string) => {
+    async (payload: QuoteFormData, tipoLabel: string, website: string) => {
       setError(null);
       await submitLead(
         payload,
         buildWhatsAppMessage(tipoLabel, payload.sub),
         "cotizador",
+        // Campo trampa, tal cual salió del <form>. Este hook no lo mira: sólo
+        // lo transporta hasta `useLeadSubmit`, que es quien lo manda al
+        // servidor. Ver `lib/bot-trap`.
+        website,
       );
     },
     [submitLead],

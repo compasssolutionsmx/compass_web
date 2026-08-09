@@ -33,7 +33,9 @@ import { REQUEST_TYPES } from "./useQuoteRequest";
 import { useLeadSubmit } from "./useLeadSubmit";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
 import { useSmoothScroll } from "./SmoothScroll";
+import HoneypotField from "./HoneypotField";
 import { buildWhatsAppUrl } from "@/lib/site";
+import { readHoneypot } from "@/lib/bot-trap";
 
 type WhatsAppModalContextValue = {
   isOpen: boolean;
@@ -225,6 +227,10 @@ function WhatsAppDialog() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    // Se lee ANTES de cualquier otra cosa: `event.currentTarget` sólo apunta al
+    // <form> mientras el manejador corre, y aquí abajo hay un `window.open`.
+    const website = readHoneypot(event.currentTarget);
+
     // El foco va al primer campo que falla, no sólo el mensaje de error.
     if (!nombre.trim()) {
       setError("Escriba su nombre para continuar.");
@@ -298,6 +304,7 @@ function WhatsAppDialog() {
       },
       whatsappMessage,
       "whatsapp",
+      website,
     );
   }
 
@@ -363,6 +370,7 @@ function WhatsAppDialog() {
             </p>
 
             <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+              <HoneypotField />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="wa-nombre" className={LABEL}>

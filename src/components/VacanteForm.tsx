@@ -32,6 +32,8 @@
 
 import { useImperativeHandle, useRef, useState } from "react";
 import { LeadError, LeadSuccess } from "./LeadConfirmation";
+import HoneypotField from "./HoneypotField";
+import { readHoneypot } from "@/lib/bot-trap";
 import { useLeadSubmit } from "./useLeadSubmit";
 
 /** Mismos estilos de campo que el cotizador, el modal corto y proveedores. */
@@ -152,6 +154,7 @@ export default function VacanteForm({
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const website = readHoneypot(event.currentTarget);
 
     if (!nombre.trim() || !correo.trim()) {
       setError("Nombre y correo son obligatorios.");
@@ -175,6 +178,7 @@ export default function VacanteForm({
       // Sin salida por WhatsApp: ver la nota de la cabecera.
       null,
       "vacante",
+      website,
     );
   }
 
@@ -206,6 +210,7 @@ export default function VacanteForm({
           dos disposiciones: a la izquierda de la tarjeta en desktop y encima de
           ella en móvil. Aquí dentro le robaba el arranque al formulario. */}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <HoneypotField />
         {/* La nota de obligatorios vive DENTRO de la tarjeta y pegada a los
             campos que describe, igual que en <ProviderForm>. Estaba fuera,
             encima de la tarjeta y bajo un titular que ya no existe, donde se
