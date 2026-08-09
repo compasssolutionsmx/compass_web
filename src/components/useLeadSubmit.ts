@@ -1,8 +1,11 @@
 "use client";
 
 /**
- * Envío compartido de leads: correo de respaldo -> webhook (stub) -> pantalla
- * de confirmación.
+ * Envío compartido de leads: POST a `/api/lead` -> pantalla de confirmación.
+ *
+ * Este hook ya no habla con ningún destino más. El correo, el acuse al cliente
+ * y el envío al CRM salen los tres del servidor, desde `/api/lead`; aquí sólo
+ * se manda el formulario y se traduce la respuesta a un estado de pantalla.
  *
  * Es el único sitio donde vive ese patrón. Lo usan los formularios del sitio,
  * que capturan cosas distintas pero terminan igual:
@@ -68,22 +71,6 @@ async function postLeadEmail(
   if (!response.ok) {
     throw new Error(`/api/lead respondió ${response.status}`);
   }
-}
-
-/**
- * STUB del POST al webhook — el endpoint real todavía no existe.
- *
- * TODO(integración CRM): implementar el POST real. Falta para eso, así que de
- * momento sólo se deja el payload listo.
- *   1. Reenviarlo DESDE EL SERVIDOR —`/api/lead` ya está montado y puede
- *      hacerlo— al webhook de studio.scndal.com. No exponer la URL ni el
- *      secreto del webhook en el cliente.
- *   2. Definir el contrato del payload — hoy cada formulario manda sus campos
- *      con los nombres que usa internamente.
- *   3. Añadir el evento de conversión de Google Ads.
- */
-async function postToWebhook(data: LeadPayload): Promise<void> {
-  console.info("[lead] POST al webhook (stub, sin conectar):", data);
 }
 
 /**
@@ -231,15 +218,16 @@ export function useLeadSubmit() {
         });
       }
 
-      // El webhook NO decide: hoy es un stub que no puede fallar, y cuando se
-      // conecte seguirá siendo un destino secundario. Si algún día se cae, el
-      // lead ya está en el correo, así que la confirmación sigue siendo cierta.
-      try {
-        await postToWebhook(payload);
-      } catch (webhookError) {
-        console.error("[lead] falló el POST al webhook:", webhookError);
-      }
-
+      /**
+       * AQUÍ ESTABA `postToWebhook`, el stub del CRM. Ya no hace falta: el
+       * envío al CRM lo hace `/api/lead` desde el servidor (ver `lib/crm`),
+       * que es lo que su propio TODO pedía — la URL y el secreto del CRM son
+       * configuración privada y en el cliente habrían viajado en el bundle.
+       *
+       * No queda nada que esperar en este punto. Que el CRM falle no cambia lo
+       * que ve el usuario: para cuando el POST de arriba respondió, el correo
+       * ya salió y el lead está registrado.
+       */
       setStatus("success");
     },
     [],

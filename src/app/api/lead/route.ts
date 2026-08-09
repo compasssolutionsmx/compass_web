@@ -14,6 +14,7 @@ import {
 } from "@/lib/lead-email";
 import { inspectSubmission } from "@/lib/bot-trap";
 import { checkLeadRate, clientIp } from "@/lib/rate-limit";
+import { sendToCrm } from "@/lib/crm";
 
 /**
  * POST /api/lead — manda el correo de aviso con los datos del formulario.
@@ -235,6 +236,14 @@ export async function POST(request: Request) {
    */
   const acuse = enviarAcuse(resend, lead);
 
+  /**
+   * El CRM, también en paralelo y también sin poder romper nada. `sendToCrm` no
+   * lanza jamás: sus fallos —CRM caído, timeout, variable sin configurar— se
+   * quedan en el log. El correo sale igual y el usuario ve su confirmación
+   * igual, porque quien decide la respuesta es el envío de abajo y sólo él.
+   */
+  const crm = sendToCrm(lead);
+
   try {
     const { data, error } = await resend.emails.send({
       from: leadFrom(),
@@ -261,9 +270,12 @@ export async function POST(request: Request) {
     console.error("[lead] error inesperado al enviar el correo:", thrown);
     return respond({ error: "No se pudo enviar." }, 500, rate.setCookie);
   } finally {
-    // `enviarAcuse` no lanza nunca, así que este await no puede convertir un
+    // Ninguna de las dos lanza nunca, así que este await no puede convertir un
     // 200 en una excepción ni pisar el `return` de ninguna rama: sólo retrasa
-    // la respuesta lo que falte para que el correo salga de verdad.
-    await acuse;
+    // la respuesta lo que falte para que las dos salidas terminen de verdad.
+    // Esperarlas es obligatorio en serverless: la función puede congelarse en
+    // cuanto se devuelve la respuesta, y un envío lanzado y no esperado es un
+    // envío que a veces sale y a veces no.
+    await Promise.all([acuse, crm]);
   }
 }
