@@ -54,7 +54,7 @@ const TIMEOUT_CORREO_MS = 10_000;
 async function postLeadEmail(
   formulario: LeadSource,
   datos: LeadPayload,
-  trampas: { website: string; elapsedMs: number },
+  trampas: { website: string; elapsedMs: number; waitedMs: number },
 ): Promise<void> {
   const response = await fetch("/api/lead", {
     method: "POST",
@@ -171,6 +171,11 @@ export function useLeadSubmit() {
       const desde = montadoEn.current ?? Date.now();
 
       const falta = MIN_FILL_MS - (Date.now() - desde);
+      // INSTRUMENTACIÓN: la pausa artificial es el tramo del retardo total que
+      // el servidor no puede ver —cuando el POST llega, ya ocurrió—, así que se
+      // mide aquí y viaja en el cuerpo para que la línea `[perf][lead]` tenga
+      // el viaje completo. Es un número, no un dato del usuario.
+      const waitedMs = Math.max(0, falta);
       if (falta > 0) {
         await new Promise((resolve) => setTimeout(resolve, falta));
       }
@@ -183,6 +188,7 @@ export function useLeadSubmit() {
         await postLeadEmail(formulario, payload, {
           website,
           elapsedMs: Date.now() - desde,
+          waitedMs,
         });
       } catch (emailError) {
         console.error("[lead] falló el correo de respaldo:", emailError);

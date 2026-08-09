@@ -49,8 +49,21 @@ import { requestTypeLabel } from "./request-types";
  * firma HMAC— se cambia en `headers`, abajo.
  */
 
-/** Cuánto se espera al CRM antes de darlo por perdido. */
-const TIMEOUT_MS = 5_000;
+/**
+ * Cuánto se espera al CRM antes de darlo por perdido.
+ *
+ * SUBIÓ DE 5 s A 15 s. Los 5 s se eligieron cuando esto bloqueaba la respuesta
+ * y cada segundo lo pagaba el usuario mirando "Enviando…". Medido en
+ * producción, el CRM tardó 3.06 s: sólo 1.9 s de margen, y el destino
+ * (`scndal-crm.vercel.app`) es a su vez una app de Vercel con sus propios
+ * arranques en frío, que se comen ese margen sin avisar. Pasarse del tope
+ * significaba perder ese lead en el CRM con sólo una línea de error.
+ *
+ * Ahora que esto corre dentro de `after()`, esperar más no le cuesta nada al
+ * usuario: sólo alarga la vida de la función. 15 s son cinco veces lo medido y
+ * dejan sitio de sobra a un arranque en frío del receptor.
+ */
+const TIMEOUT_MS = 15_000;
 
 /**
  * ORÍGENES QUE SÍ VAN AL CRM. `proveedor` y `vacante` quedan fuera: no son
@@ -170,19 +183,41 @@ function crmSecret(source: CrmSource): string | undefined {
 }
 
 /**
+ * Resultado del intento. SE DEVUELVE en vez de quedarse sólo en el log porque
+ * quien llama tiene que poder distinguir tres cosas que no son lo mismo:
+ *
+ *   enviado   el CRM lo recibió
+ *   omitido   no había nada que enviar (origen fuera del CRM, lead marcado).
+ *             NO es un fallo y NO debe alertar a nadie.
+ *   fallido   había que enviarlo y no se pudo. Esto sí merece un aviso.
+ *
+ * La distinción entre `omitido` y `fallido` es la que impide que un registro de
+ * proveedor —que nunca va al CRM por diseño— dispare una alerta de sistema.
+ */
+export type CrmResult =
+  | { estado: "enviado" }
+  | { estado: "omitido"; motivo: string }
+  | { estado: "fallido"; motivo: string };
+
+/**
  * Manda el lead al CRM. Devuelve siempre, pase lo que pase.
  *
  * Se llama en paralelo con el correo, no en cadena: son dos destinos
  * independientes y encadenarlos le sumaría al usuario los dos tiempos de espera
  * mientras mira "Enviando…".
  */
-export async function sendToCrm(lead: Lead): Promise<void> {
+export async function sendToCrm(
+  lead: Lead,
+  leadId = "sin-id",
+): Promise<CrmResult> {
   // El type guard no es adorno: es lo que le permite a TypeScript indexar
   // `CRM_URL_ENV` con este origen y garantizar que los dos mapas cubren todos
   // los orígenes que llegan aquí. Añadir uno a `CRM_SOURCES` sin darle su
   // variable rompe la compilación en vez de fallar en producción.
   const source = lead.formulario;
-  if (!isCrmSource(source)) return;
+  if (!isCrmSource(source)) {
+    return { estado: "omitido", motivo: "origen-fuera-del-crm" };
+  }
 
   /**
    * UN LEAD MARCADO POR EL HONEYPOT NO ENTRA AL CRM, y es una decisión aparte
@@ -197,17 +232,18 @@ export async function sendToCrm(lead: Lead): Promise<void> {
    */
   if (lead.flagged) {
     console.warn(
-      "[crm] omitido: el envío está marcado por el filtro anti-bot.",
+      `[crm] omitido id=${leadId} motivo=marcado-por-filtro-anti-bot`,
     );
-    return;
+    return { estado: "omitido", motivo: "marcado-por-filtro-anti-bot" };
   }
 
   const url = crmUrl(source);
   if (!url) {
+    const motivo = `${CRM_URL_ENV[source]}-sin-configurar-o-invalida`;
     console.warn(
-      `[crm] ${CRM_URL_ENV[source]} no está configurada o no es utilizable: el lead (${source}) no se envió al CRM.`,
+      `[crm] CRM FALLIDO id=${leadId} formulario=${source} motivo=${motivo}`,
     );
-    return;
+    return { estado: "fallido", motivo };
   }
 
   const secret = crmSecret(source);
@@ -226,15 +262,28 @@ export async function sendToCrm(lead: Lead): Promise<void> {
     });
 
     if (!response.ok) {
+      const motivo = `http-${response.status}`;
       console.error(
-        `[crm] ${CRM_URL_ENV[source]} respondió ${response.status}: el lead (${source}) no entró al CRM.`,
+        `[crm] CRM FALLIDO id=${leadId} formulario=${source} motivo=${motivo} destino=${CRM_URL_ENV[source]}`,
       );
-      return;
+      return { estado: "fallido", motivo };
     }
 
-    console.info(`[crm] lead enviado al CRM (${source}).`);
+    console.info(`[crm] lead enviado id=${leadId} formulario=${source}`);
+    return { estado: "enviado" };
   } catch (thrown) {
     // Cae aquí la red caída, el DNS que no resuelve y el timeout de arriba.
-    console.error("[crm] no se pudo enviar el lead al CRM:", thrown);
+    // `TimeoutError` es el nombre que `AbortSignal.timeout` le da a su motivo,
+    // así que el log distingue "tardó demasiado" de "no se pudo conectar" sin
+    // tener que leer el mensaje.
+    const motivo =
+      thrown instanceof Error && thrown.name === "TimeoutError"
+        ? `timeout-${TIMEOUT_MS}ms`
+        : `excepcion:${thrown instanceof Error ? thrown.name : "desconocida"}`;
+    console.error(
+      `[crm] CRM FALLIDO id=${leadId} formulario=${source} motivo=${motivo}`,
+      thrown,
+    );
+    return { estado: "fallido", motivo };
   }
 }

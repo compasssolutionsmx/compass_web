@@ -34,6 +34,9 @@ import "server-only";
 
 import { requestTypeLabel } from "./request-types";
 import { buildWhatsAppUrl } from "./site";
+// Sin ciclo en ejecución: `crm.ts` sólo importa tipos de este archivo, y los
+// `import type` se borran al compilar. Ver `buildCrmAlertHtml`.
+import { crmPayload } from "./crm";
 
 /**
  * Lista de RESPALDO comercial, para que un entorno mal configurado no se trague
@@ -68,6 +71,14 @@ const PROVIDER_FALLBACK_RECIPIENTS = [
  * trabajo, no un prospecto.
  */
 const VACANCY_FALLBACK_RECIPIENTS = ["rh@compasssolutions.com.mx"];
+
+/**
+ * Respaldo del aviso de fallo del CRM. NO es un lead ni va a Compass: es una
+ * alerta de sistema, y quien administra el sistema es SCNDAL. Mandarla a la
+ * bandeja comercial sería pedirle a ventas que interprete un error de
+ * integración.
+ */
+const CRM_ALERT_FALLBACK_RECIPIENTS = ["hola@scndal.com"];
 
 /**
  * QUÉ VARIABLE DE ENTORNO manda en cada origen.
@@ -126,8 +137,31 @@ const DEFAULT_FROM = "Compass Solutions <leads@compasssolutions.com.mx>";
  * proveedor cae en `PROVIDER_FALLBACK_RECIPIENTS`, no en la lista de ventas.
  */
 export function leadRecipients(source: LeadSource): string[] {
-  const variable = RECIPIENTS_ENV[source];
-  const respaldo = FALLBACK_BY_SOURCE[source];
+  return recipientsFrom(RECIPIENTS_ENV[source], FALLBACK_BY_SOURCE[source]);
+}
+
+/**
+ * Destinatarios del AVISO DE FALLO DEL CRM. Variable propia, `CRM_ALERT_RECIPIENTS`.
+ *
+ * Sigue la regla que ya rige a las otras tres —el nombre describe QUÉ genera el
+ * correo, no quién lo lee—, y por eso no se llama `SCNDAL_RECIPIENTS`: si mañana
+ * el sistema lo administra otro, el nombre no pasa a mentir. El prefijo `CRM_`
+ * además la deja junto a `CRM_WEBHOOK_URL_*` en el panel de Vercel.
+ */
+export function crmAlertRecipients(): string[] {
+  return recipientsFrom("CRM_ALERT_RECIPIENTS", CRM_ALERT_FALLBACK_RECIPIENTS);
+}
+
+/**
+ * Resolución de una lista de destinatarios desde su variable, con respaldo.
+ *
+ * Extraído de `leadRecipients` para que el aviso del CRM herede exactamente el
+ * mismo comportamiento en vez de reimplementarlo: variable vacía cae al
+ * respaldo, las direcciones mal formadas se descartan una a una —Resend rechaza
+ * el envío ENTERO si una sola viene mal— y los dos caminos que no son el feliz
+ * gritan en el log.
+ */
+function recipientsFrom(variable: string, respaldo: string[]): string[] {
   const raw = process.env[variable];
 
   const candidatos = (raw ?? "")
@@ -137,7 +171,7 @@ export function leadRecipients(source: LeadSource): string[] {
 
   if (candidatos.length === 0) {
     console.error(
-      `[lead] ${variable} no está definida o vino vacía (origen: ${source}). Se usa la lista de respaldo del código; revisar la configuración del entorno.`,
+      `[lead] ${variable} no está definida o vino vacía. Se usa la lista de respaldo del código; revisar la configuración del entorno.`,
     );
     return respaldo;
   }
@@ -564,6 +598,125 @@ export function buildHtml(lead: Lead): string {
   </table>
 </body>
 </html>`;
+}
+
+/* ─────────────── Aviso de FALLO DEL CRM (a quien administra) ─────────────── */
+
+/**
+ * Correo que avisa de que un lead NO llegó al CRM.
+ *
+ * NO ES UN LEAD NI UN ACUSE: es una alerta de sistema, y todo en ella está
+ * pensado para una sola cosa —que quien la reciba pueda dar de alta la ficha a
+ * mano sin abrir ninguna otra herramienta—. Por eso trae los datos completos y
+ * no sólo el identificador: obligar a ir al panel de Resend a buscar el correo
+ * interno convertiría un minuto de trabajo en cinco.
+ *
+ * CABECERA ROJA, no navy. Los avisos de lead usan navy; éste tiene que
+ * distinguirse de un vistazo en la bandeja, porque exige una acción distinta.
+ *
+ * DE DÓNDE SALEN LOS DATOS: de `crmPayload(lead)`, o sea EXACTAMENTE el objeto
+ * que se intentó mandar al CRM, con `tipo` ya traducido a etiqueta. No se
+ * reconstruye por separado, para que no pueda desviarse de lo que el CRM
+ * esperaba recibir.
+ *
+ * Sobre el import de `./crm`: no crea ciclo en tiempo de ejecución. `crm.ts`
+ * sólo importa de aquí con `import type`, que se borra al compilar.
+ */
+export function buildCrmAlertSubject(lead: Lead, leadId: string): string {
+  // Corto y filtrable: el prefijo entre corchetes permite una regla de correo,
+  // y el origen y el id evitan tener que abrir el mensaje para saber cuál es.
+  return `[ALERTA CRM] Lead no registrado — ${lead.formulario} — ${leadId}`;
+}
+
+export function buildCrmAlertHtml(
+  lead: Lead,
+  leadId: string,
+  motivo: string,
+): string {
+  const filas = Object.entries(crmPayload(lead))
+    .map(
+      ([clave, valor]) => `
+      <tr>
+        <td style="padding:8px 16px 8px 0;vertical-align:top;color:#64748b;font-size:13px;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(clave)}</td>
+        <td style="padding:8px 0;vertical-align:top;color:#0f172a;font-size:14px;font-weight:600;">${escapeHtml(valor).replace(/\n/g, "<br>")}</td>
+      </tr>`,
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="es">
+<body style="margin:0;padding:24px;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;">
+    <tr>
+      <td style="padding:24px 28px;background:#b91c1c;border-radius:12px 12px 0 0;">
+        <div style="color:#ffffff;font-size:18px;font-weight:700;">Un lead no llegó al CRM</div>
+        <div style="color:#fecaca;font-size:13px;margin-top:6px;">${escapeHtml(stamp())}</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:20px 28px 0;">
+        <p style="margin:0 0 16px;color:#334155;font-size:14px;line-height:1.6;">
+          El lead <strong>sí llegó por correo</strong> al equipo, así que no se perdió. Lo que
+          falló fue el registro automático en el CRM: hay que capturarlo a mano con los datos
+          de abajo.
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background:#fef2f2;border-left:4px solid #b91c1c;border-radius:6px;">
+          <tr>
+            <td style="padding:14px 16px;color:#7f1d1d;font-size:13px;line-height:1.6;">
+              <div><strong>Motivo:</strong> <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(motivo)}</span></div>
+              <div style="margin-top:4px;"><strong>Formulario:</strong> ${escapeHtml(lead.formulario)}</div>
+              <div style="margin-top:4px;"><strong>Id del correo interno:</strong> <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(leadId)}</span></div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:20px 28px 8px;">
+        <div style="color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;font-weight:700;">Datos que se intentaron enviar</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:0 28px 24px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">${filas}</table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 28px 24px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.5;">
+        Aviso automático de compasssolutions.com.mx. Las claves de la izquierda son las que
+        el CRM espera recibir; los valores están tal cual se enviaron.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export function buildCrmAlertText(
+  lead: Lead,
+  leadId: string,
+  motivo: string,
+): string {
+  const filas = Object.entries(crmPayload(lead))
+    .map(([clave, valor]) => `${clave}: ${valor}`)
+    .join("\n");
+
+  return [
+    buildCrmAlertSubject(lead, leadId),
+    stamp(),
+    "",
+    "El lead SÍ llegó por correo al equipo, así que no se perdió. Lo que falló fue el",
+    "registro automático en el CRM: hay que capturarlo a mano con los datos de abajo.",
+    "",
+    `Motivo: ${motivo}`,
+    `Formulario: ${lead.formulario}`,
+    `Id del correo interno: ${leadId}`,
+    "",
+    "DATOS QUE SE INTENTARON ENVIAR",
+    filas,
+    "",
+    "Aviso automático de compasssolutions.com.mx.",
+  ].join("\n");
 }
 
 /* ──────────────── Acuse de recibo AL CLIENTE (sólo cotizador) ───────────── */
