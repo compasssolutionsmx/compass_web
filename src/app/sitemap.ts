@@ -11,15 +11,16 @@ import { getAllPosts, postHref } from "@/lib/blog";
  * fecha del frontmatter.
  *
  * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice, artículos,
- * /importaciones-a-mexico, /proveedores, /vacantes y /nosotros. Las páginas de
- * servicio no entran porque todavía no se construyen; `allServicePaths()` de
- * lib/services.ts ya está listo para cuando existan, pero listarlas ahora sería
- * mandar al crawler a un 404.
+ * /importaciones-a-mexico, /proveedores, /vacantes, /nosotros y
+ * /apartado-legal. Las páginas de servicio no entran porque todavía no se
+ * construyen; `allServicePaths()` de lib/services.ts ya está listo para cuando
+ * existan, pero listarlas ahora sería mandar al crawler a un 404.
  *
- * /apartado-legal SÍ existe pero queda fuera a propósito: lleva
- * `robots: { index: false }` mientras el aviso sea un borrador, y listar en el
+ * /apartado-legal ESTUVO FUERA a propósito mientras el aviso de privacidad era
+ * un borrador: la página llevaba `robots: { index: false }`, y listar en el
  * sitemap una URL que se pide no indexar es darle al crawler dos órdenes
- * opuestas.
+ * opuestas. Ya está el aviso definitivo, se retiró el noindex y con él la razón
+ * para excluirla.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
@@ -79,6 +80,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: new URL("/nosotros", SITE_URL).toString(),
       changeFrequency: "yearly",
       priority: 0.6,
+    },
+    {
+      /**
+       * LA PRIORIDAD MÁS BAJA DE LA LISTA. Es una página de obligación legal:
+       * tiene que existir, ser accesible y poder rastrearse, pero no compite en
+       * búsqueda ni se quiere que se cuele por encima de nada. `yearly` porque
+       * el aviso sólo cambia cuando lo revisa el área legal.
+       */
+      url: new URL("/apartado-legal", SITE_URL).toString(),
+      changeFrequency: "yearly",
+      priority: 0.1,
     },
     ...posts.map((post) => ({
       url: new URL(postHref(post.slug), SITE_URL).toString(),

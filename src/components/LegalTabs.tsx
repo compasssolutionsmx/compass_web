@@ -56,9 +56,12 @@ function tabDelHash(): TabId | null {
 }
 
 /**
- * Dato pendiente del cliente. Va VISIBLE y marcado a propósito: es la lista de
- * lo que falta para que este borrador sea un documento real, y quien revise la
- * página tiene que verla sin abrir el código.
+ * Dato pendiente del cliente. Va VISIBLE y marcado a propósito: quien revise la
+ * página tiene que verlo sin abrir el código.
+ *
+ * QUEDA UNO SOLO: la fecha de última actualización. El documento legal que
+ * entregó el cliente no la trae, y ponerle una inventada a un aviso de
+ * privacidad es justo lo que no se puede hacer.
  */
 function Pendiente({ children }: { children: React.ReactNode }) {
   return (
@@ -68,13 +71,28 @@ function Pendiente({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Título de apartado dentro del texto legal. */
+/**
+ * Título de apartado dentro del texto legal.
+ *
+ * ES h3 Y NO h2: el h1 lo pinta el hero de la página y el h2 es el título del
+ * panel ("Aviso de privacidad"), así que los apartados numerados del documento
+ * cuelgan de él sin saltarse un nivel.
+ *
+ * El texto va TAL CUAL viene del documento —numeral romano y versalitas
+ * incluidos—, aunque el resto del sitio escriba los títulos en sentence case:
+ * es un documento legal y no se reescribe por consistencia de estilo.
+ */
 function Apartado({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="mt-10 font-heading text-lg font-bold text-brand-900">
       {children}
     </h3>
   );
+}
+
+/** Párrafo del texto legal. */
+function P({ children }: { children: React.ReactNode }) {
+  return <p className="mt-3 leading-relaxed">{children}</p>;
 }
 
 export default function LegalTabs() {
@@ -184,90 +202,438 @@ export default function LegalTabs() {
           tabIndex={0}
           className="mt-10 scroll-mt-28"
         >
-          {/* BANNER DE BORRADOR. Rompe la paleta a propósito (es el único ámbar
-              del sitio): si se pintara con los tokens de marca se leería como
-              una nota más del documento en vez de como la advertencia de que
-              nada de lo que hay debajo es definitivo. */}
-          <p
-            role="note"
-            className="rounded-2xl border-2 border-amber-600 bg-amber-100 p-4 text-sm leading-relaxed text-amber-950"
-          >
-            <strong className="font-heading font-bold">Borrador.</strong> Este
-            aviso de privacidad es provisional y no constituye el documento
-            definitivo de Compass Solutions. Pendiente de revisión y aprobación
-            legal.
-          </p>
-
-          <h2 className="mt-10 font-heading text-2xl font-bold text-brand-900 md:text-3xl">
+          <h2 className="font-heading text-2xl font-bold text-brand-900 md:text-3xl">
             Aviso de privacidad
           </h2>
 
+          {/* TEXTO LEGAL LITERAL. Todo lo que hay dentro de este bloque es
+              transcripción del documento que entregó el cliente: no se corrige
+              la redacción, ni la puntuación, ni el tratamiento (el documento
+              habla del "Titular" en tercera persona, no de "usted"), ni los
+              títulos en versalitas. Si algo aquí ha de cambiar, cambia primero
+              en el documento. */}
           <div className="max-w-[68ch] text-slate-600">
+            <P>
+              El tratamiento legítimo, controlado e informado de sus Datos
+              Personales es de vital importancia para alcanzar los objetivos
+              corporativos de Compass Solutions, S.A. de C.V. (en adelante
+              &ldquo;LA EMPRESA&rdquo;), a través de todas las áreas de negocio
+              reiteramos nuestro compromiso con su privacidad y el derecho a la
+              autodeterminación informativa, por lo que, en cumplimiento a lo
+              establecido en la Ley Federal de Protección de Datos Personales en
+              Posesión de los Particulares (en adelante &ldquo;la
+              LFPDPPP&rdquo;), ponemos a su disposición nuestro AVISO DE
+              PRIVACIDAD.
+            </P>
+            <P>
+              El Aviso de Privacidad aplicará para todos los productos,
+              servicios, programas, y/o sitios web, que tenga LA EMPRESA, de
+              acuerdo con la naturaleza de los Datos Personales recabados y
+              conforme a la legislación vigente y aplicable en materia de
+              privacidad y protección de Datos Personales. LA EMPRESA podrá
+              publicar nuevos Avisos de Privacidad específicos o actualizaciones
+              y para los cuales se podrá requerir o no, del consentimiento
+              expreso del Titular de los Datos Personales (en adelante &ldquo;el
+              Titular&rdquo;), sin embargo, a través de la página de internet
+              www.compasssolutions.com.mx, se harán del conocimiento público las
+              políticas de privacidad aplicables a los Datos Personales que nos
+              hayan sido otorgados.
+            </P>
+
+            <Apartado>I. NOMBRE Y DOMICILIO DEL RESPONSABLE</Apartado>
+            <P>
+              Para efectos de la divulgación y tratamiento de los Datos
+              Personales que el Titular haya divulgado o pudiera llegar a
+              divulgar a LA EMPRESA, a través de diversos medios y formas
+              incluyendo de manera enunciativa más no limitativamente sitios de
+              internet, herramientas tecnológicas, o directamente a nuestros
+              representantes, derivado de la relación comercial o posible
+              relación comercial que exista o llegaré a existir entre LA EMPRESA
+              y el Titular, así como por el uso de nuestros productos y/o
+              servicios, o para cualquier actividad relacionada, se considerará
+              que el responsable es LA EMPRESA, la cual es una sociedad
+              constituida de conformidad con las leyes de la República Mexicana,
+              con domicilio ubicado en calle Heriberto Frías número 1439
+              interior 401-403, colonia del Valle, código postal 03100, alcaldía
+              Benito Juárez, en la Ciudad de México.
+            </P>
+            <P>
+              Para cualquier información sobre este Aviso de Privacidad, o para
+              el ejercicio de cualquiera de sus derechos derivados de sus Datos
+              Personales, incluyendo sin limitación sus derechos de acceso,
+              rectificación, cancelación y oposición (derechos ARCO), contactar
+              a nuestro Departamento de Privacidad a través del correo
+              electrónico avisodeprivacidad@compasssolutions.com.mx.
+            </P>
+
+            <Apartado>II. DATOS PERSONALES QUE SE RECABAN</Apartado>
+            <P>
+              Para llevar a cabo las finalidades descritas en el presente Aviso
+              de Privacidad LA EMPRESA, con base en la relación jurídica o no
+              jurídica que exista con el Titular, podrá recabar los Datos
+              Personales, entre los cuales de manera enunciativa más no
+              limitativamente se encuentran:
+            </P>
+            <ul className="mt-3 list-disc space-y-1 pl-5 leading-relaxed">
+              <li>Nombre completo</li>
+              <li>Edad</li>
+              <li>Fecha de nacimiento</li>
+              <li>Domicilio</li>
+              <li>Correo electrónico</li>
+              <li>
+                Número (s) telefónico de contacto, móvil, trabajo, particular
+              </li>
+              <li>IFE o INE</li>
+              <li>Registro Federal de Contribuyentes (RFC)</li>
+              <li>Cuentas de redes sociales</li>
+              <li>Dirección de IP</li>
+            </ul>
+
             <Apartado>
-              Responsable del tratamiento de sus datos personales
+              III. FINALIDADES PARA EL USO DE LOS DATOS PERSONALES
             </Apartado>
-            <p className="mt-3 leading-relaxed">
-              <Pendiente>razón social</Pendiente> (en adelante &laquo;Compass
-              Solutions&raquo;), con domicilio en{" "}
-              <Pendiente>confirmar domicilio del responsable</Pendiente>, es
-              responsable del uso y protección de sus datos personales, en
-              cumplimiento de la Ley Federal de Protección de Datos Personales
-              en Posesión de los Particulares (LFPDPPP), su Reglamento y demás
+            <P>
+              Los Datos Personales que recabamos del Titular, son necesarios
+              para el cumplimiento de las obligaciones, la relación y/o la
+              prestación de servicios que exista o pudiera llegar a existir
+              entre el Titular y LA EMPRESA, siendo este último quien los
+              utiliza, almacena, transmite o transfiere en la medida en que la
+              Ley lo permite, para cumplir con las obligaciones derivadas de la
+              relación jurídica o no jurídica que exista o llegaré a existir con
+              el Titular.
+            </P>
+            <P>
+              A continuación, enlistamos de manera enunciativa más no
+              limitativamente las finalidades para las que trataremos sus Datos
+              Personales:
+            </P>
+            <ul className="mt-3 list-disc space-y-1 pl-5 leading-relaxed">
+              <li>Identificación</li>
+              <li>Contacto</li>
+              <li>Localización</li>
+              <li>Cobranza</li>
+              <li>Cumplimiento de obligaciones contractuales</li>
+              <li>Fines estadísticos</li>
+              <li>Rectificar vínculo comercial</li>
+              <li>
+                Fines de seguridad: transferir para el reconocimiento, ejercicio
+                o defensa de un derecho en un proceso judicial. Cuando sean
+                requeridos por las instituciones públicas, financieras,
+                autoridades gubernamentales, administrativas y/o judiciales
+                locales o federales
+              </li>
+              <li>
+                Envío de información, notificaciones, avisos, noticias,
+                propaganda o publicidad sobre nuestros productos o servicios
+              </li>
+              <li>
+                Envío de notificaciones de cambios a este aviso de privacidad
+              </li>
+            </ul>
+
+            <Apartado>
+              IV. TRANSFERENCIA Y REMISIÓN DE LOS DATOS PERSONALES
+            </Apartado>
+            <P>
+              Como parte de las operaciones propias del negocio y a fin de
+              cumplir con las finalidades descritas, LA EMPRESA, podrá compartir
+              con terceros nacionales o extranjeros, algunos o todos sus Datos
+              Personales.
+            </P>
+            <P>
+              LA EMPRESA se asegurará a través de la firma de convenios y la
+              adopción de otros documentos vinculantes, que dichos terceros
+              mantengan medidas de seguridad, administrativas, técnicas y
+              físicas adecuadas para resguardar sus datos personales, así como
+              que dichos terceros únicamente utilicen sus Datos Personales para
+              las finalidades para los cuales fueron recabados y de conformidad
+              con el presente Aviso de Privacidad.
+            </P>
+            <P>
+              LA EMPRESA podrá compartir todos o parte de sus Datos Personales
+              con entidades autorizadas de acuerdo con la Legislación Mexicana
+              para la supervisión en la realización de las actividades y
+              operaciones relacionadas con nuestros productos y/o servicios,
+              quienes podrán o no tratar sus Datos Personales por cuenta de LA
+              EMPRESA, conforme a las finalidades y usos previstos en el
+              presente Aviso de Privacidad.
+            </P>
+            <P>
+              Asimismo, LA EMPRESA se reserva el derecho de compartir sus Datos
+              Personales con autoridades administrativas, judiciales o
+              gubernamentales de cualquier tipo en los Estados Unidos Mexicanos.
+            </P>
+            <P>
+              LA EMPRESA podrá transferir sus Datos Personales a asesores y
+              prestadores de servicio de cobranza, asesores profesionales
+              externos y otros prestadores que ofrezcan servicios, soporte
+              técnico, tecnologías de la información y en general, cualquier
+              tercero que actúe como encargado a nombre y por cuenta de LA
+              EMPRESA.
+            </P>
+
+            <Apartado>V. MECANISMOS DE SEGURIDAD</Apartado>
+            <P>
+              LA EMPRESA cuenta con las medidas de seguridad, técnicas,
+              administrativas y físicas necesarias para procurar la integridad
+              de sus Datos Personales y evitar su daño, pérdida, alteración,
+              destrucción o el uso, acceso o tratamiento no autorizado.
+            </P>
+            <P>
+              Únicamente el personal autorizado de LA EMPRESA que ha cumplido y
+              observado los correspondientes requisitos de confidencialidad,
+              podrá participar en el tratamiento de sus Datos Personales. El
+              personal autorizado tiene prohibido permitir el acceso de personas
+              no autorizadas y utilizar sus Datos Personales para fines
+              distintos a los establecidos en el presente Aviso de Privacidad.
+              La obligación de confidencialidad de las personas que participan
+              en el tratamiento de sus Datos Personales subsiste aun después de
+              terminada la relación con LA EMPRESA.
+            </P>
+
+            <Apartado>VI. ALMACENAMIENTO DE SUS DATOS PERSONALES</Apartado>
+            <P>
+              LA EMPRESA podrá conservar sus Datos Personales en sus bases de
+              datos ubicadas en los Estados Unidos Mexicanos o en el extranjero
+              sin limitación alguna, en el entendido de que se cuenta con
+              políticas y estándares comerciales razonables de tecnología y
+              seguridad para proteger la información que nos haya sido
+              proporcionada.
+            </P>
+            <P>
+              LA EMPRESA se reserva el derecho a modificar los términos y
+              condiciones de este Aviso de Privacidad, en cuyo caso la
+              modificación se notificará a través del medio de comunicación que
+              LA EMPRESA considere más adecuado para tal efecto pudiendo ser a
+              través de correo electrónico, avisos en medios de comunicación,
+              comunicación directa, y/o un anuncio en nuestra página de internet
+              o en nuestra sucursal.
+            </P>
+            <P>
+              LA EMPRESA, así como el Titular, reconocen que este Aviso de
+              Privacidad es de vigencia ilimitada. Sin embargo, LA EMPRESA
+              mantendrá actualizado el presente Aviso de Privacidad.
+            </P>
+            <P>
+              LA EMPRESA, recomienda al Titular que vuelva a leer con
+              regularidad este documento, de forma que se mantenga siempre
+              informado sobre eventuales modificaciones.
+            </P>
+            <P>
+              Las alteraciones o modificaciones al presente Aviso de Privacidad
+              se volverán efectivas inmediatamente después de su publicación en
+              la página de internet de LA EMPRESA (www.compasssolutions.com.mx),
+              sin perjuicio del uso de algún otro medio para que LA EMPRESA dé
+              las mencionadas publicaciones. Una vez realizadas las
+              modificaciones, se presumirá que el Titular que continúe usando la
+              página de internet (www.compasssolutions.com.mx), solicitado los
+              servicios, o realizando los actos que dieron origen a su relación
+              con LA EMPRESA, tendrá pleno conocimiento, habrá leído y consentido
+              el Aviso de Privacidad reformado.
+            </P>
+
+            <Apartado>VII. CONSENTIMIENTO</Apartado>
+            <P>
+              El Titular manifiesta y consiente el presente Aviso de Privacidad,
+              de conformidad con la Ley de Protección de Datos Personales en
+              Posesión de los Particulares, no oponiéndose al Aviso de
+              Privacidad. Ninguno de los Datos Personales será tratado sino
+              hasta 2 (dos) días después de que hayan sido proporcionados por el
+              Titular y este no haya manifestado su negativa.
+            </P>
+
+            <Apartado>VIII. DERECHOS ARCO</Apartado>
+            <P>
+              El Titular podrá solicitar acceder a sus Datos Personales,
+              rectificarlos, cancelarlos, oponerse, limitar su uso o divulgación
+              o revocar su consentimiento, en términos de la LFPDPPP y demás
               disposiciones aplicables.
-            </p>
+            </P>
+            <P>
+              Para ejercer estos derechos, el Titular deberá contactar al
+              Departamento de Privacidad, al correo electrónico que aparecen
+              anteriormente en nuestros datos de contacto. En términos de la ley
+              aplicable, cualquier solicitud de ejercicio de los derechos ARCO
+              mencionados deberá indicar los siguientes requisitos
+              indispensables para dar respuesta a su solicitud:
+            </P>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 leading-relaxed">
+              <li>Nombre y domicilio.</li>
+              <li>
+                Los documentos que acrediten su identidad o, en su caso, la
+                representación legal de la persona que realiza la solicitud a su
+                nombre.
+              </li>
+              <li>
+                La descripción clara y precisa de los Datos Personales a los que
+                desea acceder o que desea rectificar, cancelar u oponerse y
+                cualquier otro elemento que facilite la localización de sus
+                datos.
+              </li>
+              <li>
+                Cualquier otro requisito establecido por la LFPDPPP y/o demás
+                disposiciones aplicables.
+              </li>
+            </ol>
+            <P>
+              En cualquier momento el Titular podrá solicitar que se suspenda o
+              cancele el envío de mensajes o avisos comerciales e información de
+              nuevos productos, a través de nuestro Departamento de Privacidad.
+              En caso de solicitar la rectificación de datos personales,
+              adicionalmente deberá indicar las modificaciones a realizarse y
+              aportar la documentación que sustente su petición.
+            </P>
+            <P>
+              La respuesta a su solicitud se le comunicará en un plazo de 15
+              (quince) días hábiles, contados a partir de la fecha en que se
+              recibió la solicitud, pudiendo ampliarse 5 (cinco) días más en los
+              casos en los que así lo establezca la LFPDPPP; a efecto de que en
+              caso de resultar procedente, se lleven a cabo las medidas
+              necesarias para cumplir con su solicitud, mismas que se llevarán a
+              cabo dentro de los 15 (quince) días hábiles siguientes a la fecha
+              en que se le comunique al Titular la respuesta a su solicitud.
+            </P>
+            <P>
+              El Titular de los Datos Personales, deberá cubrir los gastos
+              justificados de envío o el costo de reproducción en copias u otros
+              formatos. En el caso de requerirse envío físico de información, LA
+              EMPRESA requerirá un domicilio para dicho envió. En el caso de que
+              él envió de la información sea de forma electrónica LA EMPRESA
+              requerirá un correo electrónico.
+            </P>
+            <P>La Solicitud no será válida ante la omisión de lo señalado anteriormente.</P>
+            <P>
+              Cuando los Datos Personales hayan dejado de ser necesarios para el
+              cumplimiento de las finalidades previstas por este Aviso de
+              Privacidad y las disposiciones legales aplicables, deberán ser
+              cancelados, bloqueados y suprimidos por ministerio de Ley.
+            </P>
+            <P>
+              En caso de que el Titular haya solicitado el derecho de oposición
+              al tratamiento de sus Datos Personales, LA EMPRESA considerará lo
+              siguiente:
+            </P>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 leading-relaxed">
+              <li>
+                Que exista causa legítima y la situación específica así lo
+                requiera, lo cual deberá justificar que aun siendo lícito el
+                tratamiento, el mismo debe cesar para evitar que su persistencia
+                cause un perjuicio al Titular.
+              </li>
+              <li>
+                Que requiera manifestar su oposición para el tratamiento de sus
+                Datos Personales a fin de que no se lleve a cabo el tratamiento
+                para fines específicos.
+              </li>
+              <li>
+                Que el tratamiento no sea necesario para el cumplimiento de una
+                obligación legal impuesta a LA EMPRESA.
+              </li>
+            </ol>
+            <P>
+              En caso de haber ejercido el derecho de oposición al tratamiento
+              de sus Datos Personales, LA EMPRESA mandará a un Listado de
+              Exclusión los Datos Personales de conformidad con la LFPDPPP.
+            </P>
 
-            <Apartado>Datos personales que recabamos</Apartado>
-            <p className="mt-3 leading-relaxed">
-              Para las finalidades señaladas en este aviso, podemos recabar sus
-              datos de identificación y contacto (nombre, empresa, correo
-              electrónico, teléfono) y los datos relacionados con las
-              operaciones logísticas que nos solicite. No recabamos datos
-              personales sensibles.
-            </p>
+            <Apartado>
+              IX. PROCEDIMIENTOS PARA EL BLOQUEO Y LA SUPRESIÓN DE LOS DATOS
+              PERSONALES
+            </Apartado>
+            <P>
+              Una vez que los Datos Personales hayan sido cancelados, LA EMPRESA
+              conservará un mes más los Datos Personales del Titular, para fines
+              de aclaraciones y preparación para la supresión una vez vencido
+              este plazo, LA EMPRESA bloqueará de manera definitiva los Datos
+              Personales del Titular, no teniendo oportunidad nuevamente de
+              localización ni contacto con el Titular.
+            </P>
+            <P>
+              Si el Titular llegare a realizar otro acto con LA EMPRESA, deberá
+              iniciarlo como si la relación nunca hubiese existido.
+            </P>
+            <P>
+              Lo anterior, observando lo señalado en las Políticas de Privacidad
+              para efectos de conservar información por ministerio de ley o de
+              autoridad.
+            </P>
+            <P>
+              Los Datos Personales que hayan cumplido con sus fines, pero que no
+              puedan ser cancelados y/o suprimidos por ministerio de ley o por
+              la relación contractual existente, serán bloqueados de los fines a
+              los que eran sometidos, hasta que se puedan suprimir. Durante
+              dicho periodo, los Datos Personales no podrán ser objeto de
+              tratamiento mayor a la conservación y resguardo.
+            </P>
 
-            <Apartado>Finalidades del tratamiento</Apartado>
-            <p className="mt-3 leading-relaxed">
-              <strong className="font-semibold text-brand-900">
-                Finalidades primarias
-              </strong>{" "}
-              (necesarias para el servicio): responder a sus solicitudes de
-              cotización y contacto; coordinar y dar seguimiento a los servicios
-              de logística internacional contratados; y cumplir con las
-              obligaciones derivadas de la relación comercial.
-            </p>
-            <p className="mt-3 leading-relaxed">
-              <strong className="font-semibold text-brand-900">
-                Finalidades secundarias
-              </strong>{" "}
-              (no necesarias, puede oponerse): envío de comunicaciones
-              informativas, promocionales y de mejora de nuestros servicios. Si
-              no desea que sus datos se traten para estas finalidades, puede
-              manifestarlo escribiéndonos al correo indicado más abajo.
-            </p>
+            <Apartado>X. REVOCACIÓN DEL CONSENTIMIENTO</Apartado>
+            <P>
+              El consentimiento podrá ser revocado en cualquier momento sin que
+              se le atribuyan efectos retroactivos. Para revocar el
+              consentimiento el Titular debe de enviar una solicitud por escrito
+              al correo electrónico avisodeprivacidad@compasssolutions.com.mx
+              con los siguientes requisitos:
+            </P>
+            <ul className="mt-3 list-disc space-y-1 pl-5 leading-relaxed">
+              <li>Nombre del Titular</li>
+              <li>Domicilio al que se le enviará la respuesta a su solicitud</li>
+              <li>
+                Los documentos que acrediten la identidad del Titular, IFE (INE)
+                y/o PASAPORTE, o en su caso, la representación legal del Titular
+              </li>
+              <li>
+                La descripción clara y precisa del vínculo que tiene con LA
+                EMPRESA.
+              </li>
+              <li>Aportar la documentación que sustente su petición</li>
+              <li>La solicitud deberá estar dirigida a LA EMPRESA.</li>
+              <li>
+                Documentos que acrediten que la relación jurídica que sostenía
+                con LA EMPRESA, ha terminado
+              </li>
+            </ul>
+            <P>
+              LA EMPRESA emitirá una respuesta en la cual confirmará la
+              revocación del consentimiento del Titular, o en su caso, señalará
+              el razonamiento dependiendo del caso en concreto, contando con 15
+              (quince) días para emitir esta respuesta. Los plazos serán
+              contados a partir del momento en que la solicitud enviada a través
+              de correo electrónico entre en nuestro servidor, emitiendo LA
+              EMPRESA el respectivo Acuse de Recibido de Solicitud.
+            </P>
+            <P>
+              Cualquier solicitud ulterior a la mencionada en el párrafo
+              anterior tendrá el mismo efecto que una de inicio, estando el
+              Titular y LA EMPRESA, obligadas a los mismos plazos señalados
+              anteriormente.
+            </P>
+            <P>
+              La solicitud no será válida ante la omisión de lo señalado
+              anteriormente.
+            </P>
 
-            <Apartado>Transferencia de datos</Apartado>
-            <p className="mt-3 leading-relaxed">
-              Sus datos personales podrán ser transferidos a terceros (como
-              agentes aduanales, transportistas y aliados operativos) únicamente
-              cuando sea necesario para prestar el servicio que usted solicita.
-              Estas transferencias no requieren de su consentimiento conforme al
-              artículo 37 de la LFPDPPP.
-            </p>
-
-            <Apartado>Medios para ejercer sus derechos ARCO</Apartado>
-            <p className="mt-3 leading-relaxed">
-              Usted tiene derecho a acceder, rectificar, cancelar u oponerse al
-              tratamiento de sus datos personales (derechos ARCO), así como a
-              revocar su consentimiento. Para ejercerlos, envíe su solicitud a{" "}
-              <Pendiente>correo del área de datos personales</Pendiente>,
-              indicando su nombre y el derecho que desea ejercer.
-            </p>
-
-            <Apartado>Cambios al aviso de privacidad</Apartado>
-            <p className="mt-3 leading-relaxed">
-              Este aviso puede sufrir modificaciones. Cualquier cambio se
-              publicará en esta misma página.
-            </p>
+            <Apartado>XI. JURISDICCIÓN</Apartado>
+            <P>
+              Este Aviso de Privacidad, el tratamiento de sus Datos Personales
+              y/o todos los documentos relacionados se rigen por la LFPDPPP y
+              las demás leyes y reglamentos de los Estados Unidos Mexicanos.
+            </P>
+            <P>
+              La aceptación de este Aviso de Privacidad o la simple solicitud de
+              servicios una vez publicado y puesto a disposición el presente
+              Aviso de Privacidad implica una aceptación expresa por parte del
+              Titular de los términos del mismo y su sometimiento expreso a los
+              tribunales competentes de la Ciudad de México, para cualquier
+              controversia o reclamación derivada de este Aviso de Privacidad.
+            </P>
+            <P>
+              Manifiesto que he leído y entiendo el presente Aviso de Privacidad
+              y otorgo mi consentimiento, para los casos en que es necesario,
+              para el tratamiento de mis Datos Personales en los términos del
+              presente. Confirmo que he informado a las personas de las cuales
+              he proporcionado Datos Personales, sobre el tratamiento que se
+              hará de sus Datos Personales.
+            </P>
 
             <p className="mt-10 text-sm">
               Última actualización: <Pendiente>fecha de publicación</Pendiente>

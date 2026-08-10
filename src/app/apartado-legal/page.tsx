@@ -14,20 +14,20 @@ import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
  * ESTADO DEL CONTENIDO, que es lo que gobierna el resto de decisiones:
  *   · la POLÍTICA DE SEGURIDAD es definitiva. Se importa de lib/nosotros, que
  *     es la misma fuente que publica /nosotros
- *   · el AVISO DE PRIVACIDAD es un BORRADOR con datos del responsable todavía
- *     sin confirmar. Lleva un banner de advertencia y los huecos marcados
- *     visiblemente con [PENDIENTE: …]
+ *   · el AVISO DE PRIVACIDAD es el DOCUMENTO DEFINITIVO del cliente, transcrito
+ *     literalmente. Ya no es un borrador: razón social, domicilio y correo del
+ *     Departamento de Privacidad vienen del documento. El único hueco que queda
+ *     marcado con [PENDIENTE: …] es la fecha de última actualización, que el
+ *     documento no trae
  *   · los TÉRMINOS Y CONDICIONES ya no están aquí ni como hueco. No existe el
  *     texto y una sección vacía prometía algo que no hay
  *
- * AL CONFIRMARSE EL AVISO REAL hay que hacer, además, estas cuatro cosas:
- *   1. quitar el `robots: { index: false }` de aquí abajo
- *   2. añadir /apartado-legal a src/app/sitemap.ts
- *   3. poner `live: true` a la entrada de "Aviso de privacidad" de INFO_LINKS
- *      en Footer.tsx (la de "Términos y condiciones" ya se retiró de esa lista,
- *      porque apuntaba al ancla #terminos que esta página ya no tiene)
- *   4. envolver en <Link href="/apartado-legal#privacidad"> el "Aviso de
- *      privacidad" del CookieBanner (tiene un TODO(compliance) marcándolo)
+ * QUEDA PENDIENTE, de la lista que dejó la versión borrador:
+ *   · poner `live: true` a la entrada de "Aviso de privacidad" de INFO_LINKS
+ *     en Footer.tsx (la de "Términos y condiciones" ya se retiró de esa lista,
+ *     porque apuntaba al ancla #terminos que esta página ya no tiene)
+ *   · envolver en <Link href="/apartado-legal#privacidad"> el "Aviso de
+ *     privacidad" del CookieBanner (tiene un TODO(compliance) marcándolo)
  */
 
 const PATH = "/apartado-legal";
@@ -40,18 +40,6 @@ export const metadata: Metadata = {
   title: `${TITLE} | Compass Solutions`,
   description: DESCRIPTION,
   alternates: { canonical: PATH },
-  /**
-   * NOINDEX MIENTRAS EL AVISO SEA UN BORRADOR. Indexar un aviso de privacidad
-   * provisional es peor que no aparecer: es un documento con efectos legales y
-   * quedaría cacheado con la razón social y el domicilio sin confirmar. Aplica
-   * a la RUTA ENTERA, incluida la política de seguridad, porque el noindex es
-   * de página y las dos secciones comparten URL — la política ya está indexada
-   * en /nosotros, así que no se pierde nada.
-   *
-   * `follow: true` se conserva a propósito: los enlaces que salen de aquí (el
-   * pie, sobre todo) sí deben recorrerse.
-   */
-  robots: { index: false, follow: true },
 };
 
 export default function ApartadoLegal() {
