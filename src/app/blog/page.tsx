@@ -10,6 +10,7 @@ import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import { SITE_URL } from "@/app/layout";
 import { formatPostDate, getAllPosts, postHref } from "@/lib/blog";
+import { organizationRef } from "@/lib/jsonld";
 import { bindTail } from "@/lib/typography";
 
 const PATH = "/blog";
@@ -59,26 +60,40 @@ export const metadata: Metadata = {
  * página es —el blog con sus entradas— en vez de envolverlo en una lista
  * genérica, y encaja con el `BlogPosting` que ya emite cada artículo.
  */
-function buildJsonLd(posts: ReturnType<typeof getAllPosts>) {
+/**
+ * JSON-LD del índice. SIN `blogPost`.
+ *
+ * Aquí se incrustaban los 41 artículos completos —headline, description,
+ * datePublished e image de cada uno—, unos 40 KB por página que:
+ *
+ *  · Duplicaban lo que la página de cada artículo ya declara, mejor y entera.
+ *  · Eran nodos INCOMPLETOS: sin `author`, sin `publisher`, sin `dateModified`
+ *    y sin identificador. Para un parser, 41 BlogPosting anónimos parecidos
+ *    pero distintos a los 41 con `@id` que viven en sus URLs reales.
+ *  · No servían para descubrir nada: esta página ya tiene 42 enlaces <a> a esos
+ *    artículos, que es por donde un crawler entra de verdad.
+ *
+ * SE PROBÓ EL PASO INTERMEDIO —dejar `blogPost` con referencias `{"@id": ...}`
+ * en vez de los objetos enteros— y se descartó al validarlo: los `@id` de los
+ * artículos se definen en OTRAS URLs, así que dentro de este documento las 41
+ * referencias quedan colgando. Como URIs de Linked Data son legítimas, pero
+ * ningún consumidor las resuelve al parsear esta página: el resultado práctico
+ * es el mismo que no ponerlas, con 3 KB y 41 avisos de validador de propina.
+ *
+ * `Blog.blogPost` además no alimenta ningún resultado enriquecido de Google, así
+ * que no se pierde nada. La relación "este blog contiene estas notas" la
+ * expresa cada artículo desde su lado, con su `@id` y su `mainEntityOfPage`.
+ */
+function buildJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Blog",
+    "@id": `${new URL(PATH, SITE_URL).toString()}#blog`,
     name: TITLE,
     description: DESCRIPTION,
     url: new URL(PATH, SITE_URL).toString(),
-    publisher: {
-      "@type": "Organization",
-      name: "Compass Solutions",
-      url: SITE_URL,
-    },
-    blogPost: posts.map((post) => ({
-      "@type": "BlogPosting",
-      headline: post.title,
-      description: post.description,
-      datePublished: post.date,
-      image: new URL(post.cover, SITE_URL).toString(),
-      url: new URL(postHref(post.slug), SITE_URL).toString(),
-    })),
+    inLanguage: "es-MX",
+    publisher: organizationRef(SITE_URL),
   };
 }
 
@@ -111,7 +126,7 @@ export default function BlogIndex() {
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify(buildJsonLd(posts)),
+              __html: JSON.stringify(buildJsonLd()),
             }}
           />
 
@@ -165,6 +180,9 @@ export default function BlogIndex() {
                   alt={destacado.coverAlt}
                   fill
                   priority
+                  // Ver la nota del hero de artículo: `priority` genera el
+                  // preload pero no marca el <img> como LCP en esta versión.
+                  fetchPriority="high"
                   sizes="100vw"
                   className="object-cover"
                 />

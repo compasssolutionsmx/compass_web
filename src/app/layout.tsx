@@ -6,6 +6,7 @@ import GoogleTagManagerGate from "@/components/GoogleTagManagerGate";
 import CookieBanner from "@/components/CookieBanner";
 import SmoothScroll from "@/components/SmoothScroll";
 import { consentBootstrapScript } from "@/lib/consent";
+import { buildSiteJsonLd } from "@/lib/jsonld";
 
 /**
  * Dos familias, self-hosted por next/font (no salen requests a Google):
@@ -43,8 +44,17 @@ const archivo = Archivo({
  */
 export const SITE_URL = "https://compasssolutions.com.mx";
 
-const SITE_TITLE = "Freight forwarder en México | Compass Solutions";
-const SITE_DESCRIPTION =
+/**
+ * EXPORTADOS para que la home los reutilice. `app/page.tsx` no tenía metadata
+ * propia y heredaba estas dos de aquí, que estaba bien para el <title> pero la
+ * dejaba SIN canonical: `alternates` no se hereda, hay que declararlo en la
+ * página. Y en cuanto una página declara `openGraph`, el del layout se
+ * reemplaza entero en vez de fusionarse — así que la home tiene que repetir
+ * title, description e imagen para no perderlos. De ahí que salgan de aquí y no
+ * duplicadas allá.
+ */
+export const SITE_TITLE = "Freight forwarder en México | Compass Solutions";
+export const SITE_DESCRIPTION =
   "Coordinamos su logística internacional: transporte aéreo, marítimo y terrestre, despacho aduanal y gestión documental, bajo un solo punto de contacto.";
 
 export const metadata: Metadata = {
@@ -115,6 +125,18 @@ export default function RootLayout({
             evita el parpadeo de tema. */}
         <script
           dangerouslySetInnerHTML={{ __html: consentBootstrapScript() }}
+        />
+        {/* IDENTIDAD DEL SITIO, en TODAS las páginas. Va en el layout y no en
+            la home porque el resto de bloques JSON-LD —el `publisher` de cada
+            artículo, el `provider` del servicio— ya no repiten la organización:
+            la referencian por `@id`. Una referencia sólo resuelve si el nodo
+            está en el mismo documento, así que si esto viviera en una sola
+            página, las otras 49 quedarían apuntando al vacío. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(buildSiteJsonLd(SITE_URL)),
+          }}
         />
         <ConsentProvider>
           {/* GTM va DENTRO del provider porque lee el consentimiento, y sólo se

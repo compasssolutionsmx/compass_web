@@ -10,11 +10,16 @@ import { getAllPosts, postHref } from "@/lib/blog";
  * aquí solo, sin tocar este archivo. De ahí sale también `lastModified`, con la
  * fecha del frontmatter.
  *
- * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice, artículos, /proveedores,
- * /vacantes y /nosotros. Las páginas de servicio no entran porque todavía no se
- * construyen; `allServicePaths()` de lib/services.ts ya está listo para cuando
- * existan, pero listarlas ahora sería mandar al crawler a un 404. Lo mismo con
- * /apartado-legal, que hoy es un enlace sin destino.
+ * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice, artículos,
+ * /importaciones-a-mexico, /proveedores, /vacantes y /nosotros. Las páginas de
+ * servicio no entran porque todavía no se construyen; `allServicePaths()` de
+ * lib/services.ts ya está listo para cuando existan, pero listarlas ahora sería
+ * mandar al crawler a un 404.
+ *
+ * /apartado-legal SÍ existe pero queda fuera a propósito: lleva
+ * `robots: { index: false }` mientras el aviso sea un borrador, y listar en el
+ * sitemap una URL que se pide no indexar es darle al crawler dos órdenes
+ * opuestas.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
@@ -37,6 +42,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
       // artículo más reciente.
       lastModified: ultimoPost,
       changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      /**
+       * FALTABA. Es una página indexable —declara `robots: index, follow`
+       * explícito—, con canonical y datos estructurados propios, y encima es el
+       * destino del tráfico pagado. Quedó fuera de la lista cuando se creó, así
+       * que el rastreo programado nunca la veía: sólo llegaba a ella siguiendo
+       * enlaces.
+       *
+       * Prioridad alta, por debajo sólo de la home: es una landing de campaña,
+       * no una página de servicio al negocio como las dos de abajo.
+       */
+      url: new URL("/importaciones-a-mexico", SITE_URL).toString(),
+      changeFrequency: "monthly",
       priority: 0.8,
     },
     // Prioridad baja a propósito en las dos: son páginas de servicio al

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import BlogPreview from "@/components/BlogPreview";
 import Certifications from "@/components/Certifications";
 import FeaturesGrid from "@/components/FeaturesGrid";
@@ -13,6 +14,40 @@ import SuccessStories from "@/components/SuccessStories";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import YearsBanner from "@/components/YearsBanner";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/app/layout";
+
+/**
+ * La home era la ÚNICA página indexable sin canonical. Heredaba title y
+ * description del layout, pero `alternates` no se hereda: hay que declararlo
+ * por página. Sin él, cualquier variante con parámetros —los `?utm_*` de las
+ * campañas, un `?fbclid` pegado desde Meta— puede indexarse como URL aparte y
+ * repartir la señal de la página más importante del sitio.
+ *
+ * `openGraph` se repite ENTERO a propósito: en cuanto una página declara el
+ * suyo, reemplaza al del layout en vez de fusionarse, así que declarar sólo
+ * `url` habría dejado la home sin imagen al compartirla. Las constantes vienen
+ * del layout para que no puedan divergir.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "es_MX",
+    siteName: "Compass Solutions",
+    url: "/",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/brand/thumbnail.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Contenedor Compass Solutions en el Puerto de Lázaro Cárdenas",
+      },
+    ],
+  },
+  twitter: { card: "summary_large_image" },
+};
 
 export default function Home() {
   return (

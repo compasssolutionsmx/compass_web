@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { organizationRef } from "@/lib/jsonld";
 
 const BLOG_DIR = path.join(process.cwd(), "src/content/blog");
 
@@ -50,6 +51,29 @@ export type PostFrontmatter = {
   description: string;
   /** ISO `YYYY-MM-DD`. */
   date: string;
+  /**
+   * ISO `YYYY-MM-DD`. OPCIONAL: sólo se pone cuando un artículo YA PUBLICADO se
+   * revisa de verdad. Si falta, `dateModified` del JSON-LD cae en `date`, que
+   * es la verdad para una nota que no se ha tocado desde que salió.
+   *
+   * POR QUÉ A MANO Y NO DERIVADO. Se evaluaron las dos fuentes automáticas y
+   * las dos mienten:
+   *
+   *  - `fs.mtime`: en Vercel el repo se clona limpio en cada build, así que
+   *    todos los archivos traen la marca del checkout. Publicaría los 41
+   *    artículos como "actualizados hoy" en cada despliegue.
+   *  - `git log -1 -- archivo`: aquí el blog entero entró en un par de commits
+   *    masivos, así que git fecha las 41 notas el 2026-08-08 y el 2026-08-09
+   *    aunque su `date` vaya de 2025 a 2026. Encima Vercel clona con historial
+   *    recortado, así que en cuanto un archivo lleve unos commits sin tocarse
+   *    la consulta vuelve vacía y haría falta un fallback igualmente.
+   *
+   * Un campo opcional no obliga a mantener nada en los 41 archivos existentes:
+   * hoy ninguno lo lleva y todos declaran una fecha correcta. Sólo se escribe
+   * el día que se corrija un artículo, que es exactamente cuando el dato
+   * importa.
+   */
+  updated?: string;
   author: string;
   category: BlogCategory;
   cover: string;
@@ -228,16 +252,47 @@ export function extractHeadings(content: string): Heading[] {
  * que el schema no declara nada oculto.
  */
 export function buildBlogPostingJsonLd(post: PostSummary, siteUrl: string) {
+  const url = new URL(postHref(post.slug), siteUrl).toString();
+
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
+    // El artículo como ENTIDAD, distinto de la página que lo contiene. El
+    // fragmento es lo que separa las dos cosas: `#article` es el texto,
+    // `mainEntityOfPage` apunta al documento.
+    "@id": `${url}#article`,
+    url,
     headline: post.title,
     description: post.description,
     datePublished: post.date,
+    // Cae en `date` cuando el artículo no se ha revisado. Ver `updated` en
+    // PostFrontmatter para por qué este dato no se deriva de git ni del mtime.
+    dateModified: post.updated ?? post.date,
     image: new URL(post.cover, siteUrl).toString(),
-    author: { "@type": "Organization", name: post.author },
-    publisher: { "@type": "Organization", name: "Compass Solutions" },
+    /**
+     * MISMA EMPRESA, MISMO NODO. Los 41 artículos declaran `author: "Compass
+     * Solutions"`, que es exactamente la organización del layout: dejarlo como
+     * `Organization` anónima creaba una copia sin `@id` por artículo — el mismo
+     * problema que se acaba de arreglar en `publisher`, sólo que 41 veces.
+     *
+     * El condicional NO es decorativo: `author` viene del frontmatter y el día
+     * que una nota la firme una persona, referenciar la empresa sería atribuirle
+     * el texto a quien no lo escribió. Si el nombre no es el de la casa, se
+     * declara el autor tal cual venga.
+     */
+    author:
+      post.author === "Compass Solutions"
+        ? organizationRef(siteUrl)
+        : { "@type": "Person", name: post.author },
+    // REFERENCIA al nodo del layout raíz, que sí trae logo, teléfono y
+    // domicilio. Antes era una `Organization` suelta con sólo `name`: sin logo
+    // no calificaba para el resultado enriquecido de artículo, y al no tener
+    // `@id` era una cuarta copia de la empresa que nadie podía unificar.
+    publisher: organizationRef(siteUrl),
     keywords: post.keywords.join(", "),
-    mainEntityOfPage: new URL(postHref(post.slug), siteUrl).toString(),
+    // Forma canónica. Era un string suelto: Schema.org lo admite como `URL`,
+    // pero los ejemplos de Google usan el objeto y así queda explícito que el
+    // destino es la PÁGINA, no otra entidad.
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
 }

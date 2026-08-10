@@ -25,7 +25,20 @@ export const metadata: Metadata = {
     url: PATH,
     title: TITLE,
     description: DESCRIPTION,
+    // Explícita y no heredada: un `openGraph` propio REEMPLAZA al del layout
+    // raíz. Sin esto la página quedaba con `twitter:card = summary_large_image`
+    // —ese sí se hereda— prometiendo una tarjeta con imagen grande y sin
+    // mandar ninguna imagen. Mismo caso que ya arreglaron /vacantes y /blog.
+    images: [
+      {
+        url: "/brand/thumbnail.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Contenedor Compass Solutions en el Puerto de Lázaro Cárdenas",
+      },
+    ],
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function Proveedores() {

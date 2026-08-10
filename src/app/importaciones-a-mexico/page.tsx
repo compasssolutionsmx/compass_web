@@ -13,7 +13,7 @@ import ImportHero from "@/components/importaciones/ImportHero";
 import ImportSolutions from "@/components/importaciones/ImportSolutions";
 import ImportStats from "@/components/importaciones/ImportStats";
 import { SITE_URL } from "@/app/layout";
-import { SALES_PHONE_DISPLAY } from "@/lib/site";
+import { organizationRef } from "@/lib/jsonld";
 
 const PATH = "/importaciones-a-mexico";
 
@@ -38,6 +38,18 @@ export const metadata: Metadata = {
     url: PATH,
     title: TITLE,
     description: DESCRIPTION,
+    // Explícita y no heredada: un `openGraph` propio REEMPLAZA al del layout
+    // raíz, así que sin esto la landing se compartía con tarjeta grande y sin
+    // imagen. Importa más aquí que en el resto: esta URL es el destino de los
+    // anuncios y se pega en chats y correos.
+    images: [
+      {
+        url: "/brand/thumbnail.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Contenedor Compass Solutions en el Puerto de Lázaro Cárdenas",
+      },
+    ],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -51,13 +63,13 @@ export const metadata: Metadata = {
  * eso se pinta. Lo que declara:
  *
  *   name / description   → el <h1> y el párrafo del hero
- *   provider             → el logotipo y el nombre de marca, en header y footer
- *   telephone            → el teléfono del header y del footer
  *   serviceType          → los cuatro títulos de "Soluciones Logísticas"
  *
- * `Service` con `provider` de tipo `Organization` en vez de dos bloques
- * sueltos: es una sola entidad —el servicio de importación que presta Compass—
- * y separarlos obligaría a repetir la organización sin que aporte nada.
+ * EL `provider` YA NO SE DEFINE AQUÍ. Antes este bloque repetía la
+ * organización —nombre, url y teléfono— y era la segunda de cuatro copias
+ * sueltas de la misma empresa en el sitio. Ahora apunta por `@id` al nodo
+ * canónico que el layout raíz pinta en todas las páginas, así que el teléfono,
+ * el logotipo y el domicilio siguen declarados, sólo que una sola vez.
  */
 function buildJsonLd() {
   return {
@@ -71,12 +83,11 @@ function buildJsonLd() {
       "Transportación terrestre",
       "Servicios adicionales",
     ],
-    provider: {
-      "@type": "Organization",
-      name: "Compass Solutions",
-      url: SITE_URL,
-      telephone: SALES_PHONE_DISPLAY,
-    },
+    // REFERENCIA, no copia. La organización se define una sola vez en el
+    // layout raíz (`lib/jsonld.ts`) y aquí sólo se apunta por `@id`. Antes este
+    // bloque repetía nombre, url y teléfono, creando una segunda organización
+    // sin identificador que ningún crawler podía unificar con la del blog.
+    provider: organizationRef(SITE_URL),
     url: new URL(PATH, SITE_URL).toString(),
   };
 }

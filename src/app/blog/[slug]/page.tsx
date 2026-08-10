@@ -122,6 +122,13 @@ export default async function ArticlePage({
               height={1072}
               sizes="100vw"
               priority
+              /* `priority` genera el <link rel="preload"> en el <head>, pero en
+                 esta versión de Next NO añade el atributo al <img>: comprobado
+                 en el HTML compilado, el único fetchPriority del documento era
+                 un "low" de un chunk de JS. Sin él el navegador precarga la
+                 imagen sin saber que es la candidata a LCP y la mete en la cola
+                 normal. Es la portada de las 41 páginas de artículo. */
+              fetchPriority="high"
               unoptimized={post.cover.startsWith("http")}
               className="absolute inset-0 h-full w-full object-cover"
             />

@@ -107,6 +107,9 @@ export default function Vacantes() {
                 width={1728}
                 height={608}
                 priority
+                // Ver la nota del hero de artículo: `priority` genera el
+                // preload pero no marca el <img> como LCP en esta versión.
+                fetchPriority="high"
                 sizes="100vw"
                 className="h-full w-full object-cover opacity-60"
               />
