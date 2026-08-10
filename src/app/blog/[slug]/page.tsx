@@ -143,8 +143,8 @@ export default async function ArticlePage({
               width={1920}
               height={1072}
               sizes="100vw"
-              priority
-              /* `priority` genera el <link rel="preload"> en el <head>, pero en
+              preload
+              /* `preload` genera el <link rel="preload"> en el <head>, pero en
                  esta versión de Next NO añade el atributo al <img>: comprobado
                  en el HTML compilado, el único fetchPriority del documento era
                  un "low" de un chunk de JS. Sin él el navegador precarga la

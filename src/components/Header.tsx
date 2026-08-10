@@ -237,7 +237,7 @@ export default function Header({
               alt="Compass Solutions"
               width={1617}
               height={362}
-              priority
+              preload
               unoptimized
               className={`w-auto transition-all duration-300 motion-reduce:transition-none ${
                 onDarkSurface ? "brightness-0 invert" : ""

@@ -71,7 +71,7 @@ export default function NotFound() {
               alt=""
               width={1178}
               height={750}
-              priority
+              preload
               sizes="(min-width: 768px) 672px, 100vw"
               className="mx-auto h-auto w-full max-w-2xl"
             />
@@ -80,7 +80,7 @@ export default function NotFound() {
                 el <h1>, y describirla obligaría a un lector de pantalla a
                 escuchar el dibujo antes de llegar a la única acción que hay.
 
-                `priority` ahora sí: pesa 35 KB y es lo primero que se ve. */}
+                `preload` ahora sí: pesa 35 KB y es lo primero que se ve. */}
             <Eyebrow className="mb-4 mt-10">Error 404</Eyebrow>
 
             {/* BAJADO de `text-4xl md:text-5xl` (36/48px) a `text-3xl md:text-4xl`

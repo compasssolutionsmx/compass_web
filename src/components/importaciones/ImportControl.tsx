@@ -143,7 +143,7 @@ export default function ImportControl() {
             (#1c2030) que da 13.77:1 sobre brand-100, y sólo el 5.3% del arte es
             tinta muy clara.
 
-            SIN `priority`, a diferencia de cuando vivía en el hero: aquí entra
+            SIN `preload`, a diferencia de cuando vivía en el hero: aquí entra
             en la cuarta sección de la página, muy por debajo del pliegue, así
             que ya no es candidata a LCP. Marcarla prioritaria le quitaría ancho
             de banda a lo que sí se ve primero — que en esta página es texto

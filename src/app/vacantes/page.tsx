@@ -98,7 +98,7 @@ export default function Vacantes() {
                 zona clara del archivo queda casi toda fuera del encuadre.
 
                 `alt=""`: es fondo decorativo y el mensaje lo lleva el <h1>.
-                `priority` porque es la imagen sobre el pliegue y la candidata a
+                `preload` porque es la imagen sobre el pliegue y la candidata a
                 LCP de la página. */}
             <div className="absolute inset-0 bg-brand-950">
               <Image
@@ -106,8 +106,8 @@ export default function Vacantes() {
                 alt=""
                 width={1728}
                 height={608}
-                priority
-                // Ver la nota del hero de artículo: `priority` genera el
+                preload
+                // Ver la nota del hero de artículo: `preload` genera el
                 // preload pero no marca el <img> como LCP en esta versión.
                 fetchPriority="high"
                 sizes="100vw"

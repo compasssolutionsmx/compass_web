@@ -179,8 +179,8 @@ export default function BlogIndex() {
                   src={destacado.cover}
                   alt={destacado.coverAlt}
                   fill
-                  priority
-                  // Ver la nota del hero de artículo: `priority` genera el
+                  preload
+                  // Ver la nota del hero de artículo: `preload` genera el
                   // preload pero no marca el <img> como LCP en esta versión.
                   fetchPriority="high"
                   sizes="100vw"

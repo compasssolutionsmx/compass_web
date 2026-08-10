@@ -33,7 +33,7 @@ export default function ImportCtaBanner() {
             El archivo es 700x355 (ratio 1.97) y la caja 2.00, así que
             `object-contain` lo ajusta sin recorte perceptible.
 
-            Sin `priority`: cierra la página, muy por debajo del pliegue. */}
+            Sin `preload`: cierra la página, muy por debajo del pliegue. */}
         <Image
           src="/importaciones/buque.webp"
           alt="Buque portacontenedores cargado, visto de perfil"

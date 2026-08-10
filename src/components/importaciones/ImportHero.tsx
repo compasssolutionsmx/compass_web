@@ -45,7 +45,7 @@ export default function ImportHero() {
           velo cae a 1.03:1 — de ahí que aquí no se pueda servir cruda.
 
           `alt=""`: es fondo decorativo y el mensaje lo lleva el <h1>, igual que
-          el video del home va `aria-hidden`. `priority` porque al haberse ido
+          el video del home va `aria-hidden`. `preload` porque al haberse ido
           el tiranosaurio a <ImportControl>, ésta es la imagen sobre el pliegue
           y la candidata a LCP de la página. */}
       <div className="absolute inset-0 bg-brand-950">
@@ -54,8 +54,8 @@ export default function ImportHero() {
           alt=""
           width={1728}
           height={608}
-          priority
-          // Ver la nota del hero de artículo: `priority` genera el preload
+          preload
+          // Ver la nota del hero de artículo: `preload` genera el preload
           // pero no marca el <img> como LCP en esta versión.
           fetchPriority="high"
           sizes="100vw"
