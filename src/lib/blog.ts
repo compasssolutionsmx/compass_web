@@ -79,6 +79,19 @@ export type PostFrontmatter = {
   cover: string;
   coverAlt: string;
   keywords: string[];
+  /**
+   * OPT-IN al bloque `FAQPage`. Sólo marca que el artículo está redactado en
+   * forma de preguntas y respuestas; QUÉ preguntas entran lo decide
+   * `extractFaq()` leyendo el cuerpo, no este campo.
+   *
+   * Es opt-in y no automático porque "tener encabezados con signo de
+   * interrogación" no es lo mismo que "ser un FAQ". Hay notas con una pregunta
+   * retórica de titular —"El Día Mundial del Comercio Justo es un espejo: ¿qué
+   * reflejan sus operaciones?"— que cumplen todas las reglas mecánicas y aun
+   * así nadie las escribe en un buscador. Esa criba es editorial y se hace
+   * aquí, artículo por artículo.
+   */
+  faq?: boolean;
 };
 
 /** Lo que necesita el listado: frontmatter + slug, sin el cuerpo. */
@@ -251,6 +264,114 @@ export function extractHeadings(content: string): Heading[] {
  * descripción, fecha, autor y portada se pintan en el hero del artículo, así
  * que el schema no declara nada oculto.
  */
+/** Una pregunta del FAQ con su respuesta ya en texto plano. */
+export type FaqItem = { question: string; answer: string };
+
+/**
+ * Markdown -> texto plano, para que `acceptedAnswer.text` diga EXACTAMENTE lo
+ * que el lector ve.
+ *
+ * Se quitan las marcas, no las palabras: `**negrita**` pierde los asteriscos y
+ * `[ancla](/url)` se queda con el ancla, que es justo lo que se pinta en
+ * pantalla.
+ *
+ * LOS NÚMEROS DE LISTA TAMBIÉN SE VAN, y esto costó una vuelta: el `1.` de un
+ * `<ol>` no es texto del documento, lo pinta el navegador como marcador de
+ * lista desde CSS. Conservarlo dejaba la respuesta declarada distinta de la
+ * que un lector —o un parser leyendo el texto de la página— puede encontrar
+ * ahí. Lo destapó la comprobación de que cada respuesta aparezca literal en el
+ * HTML renderizado: fallaban exactamente las cinco que llevaban lista numerada.
+ */
+function toPlainAnswer(lines: string[]): string {
+  return lines
+    .map((line) =>
+      line
+        .replace(/^\s*(?:[-*]|\d+\.)\s+/, "") // viñeta o numeral de lista
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // enlace -> su ancla
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/(^|\W)[*_]([^*_]+)[*_](?=\W|$)/g, "$1$2")
+        .replace(/`([^`]+)`/g, "$1")
+        .trim(),
+    )
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Pares pregunta/respuesta aptos para `FAQPage`, sacados del propio cuerpo.
+ *
+ * NO HAY UNA LISTA DE RESPUESTAS ESCRITA A MANO EN NINGÚN SITIO, y es
+ * deliberado: la regla del proyecto exige que lo declarado esté visible con el
+ * mismo texto, y la única forma de garantizarlo sin depender de que alguien
+ * mantenga dos copias sincronizadas es derivar la respuesta del MDX que se
+ * renderiza. Si el artículo cambia, el JSON-LD cambia con él.
+ *
+ * Un H2 califica cuando:
+ *
+ *  1. Es una pregunta de verdad: abre con "¿" o cierra con "?".
+ *  2. NO tiene H3 dentro. Si la sección se subdivide, la respuesta está
+ *     repartida y meterla entera en un `acceptedAnswer` aplana una sección
+ *     completa en un párrafo. Es el caso que descarta "¿Qué es CTPAT?", que
+ *     cuelga de un H3 la definición.
+ *  3. Su respuesta llega a 25 palabras. Por debajo el H2 es un rótulo con dos
+ *     líneas de entradilla, no una respuesta.
+ *  4. No nombra la marca. "¿Cómo lo hacemos en Compass Solutions?" y sus
+ *     variantes son cierre comercial, no información: Google pide que el FAQ
+ *     sea contenido de ayuda y marcar publicidad como tal es justo lo que se
+ *     sanciona. Esta sola regla saca cinco preguntas de siete artículos.
+ */
+export function extractFaq(content: string): FaqItem[] {
+  const items: FaqItem[] = [];
+  let actual: { question: string; buf: string[]; h3: number } | null = null;
+  let insideFence = false;
+
+  const cerrar = () => {
+    if (!actual) return;
+    const answer = toPlainAnswer(actual.buf);
+    const esPregunta =
+      actual.question.startsWith("¿") || actual.question.endsWith("?");
+    const nombraMarca = /compass solutions/i.test(actual.question);
+
+    if (
+      esPregunta &&
+      !nombraMarca &&
+      actual.h3 === 0 &&
+      answer.split(" ").length >= 25
+    ) {
+      items.push({ question: actual.question, answer });
+    }
+    actual = null;
+  };
+
+  for (const line of content.split("\n")) {
+    if (line.trimStart().startsWith("```")) {
+      insideFence = !insideFence;
+      if (actual) actual.buf.push(line);
+      continue;
+    }
+
+    if (!insideFence) {
+      const match = /^(#{2,3})\s+(.*)$/.exec(line.trim());
+      if (match) {
+        if (match[1] === "##") {
+          cerrar();
+          actual = { question: match[2].trim(), buf: [], h3: 0 };
+        } else if (actual) {
+          actual.h3++;
+        }
+        continue;
+      }
+    }
+
+    if (actual) actual.buf.push(line);
+  }
+  cerrar();
+
+  return items;
+}
+
 export function buildBlogPostingJsonLd(post: PostSummary, siteUrl: string) {
   const url = new URL(postHref(post.slug), siteUrl).toString();
 

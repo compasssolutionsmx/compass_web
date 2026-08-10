@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import ArticleBody from "@/components/ArticleBody";
 import ArticleToc from "@/components/ArticleToc";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Eyebrow from "@/components/Eyebrow";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -14,6 +15,7 @@ import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import { SITE_URL } from "@/app/layout";
 import {
   buildBlogPostingJsonLd,
+  extractFaq,
   extractHeadings,
   formatPostDate,
   getAllPostSlugs,
@@ -21,6 +23,7 @@ import {
   getPostBySlug,
   postHref,
 } from "@/lib/blog";
+import { buildFaqJsonLd } from "@/lib/jsonld";
 import { bindTail } from "@/lib/typography";
 
 /** Rutas estáticas: una por .mdx. */
@@ -87,6 +90,15 @@ export default async function ArticlePage({
    */
   const jsonLd = buildBlogPostingJsonLd(post, SITE_URL);
 
+  /**
+   * FAQ: sólo si el artículo lo pide con `faq: true` Y el cuerpo aporta al
+   * menos dos pares que pasen las reglas de `extractFaq`. El suelo de dos no es
+   * caprichoso: un `FAQPage` con una sola pregunta describe una sección, no un
+   * apartado de preguntas frecuentes.
+   */
+  const faq = post.faq ? extractFaq(post.content) : [];
+  const faqJsonLd = faq.length >= 2 ? buildFaqJsonLd(faq) : null;
+
   return (
     <WhatsAppModalProvider>
       <QuoteModalProvider>
@@ -99,6 +111,16 @@ export default async function ArticlePage({
             // El JSON va serializado; no hay HTML dentro.
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
+
+          {/* Bloque aparte y no fusionado con el BlogPosting: son dos cosas
+              distintas —el artículo como obra y la página como conjunto de
+              preguntas— y Google las lee por separado. */}
+          {faqJsonLd && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
+          )}
 
           {/* ---------- HERO ---------- */}
           {/* GUTTER PROPIO DE ESTA PÁGINA: `px-6 lg:px-12`, mientras el resto
@@ -194,6 +216,28 @@ export default async function ArticlePage({
 
           {/* ---------- CUERPO + SIDEBAR ---------- */}
           <div className="mx-auto max-w-7xl px-6 py-16 md:py-20 lg:px-12">
+            {/* MIGAS DE PAN: DEBAJO DEL HERO, NO DENTRO.
+                Dentro del hero irían sobre la foto de portada, que es una
+                imagen cualquiera: habría que medirle el contraste a cada una de
+                las 41 —el velo de tres tramos existe justo por eso— y encima
+                quedarían pegadas al <h1>, compitiendo con él. Aquí van sobre
+                blanco, con contraste garantizado, y el primer elemento de la
+                página sigue siendo el titular.
+
+                COMPARTEN CONTENEDOR con el cuerpo (`max-w-7xl px-6 lg:px-12`),
+                que es el mismo que usa el hero, así que arrancan exactamente en
+                la misma x que el <h1> y que el texto del artículo. */}
+            <Breadcrumbs
+              siteUrl={SITE_URL}
+              className="mb-10"
+              items={[
+                { name: "Inicio", href: "/" },
+                { name: "Blog", href: "/blog" },
+                // Sin `href`: es la página actual. <Breadcrumbs> lo pinta sin
+                // enlace y lo omite del `item` del JSON-LD.
+                { name: post.title },
+              ]}
+            />
             {/* LA PISTA IZQUIERDA TOPA EN LA MEDIDA DE LECTURA, no en `1fr`.
                 Con `1fr` la pista se estiraba a todo lo que sobrara (880px a
                 partir de 1280) mientras el texto se quedaba en sus 68ch (744px),

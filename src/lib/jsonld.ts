@@ -114,6 +114,60 @@ function buildWebSite(siteUrl: string) {
   };
 }
 
+/** Un escalón de las migas de pan. Sin `href` = página actual. */
+export type Crumb = { name: string; href?: string };
+
+/**
+ * `BreadcrumbList` a partir de los MISMOS datos que pinta <Breadcrumbs>.
+ *
+ * Vive aquí y no en el componente para que el resto de constructores de JSON-LD
+ * queden juntos, pero SÓLO lo llama <Breadcrumbs> y sólo con el array que
+ * acaba de renderizar. Ese acoplamiento es deliberado: es lo que garantiza,
+ * por construcción y no por disciplina, que no se declare un escalón que no
+ * esté en pantalla con ese mismo texto.
+ *
+ * El ÚLTIMO escalón va sin `item`. Es la página actual —la que no lleva enlace
+ * en el marcado—, y las guías de Google dicen expresamente que no necesita
+ * destino. Así el JSON-LD refleja el HTML escalón por escalón.
+ */
+export function buildBreadcrumbJsonLd(items: Crumb[], siteUrl: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: crumb.name,
+      ...(crumb.href ? { item: new URL(crumb.href, siteUrl).toString() } : {}),
+    })),
+  };
+}
+
+/**
+ * `FAQPage` a partir de los pares que `extractFaq()` saca del propio cuerpo del
+ * artículo. Nada se escribe a mano: la respuesta es el texto del MDX que se
+ * está renderizando, sin sus marcas de formato.
+ *
+ * EXPECTATIVA REALISTA: desde agosto de 2023 Google reserva el resultado
+ * enriquecido de FAQ a sitios de gobierno y salud, así que esto NO va a pintar
+ * el acordeón en la SERP de un freight forwarder. Se declara porque sigue
+ * siendo marcado válido que describe la página, lo consumen otros agentes y no
+ * cuesta nada mantenerlo — no porque vaya a cambiar el aspecto del resultado.
+ */
+export function buildFaqJsonLd(
+  items: { question: string; answer: string }[],
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
+
 /**
  * El grafo global, para el layout raíz. Un solo `<script>` con `@graph` en vez
  * de dos etiquetas sueltas: así los dos nodos comparten `@context` y quedan
