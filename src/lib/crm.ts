@@ -127,11 +127,60 @@ const CRM_SECRET_ENV: Record<CrmSource, string> = {
  *
  * Si llegara un slug desconocido, `requestTypeLabel` devuelve el propio valor,
  * así que el dato pasa tal cual en vez de perderse.
+ *
+ * ─── LA SEGUNDA TRADUCCIÓN: `sub` -> `origen` EN MARÍTIMO Y AÉREO ─────────
+ *
+ * Ver `TIPOS_CUYO_PASO_2_ES_UN_ORIGEN`, justo debajo.
  */
+
+/**
+ * RAMAS CUYO PASO 2 CAPTURA UN ORIGEN, NO UN SUBTIPO.
+ *
+ * El cotizador guarda el paso 2 en una sola variable de estado, `sub`, porque
+ * en pantalla es siempre lo mismo: una fila de chips. Pero lo que la persona
+ * elige ahí NO significa lo mismo en todas las ramas:
+ *
+ *   maritimo    un PUERTO      (Manzanillo, Lázaro Cárdenas, Veracruz…)
+ *   aereo       un AEROPUERTO  (AIFA / CDMX, Guadalajara, Monterrey…)
+ *   terrestre   una MODALIDAD  (LTL consolidado, FTL dedicado)
+ *
+ * Las dos primeras son la plaza DE DONDE SALE la carga; la tercera sí es un
+ * subtipo de servicio, y por eso Terrestre además tiene su propio paso de
+ * origen-destino (ver `PASO_TRAYECTO` en <QuoteWizard>), que las otras dos no
+ * tienen.
+ *
+ * Mandarlo todo bajo `sub` dejaba al CRM leads aéreos con subtipo "AIFA / CDMX"
+ * y el campo de origen VACÍO —confirmado contra los registros reales—, o sea el
+ * dato más útil del lead guardado donde nadie lo busca. Aquí se reetiqueta.
+ *
+ * SE ARREGLA EN ESTA FUNCIÓN Y NO EN EL FORMULARIO a propósito, igual que la
+ * traducción de `tipo`: el estado de React, el POST a `/api/lead`, el correo
+ * interno y su etiqueta "Ruta / modalidad" siguen viendo `sub` exactamente como
+ * hasta ahora. El único que necesita la distinción es el CRM, porque es el
+ * único que tiene dos columnas distintas donde ponerla.
+ *
+ * Integral, Especializado y Otros NO ESTÁN AQUÍ y no es un olvido: su paso 2 no
+ * usa `sub`, es un textarea que ya viaja en su propia clave, `descripcion`.
+ */
+const TIPOS_CUYO_PASO_2_ES_UN_ORIGEN = new Set(["maritimo", "aereo"]);
+
 export function crmPayload(lead: Lead): Record<string, string> {
   // Copia antes de tocar nada: `lead.datos` lo comparten el correo y el acuse,
-  // que sí quieren el slug.
+  // que sí quieren el slug —y, ahora, también la clave `sub` original.
   const datos = { ...lead.datos };
+
+  // Se decide con el SLUG, antes de traducirlo: dos líneas más abajo `tipo` ya
+  // es "Marítimo" y esta comparación dejaría de encontrar nada.
+  if (datos.sub && TIPOS_CUYO_PASO_2_ES_UN_ORIGEN.has(datos.tipo ?? "")) {
+    // La guarda de `!datos.origen` no debería hacer falta —estas dos ramas no
+    // tienen paso de trayecto, así que llegan siempre sin origen—, pero si
+    // algún día lo tuvieran, mover `sub` encima borraría el dato bueno. Ante la
+    // duda se quedan los dos campos y no se pierde nada.
+    if (!datos.origen) {
+      datos.origen = datos.sub;
+      delete datos.sub;
+    }
+  }
 
   if (datos.tipo) {
     datos.tipo = requestTypeLabel(datos.tipo) ?? datos.tipo;
