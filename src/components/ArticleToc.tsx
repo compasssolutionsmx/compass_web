@@ -29,7 +29,7 @@
  */
 
 import { ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Heading } from "@/lib/blog";
 import { useSmoothScroll } from "./SmoothScroll";
 
@@ -49,10 +49,23 @@ export default function ArticleToc({
   const [activeId, setActiveId] = useState<string | null>(null);
   const { scrollTo } = useSmoothScroll();
 
-  useEffect(() => {
-    if (headings.length === 0) return;
+  /**
+   * Las preguntas frecuentes son <h2> reales en el cuerpo —mismo DOM, mismo
+   * `id`, mismo JSON-LD— pero no son puntos de navegación: son respuestas
+   * cortas agrupadas bajo "Preguntas frecuentes", no secciones del artículo.
+   * `isFaq` ya viene resuelto desde `extractHeadings()` contra el mismo
+   * `extractFaq()` que arma el `FAQPage`, así que aquí sólo se filtra la
+   * lista que se pinta — no se toca el array original ni los `id`.
+   */
+  const tocHeadings = useMemo(
+    () => headings.filter((heading) => !heading.isFaq),
+    [headings],
+  );
 
-    const elements = headings
+  useEffect(() => {
+    if (tocHeadings.length === 0) return;
+
+    const elements = tocHeadings
       .map((h) => document.getElementById(h.id))
       .filter((el): el is HTMLElement => el !== null);
     if (elements.length === 0) return;
@@ -75,9 +88,9 @@ export default function ArticleToc({
 
     elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [headings]);
+  }, [tocHeadings]);
 
-  if (headings.length === 0) return null;
+  if (tocHeadings.length === 0) return null;
 
   function goTo(event: React.MouseEvent<HTMLAnchorElement>, id: string) {
     const target = document.getElementById(id);
@@ -92,7 +105,7 @@ export default function ArticleToc({
 
   const list = (
     <ol className="space-y-1 border-l border-slate-200">
-      {headings.map((heading) => {
+      {tocHeadings.map((heading) => {
         const isActive = heading.id === activeId;
         return (
           <li key={heading.id}>

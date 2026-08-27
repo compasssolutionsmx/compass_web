@@ -72,7 +72,7 @@ export default async function ArticlePage({
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
-  const headings = extractHeadings(post.content);
+  const headings = extractHeadings(post.content, post.faq ?? false);
 
   // Sigue leyendo: primero las de la misma categoría, luego el resto por fecha.
   const related = getAllPosts()

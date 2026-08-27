@@ -59,11 +59,13 @@ function buildOrganization(siteUrl: string) {
     "@id": organizationId(siteUrl),
     name: "Compass Solutions",
     url: siteUrl,
-    // El logotipo del header y del pie. Va como ImageObject y no como string
-    // porque es lo que piden las guías de Article para `publisher.logo`.
+    // Va como ImageObject y no como string porque es lo que piden las guías
+    // de Article para `publisher.logo`. PNG y no el SVG del header/pie: las
+    // directrices de Google para el logo de `Organization` en datos
+    // estructurados excluyen SVG como formato soportado.
     logo: {
       "@type": "ImageObject",
-      url: new URL("/brand/logotipo.svg", siteUrl).toString(),
+      url: new URL("/brand/logotipo.jpg", siteUrl).toString(),
     },
     // Reutiliza la miniatura de Open Graph: es la foto de marca del sitio.
     image: new URL("/brand/thumbnail.jpg", siteUrl).toString(),

@@ -181,8 +181,22 @@ export function formatPostDate(iso: string): string {
   }).format(new Date(iso));
 }
 
-/** Encabezado del cuerpo del artículo, para el índice lateral. */
-export type Heading = { id: string; text: string; level: 2 | 3 };
+/**
+ * Encabezado del cuerpo del artículo, para el índice lateral.
+ *
+ * `isFaq`: true cuando este encabezado es una de las preguntas que
+ * `extractFaq()` capturó efectivamente para el mismo contenido. No es una
+ * heurística propia — se calcula llamando a `extractFaq()` y comparando el
+ * texto, así que un <h2> con forma de pregunta que `extractFaq()` descarte
+ * (por tener un <h3> anidado, una respuesta corta, o mencionar la marca)
+ * queda con `isFaq: false` igual que cualquier encabezado que no es pregunta.
+ */
+export type Heading = {
+  id: string;
+  text: string;
+  level: 2 | 3;
+  isFaq: boolean;
+};
 
 /**
  * AQUÍ VIVÍA `bindHeadingTail`, la protección anti-huérfanos del <h1> de
@@ -231,9 +245,25 @@ export function slugifyHeading(text: string): string {
  *
  * Se saltan los bloques de código para no confundir un `## comentario` de
  * dentro de un fence con un encabezado real.
+ *
+ * `isFaq` se resuelve llamando a `extractFaq()` sobre el mismo `content` y
+ * comparando el texto: es la MISMA función que decide qué entra al
+ * `FAQPage`, así que el índice y el JSON-LD nunca pueden divergir sobre qué
+ * cuenta como pregunta. `extractFaq()` está declarada más abajo en este
+ * archivo, pero al ser un `function` con hoisting puede llamarse aquí sin
+ * problema.
+ *
+ * `faq` es EL MISMO flag opt-in de `PostFrontmatter.faq` que decide si la
+ * página pinta el `FAQPage`. Sin él en `true`, `extractFaq()` ni se llama: un
+ * artículo sin `faq: true` puede tener un `<h2>` que cumpla mecánicamente las
+ * reglas de pregunta (empieza en "¿", sin H3 anidado, respuesta larga) sin
+ * que el autor lo haya escrito como FAQ, y ese encabezado debe seguir
+ * navegable en el índice igual que hasta ahora. El día que el artículo SÍ
+ * declare `faq: true`, el índice y el `FAQPage` vuelven a mirar exactamente
+ * el mismo conjunto de preguntas.
  */
-export function extractHeadings(content: string): Heading[] {
-  const headings: Heading[] = [];
+export function extractHeadings(content: string, faq: boolean): Heading[] {
+  const headings: Omit<Heading, "isFaq">[] = [];
   let insideFence = false;
 
   for (const line of content.split("\n")) {
@@ -254,7 +284,14 @@ export function extractHeadings(content: string): Heading[] {
     });
   }
 
-  return headings;
+  const faqQuestions = new Set(
+    faq ? extractFaq(content).map((item) => item.question) : [],
+  );
+
+  return headings.map((heading) => ({
+    ...heading,
+    isFaq: faqQuestions.has(heading.text),
+  }));
 }
 
 /**
@@ -300,6 +337,24 @@ function toPlainAnswer(lines: string[]): string {
 }
 
 /**
+ * Un H2 es el WRAPPER de un bloque de preguntas frecuentes —"Preguntas
+ * frecuentes", "Preguntas frecuentes sobre X"— cuando sus preguntas reales
+ * cuelgan de él como H3, una por una.
+ *
+ * EL CRITERIO ES UN `startsWith`, no "contiene la palabra pregunta", y es a
+ * propósito: un barrido de las 42 notas encontró dos H2 que mencionan
+ * "preguntas" sin ser un bloque de FAQ —"Cinco preguntas para su operador
+ * logístico" y "3 preguntas para saber si su empresa está lista", ambos
+ * prompts retóricos para que el LECTOR se autoevalúe, sin H3 debajo— y las
+ * siete variantes reales de wrapper en el blog empiezan todas, literal, con
+ * "Preguntas frecuentes". Un `includes` habría tratado esos dos prompts como
+ * wrapper y les habría anulado su propia captura por el patrón H2 antiguo.
+ */
+function esWrapperDePreguntas(textoH2: string): boolean {
+  return textoH2.trim().toLowerCase().startsWith("preguntas frecuentes");
+}
+
+/**
  * Pares pregunta/respuesta aptos para `FAQPage`, sacados del propio cuerpo.
  *
  * NO HAY UNA LISTA DE RESPUESTAS ESCRITA A MANO EN NINGÚN SITIO, y es
@@ -308,39 +363,76 @@ function toPlainAnswer(lines: string[]): string {
  * mantenga dos copias sincronizadas es derivar la respuesta del MDX que se
  * renderiza. Si el artículo cambia, el JSON-LD cambia con él.
  *
- * Un H2 califica cuando:
+ * DOS PATRONES DE ORIGEN PARA UNA PREGUNTA, LOS MISMOS CUATRO CRITERIOS DE
+ * VALIDACIÓN PARA LAS DOS:
+ *
+ *  A. H2 suelto, sin H3 anidado (patrón original). La pregunta es el propio
+ *     H2 y la respuesta es todo lo que cuelga de él hasta el siguiente H2.
+ *  B. H2 wrapper (`esWrapperDePreguntas`) seguido de H3 — cada H3 es una
+ *     pregunta independiente y su respuesta es el texto que cuelga de ESE H3
+ *     hasta el siguiente H3 o hasta que termine el bloque. El wrapper mismo
+ *     NUNCA se evalúa como pregunta, sin importar cómo esté redactado.
+ *
+ * En los dos casos, una pregunta (el H2 suelto, o cada H3 dentro del
+ * wrapper) califica cuando:
  *
  *  1. Es una pregunta de verdad: abre con "¿" o cierra con "?".
- *  2. NO tiene H3 dentro. Si la sección se subdivide, la respuesta está
- *     repartida y meterla entera en un `acceptedAnswer` aplana una sección
- *     completa en un párrafo. Es el caso que descarta "¿Qué es CTPAT?", que
- *     cuelga de un H3 la definición.
- *  3. Su respuesta llega a 25 palabras. Por debajo el H2 es un rótulo con dos
+ *  2. En el patrón A, el H2 NO tiene H3 dentro. Si la sección se subdivide,
+ *     la respuesta está repartida y meterla entera en un `acceptedAnswer`
+ *     aplana una sección completa en un párrafo. Es el caso que descarta
+ *     "¿Qué es CTPAT?", que cuelga de un H3 la definición. En el patrón B
+ *     esta regla no aplica al H3 individual —es justo el nivel que SÍ se
+ *     captura—, pero el wrapper con un H3 que a su vez tuviera un H4 quedaría
+ *     fuera de alcance: este archivo no usa H4 en ningún lado.
+ *  3. Su respuesta llega a 25 palabras. Por debajo es un rótulo con dos
  *     líneas de entradilla, no una respuesta.
  *  4. No nombra la marca. "¿Cómo lo hacemos en Compass Solutions?" y sus
  *     variantes son cierre comercial, no información: Google pide que el FAQ
  *     sea contenido de ayuda y marcar publicidad como tal es justo lo que se
- *     sanciona. Esta sola regla saca cinco preguntas de siete artículos.
+ *     sanciona.
  */
 export function extractFaq(content: string): FaqItem[] {
   const items: FaqItem[] = [];
+
+  // Patrón A: la pregunta directa en H2.
   let actual: { question: string; buf: string[]; h3: number } | null = null;
+
+  // Patrón B: dentro de un H2 wrapper, cada H3 abre su propia pregunta.
+  let enWrapper = false;
+  let subActual: { question: string; buf: string[] } | null = null;
+
   let insideFence = false;
 
-  const cerrar = () => {
-    if (!actual) return;
-    const answer = toPlainAnswer(actual.buf);
-    const esPregunta =
-      actual.question.startsWith("¿") || actual.question.endsWith("?");
-    const nombraMarca = /compass solutions/i.test(actual.question);
+  const validar = (question: string, buf: string[]): FaqItem | null => {
+    const answer = toPlainAnswer(buf);
+    const esPregunta = question.startsWith("¿") || question.endsWith("?");
+    const nombraMarca = /compass solutions/i.test(question);
 
-    if (
-      esPregunta &&
-      !nombraMarca &&
-      actual.h3 === 0 &&
-      answer.split(" ").length >= 25
-    ) {
-      items.push({ question: actual.question, answer });
+    if (esPregunta && !nombraMarca && answer.split(" ").length >= 25) {
+      return { question, answer };
+    }
+    return null;
+  };
+
+  const cerrarSub = () => {
+    if (!subActual) return;
+    const item = validar(subActual.question, subActual.buf);
+    if (item) items.push(item);
+    subActual = null;
+  };
+
+  // Cierra lo que esté abierto, sea el H2 del patrón A o el H3 en curso del
+  // patrón B. Se llama al llegar a CUALQUIER H2 nuevo: eso es lo que termina
+  // un bloque wrapper, igual que termina una pregunta suelta.
+  const cerrar = () => {
+    if (enWrapper) {
+      cerrarSub();
+      return;
+    }
+    if (!actual) return;
+    if (actual.h3 === 0) {
+      const item = validar(actual.question, actual.buf);
+      if (item) items.push(item);
     }
     actual = null;
   };
@@ -348,7 +440,11 @@ export function extractFaq(content: string): FaqItem[] {
   for (const line of content.split("\n")) {
     if (line.trimStart().startsWith("```")) {
       insideFence = !insideFence;
-      if (actual) actual.buf.push(line);
+      if (enWrapper) {
+        if (subActual) subActual.buf.push(line);
+      } else if (actual) {
+        actual.buf.push(line);
+      }
       continue;
     }
 
@@ -357,7 +453,17 @@ export function extractFaq(content: string): FaqItem[] {
       if (match) {
         if (match[1] === "##") {
           cerrar();
-          actual = { question: match[2].trim(), buf: [], h3: 0 };
+          const texto = match[2].trim();
+          enWrapper = esWrapperDePreguntas(texto);
+          // El wrapper nunca se rastrea como pregunta propia: `actual` se
+          // queda en null mientras `enWrapper` es true.
+          actual = enWrapper ? null : { question: texto, buf: [], h3: 0 };
+          continue;
+        }
+        // H3
+        if (enWrapper) {
+          cerrarSub();
+          subActual = { question: match[2].trim(), buf: [] };
         } else if (actual) {
           actual.h3++;
         }
@@ -365,7 +471,11 @@ export function extractFaq(content: string): FaqItem[] {
       }
     }
 
-    if (actual) actual.buf.push(line);
+    if (enWrapper) {
+      if (subActual) subActual.buf.push(line);
+    } else if (actual) {
+      actual.buf.push(line);
+    }
   }
   cerrar();
 

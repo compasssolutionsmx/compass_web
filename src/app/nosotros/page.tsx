@@ -180,12 +180,12 @@ export default function Nosotros() {
                 <TarjetaValor
                   etiqueta="Misión"
                   titulo="Cuidamos cada carga como propia"
-                  texto="Ofreciendo soluciones logísticas eficientes y confiables."
+                  texto="Nos preocupamos por su carga como si fuera nuestra. Como freight forwarder, reconocemos la importancia de ser eficientes y efectivos al operar. Ofrecemos soluciones flexibles, honestas y a través de un proceso estructurado. Tenemos el compromiso de desarrollar el comercio internacional global y fomentar el crecimiento de la economía mexicana."
                 />
                 <TarjetaValor
                   etiqueta="Visión"
-                  titulo="El socio logístico más confiable de México"
-                  texto="Superando límites para cada entrega."
+                  titulo="El freight forwarder más confiable de México"
+                  texto="Ser reconocidos por nuestros clientes como el freight forwarder más confiable en México, logrando que los productos lleguen a donde se necesiten y empujando así nuestros límites."
                 />
               </div>
             </div>
