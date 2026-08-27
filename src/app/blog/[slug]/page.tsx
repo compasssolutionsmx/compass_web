@@ -268,8 +268,8 @@ export default async function ArticlePage({
                 `auto` y se dimensiona por el max-content de su contenido — y
                 aquí el contenido es el cuerpo del artículo, con sus tablas y
                 sus bloques de código. Es el mismo desbordamiento que ya mordió
-                en <SuccessStories> y en <BlogPreview>. `repeat(1, minmax(0,1fr))`
-                lo cierra. */}
+                en la sección de casos de éxito del home (retirada) y en
+                <BlogPreview>. `repeat(1, minmax(0,1fr))` lo cierra. */}
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,68ch)_minmax(18rem,1fr)] lg:gap-16">
               {/* ÍNDICE EN MÓVIL, ARRIBA DEL CUERPO. Antes sólo existía dentro
                   del <aside>, y al colapsar a una columna el <aside> cae después

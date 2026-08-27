@@ -10,7 +10,6 @@ import { QuoteModalProvider } from "@/components/QuoteModal";
 import QuoteSection from "@/components/QuoteSection";
 import ServicesGrid from "@/components/ServicesGrid";
 import StatsSection from "@/components/StatsSection";
-import SuccessStories from "@/components/SuccessStories";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import YearsBanner from "@/components/YearsBanner";
@@ -66,7 +65,6 @@ export default function Home() {
           <FeaturesGrid />
           <YearsBanner />
           <ServicesGrid />
-          <SuccessStories />
           <IntegratedSolutions />
           <BlogPreview />
         </main>

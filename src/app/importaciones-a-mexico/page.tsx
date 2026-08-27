@@ -4,7 +4,6 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { QuoteModalProvider } from "@/components/QuoteModal";
 import QuoteSection from "@/components/QuoteSection";
-import SuccessStories from "@/components/SuccessStories";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import ImportControl from "@/components/importaciones/ImportControl";
@@ -157,9 +156,6 @@ export default function ImportacionesAMexico() {
 
           {/* 🆕 */}
           <ImportCtaBanner />
-
-          {/* ♻️ el MISMO componente que monta el home */}
-          <SuccessStories />
         </main>
 
         <WhatsAppFloatingButton />

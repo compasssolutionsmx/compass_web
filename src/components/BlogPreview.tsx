@@ -50,10 +50,11 @@ export default function BlogPreview() {
           que impide que el contenido infle la pista — el mismo motivo por el que
           la fila de `lg` usa `minmax(0,...)`.
 
-          ES EXACTAMENTE EL MISMO FALLO que ya se diagnosticó y se corrigió en
-          <SuccessStories>, el otro sitio con un carrusel dentro de un grid; ver
-          la nota de su propio `grid-cols-1`. Este quedó sin arreglar. Al añadir
-          un carrusel dentro de un grid, declarar siempre las columnas. */}
+          ES EXACTAMENTE EL MISMO FALLO que ya se había diagnosticado y
+          corregido en la sección de casos de éxito del home (retirada), el
+          otro sitio que metía un carrusel dentro de un grid. Este quedó sin
+          arreglar. Al añadir un carrusel dentro de un grid, declarar siempre
+          las columnas. */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-12">
         <div>
           <Eyebrow className="mb-3">Blog</Eyebrow>
