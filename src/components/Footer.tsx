@@ -45,10 +45,11 @@ import { SALES_PHONE_DISPLAY } from "@/lib/site";
  * Con #privacidad no pasa, porque ése es el panel por defecto y sí viene en el
  * HTML. Sin verificar en navegador.
  *
- * OJO 2: la página sigue con `noindex` porque su aviso es un borrador con datos
- * pendientes. Eso es deliberado y no se contradice — poder LLEGAR al aviso desde
- * cualquier página es justo lo que se busca; lo que no queremos es que Google lo
- * indexe mientras no esté aprobado.
+ * OJO 2: la página YA NO lleva `noindex`. El aviso de privacidad es el
+ * documento definitivo del cliente, se publicó y se indexa con normalidad —
+ * el `live: true` de las tres entradas de aquí abajo sigue siendo necesario
+ * por la misma razón de siempre (sin el flag no hay `<Link>`), no por ningún
+ * estado de borrador.
  */
 const INFO_LINKS = [
   { href: "/proveedores", label: "Proveedores", live: true },

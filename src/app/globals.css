@@ -501,10 +501,27 @@ button:not(:disabled),
    `clip` y no `hidden` a propósito: `hidden` convertiría a <html> en contenedor
    de scroll —rompiendo el scroll nativo y peleándose con Lenis—, mientras que
    `clip` recorta sin crear scroll y admite dejar el eje vertical en `visible`,
-   que es exactamente el par que se necesita aquí. */
+   que es exactamente el par que se necesita aquí.
+
+   `overscroll-behavior-y: none` va en el mismo selector por la misma razón:
+   <html> —no <body>— es el elemento que de verdad scrollea (`content:
+   document.documentElement` en SmoothScroll.tsx, con `wrapper: window`), así
+   que es donde el navegador dispara el rebote elástico nativo en los bordes.
+   Lenis clampa su propio scroll virtual entre 0 y el límite del documento
+   —medido, responde en ~20ms sin importar cuánto scroll de más se acumule—,
+   pero no controla ese rebote nativo: es un efecto del compositor/SO, ajeno al
+   ciclo de eventos `wheel` que Lenis intercepta, y sin esta propiedad corría
+   en paralelo a la posición virtual de Lenis. De ahí el retraso al revertir
+   el scroll después de pasarse del borde.
+
+   SOLO EL EJE Y, con la propiedad de eje (`overscroll-behavior-y`) y no el
+   atajo `overscroll-behavior`: los carruseles de la tarjeta (Embla, blog y
+   demás) dependen del rebote/arrastre horizontal nativo en X, y el atajo sin
+   eje habría apagado los dos ejes a la vez. */
 html {
   scroll-padding-top: 6rem;
   overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 
 body {

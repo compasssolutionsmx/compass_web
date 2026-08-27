@@ -11,23 +11,24 @@ import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
  * Apartado legal. DOS SECCIONES EN TABS: aviso de privacidad y política de
  * seguridad.
  *
- * ESTADO DEL CONTENIDO, que es lo que gobierna el resto de decisiones:
+ * ESTADO DEL CONTENIDO — página publicada, sin borrador ni datos pendientes:
  *   · la POLÍTICA DE SEGURIDAD es definitiva. Se importa de lib/nosotros, que
  *     es la misma fuente que publica /nosotros
  *   · el AVISO DE PRIVACIDAD es el DOCUMENTO DEFINITIVO del cliente, transcrito
- *     literalmente. Ya no es un borrador: razón social, domicilio y correo del
- *     Departamento de Privacidad vienen del documento. El único hueco que queda
- *     marcado con [PENDIENTE: …] es la fecha de última actualización, que el
- *     documento no trae
- *   · los TÉRMINOS Y CONDICIONES ya no están aquí ni como hueco. No existe el
+ *     literalmente. Razón social, domicilio y correo del Departamento de
+ *     Privacidad vienen del documento. El párrafo de "última actualización"
+ *     que llevaba el hueco `[PENDIENTE: …]` se quitó por completo: el
+ *     documento legal que entregó el cliente no trae esa fecha, y no hay una
+ *     real que poner en su lugar — inventarla en un aviso de privacidad es
+ *     justo lo que no se puede hacer. Si el cliente la define más adelante,
+ *     se añade el párrafo de vuelta con el valor real
+ *   · los TÉRMINOS Y CONDICIONES no están aquí ni como hueco. No existe el
  *     texto y una sección vacía prometía algo que no hay
  *
- * QUEDA PENDIENTE, de la lista que dejó la versión borrador:
- *   · poner `live: true` a la entrada de "Aviso de privacidad" de INFO_LINKS
- *     en Footer.tsx (la de "Términos y condiciones" ya se retiró de esa lista,
- *     porque apuntaba al ancla #terminos que esta página ya no tiene)
- *   · envolver en <Link href="/apartado-legal#privacidad"> el "Aviso de
- *     privacidad" del CookieBanner (tiene un TODO(compliance) marcándolo)
+ * SIN `robots: { index: false }` en `metadata` (más abajo) y listada en
+ * `sitemap.ts`: la página se indexa con normalidad. El `live: true` de las
+ * tres entradas de /apartado-legal en `INFO_LINKS` (Footer.tsx) y el enlace
+ * del CookieBanner ya estaban resueltos antes de esta revisión.
  */
 
 const PATH = "/apartado-legal";

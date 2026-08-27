@@ -56,22 +56,6 @@ function tabDelHash(): TabId | null {
 }
 
 /**
- * Dato pendiente del cliente. Va VISIBLE y marcado a propósito: quien revise la
- * página tiene que verlo sin abrir el código.
- *
- * QUEDA UNO SOLO: la fecha de última actualización. El documento legal que
- * entregó el cliente no la trae, y ponerle una inventada a un aviso de
- * privacidad es justo lo que no se puede hacer.
- */
-function Pendiente({ children }: { children: React.ReactNode }) {
-  return (
-    <mark className="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-950">
-      [PENDIENTE: {children}]
-    </mark>
-  );
-}
-
-/**
  * Título de apartado dentro del texto legal.
  *
  * ES h3 Y NO h2: el h1 lo pinta el hero de la página y el h2 es el título del
@@ -634,10 +618,6 @@ export default function LegalTabs() {
               he proporcionado Datos Personales, sobre el tratamiento que se
               hará de sus Datos Personales.
             </P>
-
-            <p className="mt-10 text-sm">
-              Última actualización: <Pendiente>fecha de publicación</Pendiente>
-            </p>
           </div>
         </section>
       )}
