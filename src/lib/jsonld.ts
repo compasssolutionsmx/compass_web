@@ -91,6 +91,13 @@ function buildOrganization(siteUrl: string) {
     hasMap: "https://maps.app.goo.gl/ipKMCtBJQzui5dMW7",
     // "Desde 2014, movemos su carga sin fronteras" — <StatsSection> en la home.
     foundingDate: "2014",
+    // Mismos cuatro perfiles que los iconos del pie (<Footer>, primera columna).
+    sameAs: [
+      "https://www.facebook.com/compasssolutionslogistica",
+      "https://www.instagram.com/compasssolutionslogistica/",
+      "https://www.tiktok.com/@compass.solutions5",
+      "https://www.linkedin.com/company/compass-solutions-logistica/",
+    ],
   };
 }
 
