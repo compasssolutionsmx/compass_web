@@ -40,6 +40,7 @@ const SECCIONES: Record<BlogCategory, string> = {
   "Transporte terrestre": "Transporte terrestre y modalidades de carga",
   "Transporte aéreo": "Transporte aéreo",
   "Operación y almacén": "Operación, costos y almacén",
+  Seguridad: "Seguridad de la cadena de suministro y certificaciones",
   Tecnología: "Tecnología logística",
   Actualidad: "Temporadas y actualidad del sector",
 };

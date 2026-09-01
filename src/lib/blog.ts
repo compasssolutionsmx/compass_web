@@ -29,6 +29,7 @@ export const BLOG_CATEGORIES = [
   "Transporte terrestre",
   "Transporte aéreo",
   "Operación y almacén",
+  "Seguridad",
   "Tecnología",
   "Actualidad",
 ] as const;
