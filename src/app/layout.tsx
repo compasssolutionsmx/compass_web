@@ -38,11 +38,22 @@ const archivo = Archivo({
 });
 
 /**
- * Dominio final, confirmado. ÚNICA FUENTE de la URL absoluta del sitio: la
- * consumen `metadataBase` de aquí abajo, el JSON-LD del artículo y el sitemap.
+ * Dominio canónico. ÚNICA FUENTE de la URL absoluta del sitio: la consumen
+ * `metadataBase` de aquí abajo, el JSON-LD del artículo y el sitemap.
  * Antes había una segunda copia hardcodeada en blog/[slug]/page.tsx.
+ *
+ * VA CON www PORQUE ASÍ LO SIRVE PRODUCCIÓN. En la configuración de dominio de
+ * Vercel el primario es www: el ápice y las dos variantes http responden 308
+ * hacia https://www. Mientras esta constante dijo el ápice, cada página
+ * servida en www declaraba un canonical hacia una URL que redirigía de vuelta
+ * a www, y el sitemap listaba esa misma URL. Google descarta un canonical que
+ * apunta a una redirección, así que la señal quedaba partida entre los dos
+ * hosts en vez de consolidarse en uno.
+ *
+ * Si algún día se invierte el primario en Vercel, esta línea se invierte con
+ * él. Las dos tienen que nombrar el mismo host.
  */
-export const SITE_URL = "https://compasssolutions.com.mx";
+export const SITE_URL = "https://www.compasssolutions.com.mx";
 
 /**
  * EXPORTADOS para que la home los reutilice. `app/page.tsx` no tenía metadata
