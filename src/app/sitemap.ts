@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "./layout";
 import { getAllPosts, postHref } from "@/lib/blog";
+import { allServicioSlugs } from "@/lib/servicios-contenido";
 
 /**
  * Sitemap generado en build, no una lista escrita a mano.
@@ -11,10 +12,15 @@ import { getAllPosts, postHref } from "@/lib/blog";
  * fecha del frontmatter.
  *
  * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice, artículos,
- * /importaciones-a-mexico, /proveedores, /vacantes, /nosotros y
- * /apartado-legal. Las páginas de servicio no entran porque todavía no se
- * construyen; `allServicePaths()` de lib/services.ts ya está listo para cuando
- * existan, pero listarlas ahora sería mandar al crawler a un 404.
+ * /importaciones-a-mexico, /proveedores, /vacantes, /nosotros,
+ * /apartado-legal y las 18 páginas de servicio.
+ *
+ * LAS DE SERVICIO SALEN DE `allServicioSlugs()`, no escritas a mano: es la
+ * misma lista que alimenta `generateStaticParams` de la ruta dinámica, así
+ * que una entrada nueva en `lib/servicios-contenido.ts` aparece aquí sola.
+ * OJO: son las rutas PLANAS de `lib/servicios-contenido.ts`, no las que
+ * generaría `servicePath()` de `lib/services.ts`, que anida por rama y modo.
+ * Ese otro árbol sigue sin tener páginas y por eso sigue fuera.
  *
  * /apartado-legal ESTUVO FUERA a propósito mientras el aviso de privacidad era
  * un borrador: la página llevaba `robots: { index: false }`, y listar en el
@@ -92,6 +98,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.1,
     },
+    /**
+     * LAS 18 PÁGINAS DE SERVICIO. `0.8` y `monthly`, el mismo escalón que
+     * /blog y /importaciones-a-mexico: son destinos comerciales del sitio, el
+     * catálogo por el que se quiere competir en búsqueda, por encima del
+     * contenido institucional (/nosotros, 0.6) y muy por encima de las
+     * páginas de servicio al negocio (/proveedores y /vacantes, 0.3).
+     *
+     * SIN `lastModified`: estas entradas no llevan fecha en
+     * `lib/servicios-contenido.ts`, y aquí no hay de dónde sacar una que sea
+     * verdad. Mismo criterio que el resto de rutas estáticas del sitio, que
+     * tampoco la declaran; sólo la traen /blog y los artículos, que sí tienen
+     * fecha real en el frontmatter.
+     */
+    ...allServicioSlugs().map((slug) => ({
+      url: new URL(`/servicios/${slug}`, SITE_URL).toString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
     ...posts.map((post) => ({
       url: new URL(postHref(post.slug), SITE_URL).toString(),
       lastModified: post.date,

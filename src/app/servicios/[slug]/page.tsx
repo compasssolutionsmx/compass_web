@@ -14,6 +14,7 @@ import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
 import {
   allServicioSlugs,
   getServicioBySlug,
+  serviciosRelacionados,
 } from "@/lib/servicios-contenido";
 
 /**
@@ -29,15 +30,20 @@ import {
  * navegación real. `lib/servicios-contenido.ts` lista dónde no coinciden los
  * dos modelos.
  *
- * `robots: { index: false, follow: false }` y fuera de `sitemap.ts`: son
- * borradores de revisión, no páginas aprobadas. Mismo criterio que usó este
- * proyecto con /apartado-legal mientras su aviso era borrador, y el que ya
- * traía la plantilla de FTL.
+ * SIN `robots` DECLARADO: las 18 heredan el comportamiento indexable por
+ * defecto y entran en `sitemap.ts`, derivadas de `allServicioSlugs()`. Antes
+ * llevaban `robots: { index: false, follow: false }` porque el copy era de
+ * relleno; hoy el copy es real y se levantó ese bloqueo. El `canonical` de
+ * abajo ya no convive con un noindex, así que las dos señales apuntan al
+ * mismo lado.
  *
- * TODO EL COPY ES MARCADOR DE POSICIÓN, entre corchetes, salvo el nombre del
- * servicio en el <h1>. Las tres imágenes (hero y una por bloque alternado)
- * son cajas con borde punteado y su medida, sin archivo real detrás. Los
- * números de la banda de métricas quedan como "Pendiente".
+ * SIN NINGÚN MARCADOR DE POSICIÓN VISIBLE. El copy de las 18 es real y ya no
+ * queda nada entre corchetes ni ningún "Pendiente" en pantalla. Lo que sigue
+ * faltando es el ARTE: las tres cajas de imagen (hero y una por bloque
+ * alternado) llevan el degradado de marca en la medida exacta que tendrá la
+ * foto, sin borde punteado ni etiqueta, para que el hueco no se anuncie como
+ * hueco en una página que ya se indexa. <ServiceMetrics> directamente no se
+ * renderiza mientras sus entradas no traigan `cifra`.
  */
 
 /** Rutas estáticas: una por entrada de `lib/servicios-contenido.ts`. */
@@ -58,7 +64,6 @@ export async function generateMetadata({
     title: `${servicio.seoTitulo} | Compass Solutions`,
     description: servicio.seoDescripcion,
     alternates: { canonical: `/servicios/${servicio.slug}` },
-    robots: { index: false, follow: false },
   };
 }
 
@@ -102,7 +107,6 @@ export default async function ServicioPage({
               title={bloqueUno.titulo}
               description={bloqueUno.parrafo}
               imageSide="left"
-              imageLabel="[Imagen de marcador de posición — 1200×900]"
             />
           </div>
 
@@ -128,7 +132,6 @@ export default async function ServicioPage({
               title={bloqueDos.titulo}
               description={bloqueDos.parrafo}
               imageSide="right"
-              imageLabel="[Imagen de marcador de posición — 1200×900]"
             />
           </div>
 
@@ -140,7 +143,9 @@ export default async function ServicioPage({
             rotulo={servicio.preguntasRotulo}
             preguntas={servicio.preguntas}
           />
-          <RelatedServicesCarousel />
+          <RelatedServicesCarousel
+            servicios={serviciosRelacionados(servicio.slug)}
+          />
         </main>
 
         <WhatsAppFloatingButton />

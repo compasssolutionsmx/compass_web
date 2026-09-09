@@ -38,12 +38,23 @@
  * métricas siguen igual: el componente pinta "Pendiente" porque `ServicioMetrica`
  * no lleva cifra.
  *
- * LAS 18 PÁGINAS VAN CON `noindex, nofollow` y FUERA DEL SITEMAP. Ese criterio
- * se puso cuando el texto era de relleno, así que HOY ES UNA DECISIÓN POR
- * REVISAR y no una consecuencia: lo único que falta para publicarlas es el
- * arte. Al levantarlo hay que tocar tres sitios a la vez, no uno: el `robots`
- * de `app/servicios/[slug]/page.tsx`, la lista de `app/sitemap.ts` y los
- * enlaces internos que hoy no apuntan a ninguna de estas rutas.
+ * LAS 18 PÁGINAS YA SON INDEXABLES. El `noindex, nofollow` que llevaban se
+ * puso cuando el texto era de relleno y se retiró al quedar el copy real:
+ * `app/servicios/[slug]/page.tsx` ya no declara `robots` (hereda el indexable
+ * por defecto) y `app/sitemap.ts` las lista derivándolas de
+ * `allServicioSlugs()`. Cada una conserva su `canonical`, que ahora ya no
+ * contradice a nada.
+ *
+ * QUEDAN DOS COSAS DE ESA MISMA LISTA, y ahora pesan más porque las páginas
+ * ya se pueden indexar:
+ *  - LOS ENLACES INTERNOS. Ninguna navegación del sitio apunta a estas rutas:
+ *    ni el nav, ni el pie (que sigue listando `/tipo-solucion/*` como texto
+ *    inerte), ni el blog. Un buscador sólo llega a ellas por el sitemap.
+ *  - EL ARTE Y LAS CIFRAS. Los componentes de `components/servicios/` siguen
+ *    pintando sus marcadores: las tres cajas de imagen con borde punteado, el
+ *    "Pendiente" de la banda de métricas y los dos textos entre corchetes de
+ *    <ServiceFaq> y <RelatedServicesCarousel>. Este archivo ya no tiene ni un
+ *    marcador, pero la página renderizada sí.
  */
 
 /** Uno de los dos bloques alternados de imagen y texto. */
@@ -53,11 +64,23 @@ export type ServicioBloque = {
   parrafo: string;
 };
 
-/** Una de las tres tarjetas de la banda de métricas. La cifra no vive aquí:
- *  el componente la pinta como "Pendiente" hasta que haya números reales. */
+/**
+ * Una de las tres tarjetas de la banda de métricas.
+ *
+ * `cifra` ES OPCIONAL Y HOY NO LA TRAE NINGUNA DE LAS 18 ENTRADAS. Mientras
+ * falte, <ServiceMetrics> no renderiza la sección: antes pintaba la palabra
+ * "Pendiente" en lugar del número, que es un marcador visible en una página
+ * ya indexable. El día que el cliente confirme números reales, se escriben
+ * aquí y la banda aparece sola, sin tocar el componente.
+ *
+ * NO SE INVENTA NI SE PONE UN 0 DE RELLENO: un cero se leería como un dato
+ * real y negativo, y la regla del proyecto es que ningún dato salga sin venir
+ * del cliente o de fuente oficial.
+ */
 export type ServicioMetrica = {
   nombre: string;
   descripcion: string;
+  cifra?: string;
 };
 
 /** Una de las tres preguntas frecuentes de la página. */
@@ -1169,4 +1192,53 @@ export function getServicioBySlug(
   slug: string,
 ): ServicioContenido | undefined {
   return SERVICIOS.find((servicio) => servicio.slug === slug);
+}
+
+/**
+ * Los otros servicios que <RelatedServicesCarousel> pinta al pie de cada
+ * página.
+ *
+ * EL CRITERIO ES MECÁNICO, NO EDITORIAL, y conviene saberlo antes de fiarse
+ * de él: primero los que comparten `heroEyebrow` (la categoría real del
+ * servicio: "Transporte marítimo", "Transporte terrestre", etc.) y después el
+ * resto en el orden de la lista, hasta completar `cuantos`. Se excluye
+ * siempre el servicio que se está viendo.
+ *
+ * NO HAY UNA TABLA DE AFINIDAD porque ninguna entrada declara con qué otros
+ * servicios se opera en conjunto de verdad, y eso es una decisión de negocio
+ * que no se puede derivar del contenido. Agrupar por categoría es lo más
+ * cercano que permiten los datos de hoy y es defendible (un FCL junto a los
+ * demás marítimos), pero si el cliente quiere pares concretos —FCL con previo
+ * en origen, lowboy con seguro de carga— hay que añadir un campo
+ * `relacionados` a `ServicioContenido` y leerlo aquí.
+ *
+ * EL RELLENO ROTA, Y ESO NO ES UN DETALLE. Con la lista recorrida siempre en
+ * el mismo orden, los servicios del final no entraban en el carrusel de nadie:
+ * `carga-aerea`, que además es el único de su categoría, se quedaba con CERO
+ * enlaces internos entrantes aunque estuviera en el sitemap y fuera indexable.
+ * Arrancando el recorrido justo después del servicio actual y dando la vuelta,
+ * los 18 aparecen en el carrusel de alguien.
+ */
+export function serviciosRelacionados(
+  slug: string,
+  cuantos = 6,
+): ServicioContenido[] {
+  const actual = getServicioBySlug(slug);
+  const indice = SERVICIOS.findIndex((servicio) => servicio.slug === slug);
+  if (indice === -1) return SERVICIOS.slice(0, cuantos);
+
+  // Los otros 17, empezando por el siguiente de la lista y dando la vuelta.
+  const rotados = [
+    ...SERVICIOS.slice(indice + 1),
+    ...SERVICIOS.slice(0, indice),
+  ];
+
+  const mismaCategoria = rotados.filter(
+    (servicio) => servicio.heroEyebrow === actual?.heroEyebrow,
+  );
+  const resto = rotados.filter(
+    (servicio) => servicio.heroEyebrow !== actual?.heroEyebrow,
+  );
+
+  return [...mismaCategoria, ...resto].slice(0, cuantos);
 }

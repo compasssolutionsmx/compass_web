@@ -7,7 +7,6 @@ export type ServiceFeatureBlockProps = {
   description: string;
   /** Qué lado de la rejilla lleva la imagen en escritorio. */
   imageSide: "left" | "right";
-  imageLabel: string;
 };
 
 /**
@@ -31,24 +30,22 @@ export type ServiceFeatureBlockProps = {
  * arriba: cada uno sigue su propio orden de DOM, no uno forzado igual para
  * los dos.
  *
- * SIN FOTO REAL: el marcador ocupa la misma caja `aspect-[4/3]
- * overflow-hidden rounded-2xl` que llevaría la <Image> real (mismo
- * tratamiento que <StatsSection>).
+ * SIN FOTO REAL: la caja conserva la misma medida `aspect-[4/3]
+ * overflow-hidden rounded-2xl` que llevará la <Image> (mismo tratamiento que
+ * <StatsSection>), rellena con el degradado de marca de globals.css. Dejó de
+ * ser un marcador con borde punteado y etiqueta: estas páginas ya se indexan
+ * y el hueco no puede anunciarse como hueco. Al llegar el arte, se sustituye
+ * este <div> por la <Image> sin tocar la rejilla.
  */
 export default function ServiceFeatureBlock({
   eyebrow,
   title,
   description,
   imageSide,
-  imageLabel,
 }: ServiceFeatureBlockProps) {
   const imagen = (
     <div className="overflow-hidden rounded-2xl">
-      <div className="flex aspect-[4/3] w-full items-center justify-center border border-dashed border-slate-300 bg-slate-100">
-        <p className="px-6 text-center font-heading text-sm font-semibold text-slate-500">
-          {imageLabel}
-        </p>
-      </div>
+      <div className="brand-gradient aspect-[4/3] w-full" />
     </div>
   );
 

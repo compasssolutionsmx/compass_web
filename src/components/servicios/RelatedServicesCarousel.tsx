@@ -22,24 +22,40 @@
  * servicios, no a contenido editorial que convenga ir mostrando solo; se
  * deja el avance en manos del usuario.
  *
- * SIN DATOS REALES: las tarjetas son `<div>` y no `<Link>` —mismo criterio
- * que <ServicesGrid>—, porque ninguna otra página de servicio existe
- * todavía.
+ * YA CON DATOS REALES: las tarjetas son `<Link>` a `/servicios/<slug>` y su
+ * texto sale de las entradas de `lib/servicios-contenido.ts`. Antes eran
+ * `<div>` con cuatro rótulos entre corchetes, porque ninguna otra página de
+ * servicio existía; hoy existen las 18, son indexables y este carrusel es el
+ * único enlazado interno que las conecta entre sí.
+ *
+ * LA LISTA LLEGA POR PROPS y la calcula `serviciosRelacionados()` en el
+ * servidor: este componente es cliente por Embla y no puede leer el módulo de
+ * contenido por su cuenta. El criterio de "relacionado" está documentado en
+ * esa función, y es mecánico (misma categoría primero), no editorial.
+ *
+ * SIN FOTO: la tarjeta usa el degradado de marca, el mismo tratamiento que
+ * las cajas de imagen del resto de la página mientras no llegue el arte.
  */
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import Eyebrow from "../Eyebrow";
 
-const OTROS_SERVICIOS = [
-  "[Servicio relacionado 1]",
-  "[Servicio relacionado 2]",
-  "[Servicio relacionado 3]",
-  "[Servicio relacionado 4]",
-];
+export type ServicioRelacionado = {
+  slug: string;
+  heroEyebrow: string;
+  heroTitulo: string;
+};
 
-export default function RelatedServicesCarousel() {
+export type RelatedServicesCarouselProps = {
+  servicios: readonly ServicioRelacionado[];
+};
+
+export default function RelatedServicesCarousel({
+  servicios,
+}: RelatedServicesCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: "start",
@@ -71,8 +87,8 @@ export default function RelatedServicesCarousel() {
             que pueden interesarle
           </h2>
           <p className="mt-4 max-w-sm text-slate-600">
-            [Texto de marcador de posición] introducción breve a la sección
-            de servicios relacionados.
+            Compass coordina la cadena completa. Estos son otros servicios que
+            suelen operar en conjunto con el que está consultando.
           </p>
         </div>
 
@@ -108,16 +124,22 @@ export default function RelatedServicesCarousel() {
             ref={emblaRef}
           >
             <ul className="flex gap-6 lg:gap-8">
-              {OTROS_SERVICIOS.map((nombre) => (
+              {servicios.map((servicio) => (
                 <li
-                  key={nombre}
+                  key={servicio.slug}
                   className="min-w-0 flex-[0_0_78%] sm:flex-[0_0_45%] lg:flex-[0_0_28%]"
                 >
-                  <div className="flex aspect-[3/4] cursor-default flex-col justify-end overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-100 p-5">
-                    <p className="font-heading text-lg font-bold leading-snug text-slate-500">
-                      {nombre}
+                  <Link
+                    href={`/servicios/${servicio.slug}`}
+                    className="brand-gradient flex aspect-[3/4] flex-col justify-end overflow-hidden rounded-2xl p-5 transition-opacity hover:opacity-90"
+                  >
+                    <p className="font-heading text-xs font-semibold uppercase tracking-wide text-brand-100">
+                      {servicio.heroEyebrow}
                     </p>
-                  </div>
+                    <p className="mt-2 font-heading text-lg font-bold leading-snug text-white">
+                      {servicio.heroTitulo}
+                    </p>
+                  </Link>
                 </li>
               ))}
             </ul>

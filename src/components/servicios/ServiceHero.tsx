@@ -38,18 +38,13 @@ export default function ServiceHero({
 }: ServiceHeroProps) {
   return (
     <section className="relative overflow-hidden rounded-b-[2rem] bg-brand-950 pb-16 pt-32 md:pb-20 md:pt-40">
-      {/* Caja de la imagen de fondo: 1920x1080, el mismo `absolute inset-0
-          h-full w-full object-cover` que ocuparía <Image>. La etiqueta va
-          abajo a la derecha, fuera de las dos zonas que ya ocupa otro
-          contenido: centrada caía encima del <h1> (los dos se centran en el
-          mismo punto de una sección de esta altura), y arriba a la derecha
-          caía detrás del header flotante (`fixed`, `z-40`, con su propio
-          espacio reservado en el `pt-32 md:pt-40` de este section). */}
-      <div className="absolute inset-0 flex items-end justify-end border border-dashed border-white/25 bg-brand-900 p-6">
-        <p className="rounded-full bg-black/30 px-4 py-2 font-heading text-sm font-semibold text-white">
-          [Imagen de marcador de posición — 1920×1080]
-        </p>
-      </div>
+      {/* Fondo del hero mientras no hay foto: ocupa exactamente la misma caja
+          que llevará la <Image> (`absolute inset-0`), con el degradado de
+          marca de globals.css. Sin borde punteado y sin etiqueta: en una
+          página ya indexable el hueco no puede anunciarse como hueco, así que
+          se lee como un fondo tintado deliberado. El velo de abajo sigue
+          encima, igual que irá sobre la foto real. */}
+      <div className="brand-gradient absolute inset-0" />
 
       {/* Mismo velo de tres tramos que el hero de artículo de blog. */}
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(1,27,38,0.85)_0%,rgba(1,27,38,0.45)_38%,rgba(1,27,38,0.92)_100%)]" />

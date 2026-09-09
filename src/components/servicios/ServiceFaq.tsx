@@ -56,14 +56,13 @@ export default function ServiceFaq({ rotulo, preguntas }: ServiceFaqProps) {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start lg:gap-12">
         {/* ---------- Columna fija ---------- */}
         <div>
-          <Eyebrow className="mb-3">[Contacto]</Eyebrow>
+          <Eyebrow className="mb-3">Contacto</Eyebrow>
           <h2 className="font-heading text-3xl font-bold leading-tight text-brand-900 md:text-4xl">
             ¿Alguna duda?
           </h2>
           <p className="mt-4 max-w-sm text-slate-600">
-            [Texto de marcador de posición] Invitación breve a resolver
-            cualquier duda directamente con el equipo, en un tono cercano y
-            sin tecnicismos.
+            Si su operación tiene un requerimiento que no aparece aquí,
+            escríbanos y lo revisamos con usted.
           </p>
           <WhatsAppButton className="mt-6 rounded-full bg-brand-900 px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90">
             Escríbanos por WhatsApp
