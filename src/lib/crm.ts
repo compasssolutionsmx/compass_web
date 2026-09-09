@@ -40,10 +40,17 @@ import { requestTypeLabel } from "./request-types";
  * caer al de otro formulario sería clasificar mal el lead en silencio, que es
  * peor que no enviarlo.
  *
- *   CRM_WEBHOOK_SECRET_COTIZADOR  Opcionales. Si están, viajan como
- *   CRM_WEBHOOK_SECRET_WHATSAPP   `Authorization: Bearer`.
- *   CRM_WEBHOOK_SECRET            Respaldo común de las dos: si los dos
- *                                 destinos comparten token, basta con ésta.
+ *   CRM_WEBHOOK_SECRET_COTIZADOR  Viajan como `Authorization: Bearer`. El CRM
+ *   CRM_WEBHOOK_SECRET_WHATSAPP   las exige: sin ellas responde 401.
+ *
+ * UNA POR FUENTE Y NINGUNA COMPARTIDA, por el mismo motivo que las URLs: cada
+ * fuente del CRM es una integración aparte, con su propio secreto. Si un token
+ * se filtra hay que poder revocar SÓLO esa integración; con un secreto común,
+ * revocarlo apagaría también al otro formulario.
+ *
+ * Si falta la del origen, la petición SALE IGUAL, sin la cabecera, y el CRM la
+ * rechaza con 401. Es deliberado: un 401 en el log es rastreable y un envío que
+ * nunca ocurrió no lo es.
  *
  * Si el CRM espera otro esquema de autenticación —una cabecera propia, una
  * firma HMAC— se cambia en `headers`, abajo.
@@ -219,16 +226,13 @@ function crmUrl(source: CrmSource): URL | null {
 }
 
 /**
- * Token del origen, con respaldo en el compartido. Se resuelve así y no al
- * revés para que un destino con token propio pueda convivir con otro que usa
- * el común, sin obligar a duplicar el mismo valor en dos variables.
+ * Token del origen, y sólo el suyo: no hay respaldo compartido ni se cae al del
+ * otro formulario. El porqué está arriba, junto a los nombres de las variables.
+ *
+ * Que falte no detiene el envío; ver `sendToCrm`.
  */
 function crmSecret(source: CrmSource): string | undefined {
-  return (
-    process.env[CRM_SECRET_ENV[source]]?.trim() ||
-    process.env.CRM_WEBHOOK_SECRET?.trim() ||
-    undefined
-  );
+  return process.env[CRM_SECRET_ENV[source]]?.trim() || undefined;
 }
 
 /**
@@ -296,6 +300,15 @@ export async function sendToCrm(
   }
 
   const secret = crmSecret(source);
+  if (!secret) {
+    // NO se corta el envío: sale sin la cabecera y el CRM lo rechaza con 401,
+    // que queda registrado más abajo como `http-401`. Esta línea sólo añade lo
+    // que ese 401 no dice: CUÁL de las variables falta. Con dos secretos (y más
+    // si mañana entra un tercer origen), deducirlo desde el 401 es adivinar.
+    console.warn(
+      `[crm] ${CRM_SECRET_ENV[source]} sin configurar id=${leadId} formulario=${source}: se envía sin Authorization y el CRM responderá 401.`,
+    );
+  }
 
   try {
     const response = await fetch(url, {
