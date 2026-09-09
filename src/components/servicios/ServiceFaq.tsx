@@ -1,5 +1,13 @@
+import type { ServicioPregunta } from "@/lib/servicios-contenido";
 import Eyebrow from "../Eyebrow";
 import { WhatsAppButton } from "../WhatsAppModal";
+
+export type ServiceFaqProps = {
+  /** Rótulo <h2>. Empieza siempre por "Preguntas frecuentes", ver el tipo
+   *  `ServicioContenido` en `lib/servicios-contenido.ts`. */
+  rotulo: string;
+  preguntas: readonly ServicioPregunta[];
+};
 
 /**
  * Preguntas frecuentes de la plantilla de servicio, en dos columnas.
@@ -35,26 +43,14 @@ import { WhatsAppButton } from "../WhatsAppModal";
  * que el cuerpo de un artículo del blog. El `mt-12` del h2 original no
  * aplica aquí: como primer elemento de su columna no necesita el aire
  * superior que sí necesita colgando de un párrafo anterior.
+ *
+ * EL RÓTULO Y LAS PREGUNTAS LLEGAN POR PROPS desde
+ * `lib/servicios-contenido.ts`. El rótulo sigue empezando por "Preguntas
+ * frecuentes" en las 18 entradas: ese prefijo es lo que reconoce
+ * `extractFaq()`, y romperlo dejaría la marcación sin calzar el día que estas
+ * páginas ganen su propio pipeline de datos estructurados.
  */
-const PREGUNTAS = [
-  {
-    pregunta: "[Marcador de posición] ¿Qué es el servicio FTL?",
-    respuesta:
-      "[Texto de marcador de posición] Aquí va la respuesta completa a esta pregunta, con el mismo nivel de detalle que las preguntas frecuentes del blog: contexto, condiciones de operación y una cifra o un plazo concreto cuando corresponda.",
-  },
-  {
-    pregunta: "[Marcador de posición] ¿Cuándo conviene FTL frente a LTL?",
-    respuesta:
-      "[Texto de marcador de posición] Aquí va la respuesta completa a esta pregunta, con el mismo nivel de detalle que las preguntas frecuentes del blog: contexto, condiciones de operación y una cifra o un plazo concreto cuando corresponda.",
-  },
-  {
-    pregunta: "[Marcador de posición] ¿Qué cobertura tiene el servicio?",
-    respuesta:
-      "[Texto de marcador de posición] Aquí va la respuesta completa a esta pregunta, con el mismo nivel de detalle que las preguntas frecuentes del blog: contexto, condiciones de operación y una cifra o un plazo concreto cuando corresponda.",
-  },
-];
-
-export default function ServiceFaq() {
+export default function ServiceFaq({ rotulo, preguntas }: ServiceFaqProps) {
   return (
     <section className="mx-auto max-w-7xl px-6 py-20">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start lg:gap-12">
@@ -77,10 +73,10 @@ export default function ServiceFaq() {
         {/* ---------- Columna de preguntas ---------- */}
         <div className="max-w-[68ch]">
           <h2 className="font-heading text-2xl font-bold text-brand-900 md:text-3xl">
-            Preguntas frecuentes sobre FTL
+            {rotulo}
           </h2>
 
-          {PREGUNTAS.map((item) => (
+          {preguntas.map((item) => (
             <div key={item.pregunta}>
               <h3 className="mt-8 font-heading text-xl font-bold text-brand-900 md:text-2xl">
                 {item.pregunta}

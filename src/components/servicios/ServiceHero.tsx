@@ -1,6 +1,14 @@
 import Eyebrow from "../Eyebrow";
 import { QuoteButton } from "../QuoteModal";
 
+export type ServiceHeroProps = {
+  /** Categoría del servicio, encima del título. */
+  eyebrow: string;
+  /** Título del hero. Es el <h1> de la página. */
+  titulo: string;
+  parrafo: string;
+};
+
 /**
  * Hero de la plantilla de página de servicio (/servicios/[slug]).
  *
@@ -18,8 +26,16 @@ import { QuoteButton } from "../QuoteModal";
  * la <Image> real (`absolute inset-0`, mismo velo encima), para que quien
  * apruebe la plantilla vea el hueco real que debe llenar el arte final y no
  * tenga que imaginarlo.
+ *
+ * TODO EL TEXTO LLEGA POR PROPS desde `lib/servicios-contenido.ts`: este
+ * componente lo comparten las 18 páginas y no puede traer el copy de un
+ * servicio concreto dentro.
  */
-export default function ServiceHero() {
+export default function ServiceHero({
+  eyebrow,
+  titulo,
+  parrafo,
+}: ServiceHeroProps) {
   return (
     <section className="relative overflow-hidden rounded-b-[2rem] bg-brand-950 pb-16 pt-32 md:pb-20 md:pt-40">
       {/* Caja de la imagen de fondo: 1920x1080, el mismo `absolute inset-0
@@ -40,18 +56,14 @@ export default function ServiceHero() {
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
         <Eyebrow tone="dark" className="mb-4">
-          Transporte terrestre
+          {eyebrow}
         </Eyebrow>
 
         <h1 className="max-w-3xl font-heading text-2xl font-bold leading-tight text-white md:text-4xl">
-          FTL: transporte terrestre dedicado
+          {titulo}
         </h1>
 
-        <p className="mt-5 max-w-2xl text-lg text-brand-50">
-          [Texto de marcador de posición] Párrafo descriptivo del servicio.
-          Aquí va la propuesta de valor de FTL en dos o tres líneas: qué
-          cubre, en qué tiempos y qué problema del cliente resuelve.
-        </p>
+        <p className="mt-5 max-w-2xl text-lg text-brand-50">{parrafo}</p>
 
         <QuoteButton className="mt-8 rounded-full bg-white px-8 py-3 font-heading text-sm font-semibold text-brand-950 transition-colors hover:bg-brand-50">
           Solicitar cotización

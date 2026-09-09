@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Certifications from "@/components/Certifications";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -10,43 +11,68 @@ import ServiceMetrics from "@/components/servicios/ServiceMetrics";
 import RelatedServicesCarousel from "@/components/servicios/RelatedServicesCarousel";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
+import {
+  allServicioSlugs,
+  getServicioBySlug,
+} from "@/lib/servicios-contenido";
 
 /**
- * PLANTILLA DE PÁGINA DE SERVICIO, para revisión del cliente. No es contenido
- * final: es la estructura que tendría cualquier página bajo /servicios/,
- * usando FTL (transporte terrestre dedicado) como caso de muestra.
+ * PÁGINA DE SERVICIO, una ruta dinámica para las 18. Sustituye a la plantilla
+ * estática /servicios/ftl, que era este mismo diseño con el copy de FTL
+ * incrustado: ahora el diseño vive aquí y el copy en
+ * `lib/servicios-contenido.ts`, una entrada por página.
  *
- * RUTA PLANA a propósito: /servicios/ftl, sin anidar por rama ni por modo.
- * Es DISTINTA de lo que generaría `servicePath()` en `src/lib/services.ts`
- * (que anidaría por rama y modo: /servicios/servicio-internacional/terrestre
- * /ftl) — esa función no se tocó, ni el árbol de `lib/services.ts`, ni el
- * footer, ni el nav. Esta página vive sola, sin engancharse todavía a
- * ninguna navegación real. Conectar esta plantilla al árbol de servicios,
- * decidir el esquema de URL definitivo y resolver los puntos pendientes que
- * ya documenta `lib/services.ts` son tareas aparte.
+ * RUTAS PLANAS a propósito: /servicios/<slug>, sin anidar por rama ni por
+ * modo. Siguen siendo DISTINTAS de lo que generaría `servicePath()` en
+ * `src/lib/services.ts` (que anidaría por rama y modo). Ese árbol no se tocó,
+ * ni el footer, ni el nav: estas páginas siguen sin engancharse a ninguna
+ * navegación real. `lib/servicios-contenido.ts` lista dónde no coinciden los
+ * dos modelos.
  *
- * `robots: { index: false, follow: false }` y fuera de `sitemap.ts`: es un
- * borrador de revisión, no una página aprobada. Mismo criterio que usó este
- * proyecto con /apartado-legal mientras su aviso era borrador.
+ * `robots: { index: false, follow: false }` y fuera de `sitemap.ts`: son
+ * borradores de revisión, no páginas aprobadas. Mismo criterio que usó este
+ * proyecto con /apartado-legal mientras su aviso era borrador, y el que ya
+ * traía la plantilla de FTL.
  *
- * TODO EL COPY ES MARCADOR DE POSICIÓN, entre corchetes a propósito para que
- * nadie lo confunda con contenido final. Las tres imágenes (hero y una por
- * bloque alternado) son cajas con borde punteado y su medida, sin archivo
- * real detrás. Los números de la banda de métricas quedan como "Pendiente".
+ * TODO EL COPY ES MARCADOR DE POSICIÓN, entre corchetes, salvo el nombre del
+ * servicio en el <h1>. Las tres imágenes (hero y una por bloque alternado)
+ * son cajas con borde punteado y su medida, sin archivo real detrás. Los
+ * números de la banda de métricas quedan como "Pendiente".
  */
-const PATH = "/servicios/ftl";
-const TITLE = "FTL: transporte terrestre dedicado (plantilla)";
-const DESCRIPTION =
-  "[Marcador de posición] Plantilla de página de servicio para revisión de estructura. No es copy final.";
 
-export const metadata: Metadata = {
-  title: `${TITLE} | Compass Solutions`,
-  description: DESCRIPTION,
-  alternates: { canonical: PATH },
-  robots: { index: false, follow: false },
-};
+/** Rutas estáticas: una por entrada de `lib/servicios-contenido.ts`. */
+export function generateStaticParams() {
+  return allServicioSlugs().map((slug) => ({ slug }));
+}
 
-export default function ServicioFtl() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const servicio = getServicioBySlug(slug);
+  if (!servicio) return {};
+
+  return {
+    title: `${servicio.seoTitulo} | Compass Solutions`,
+    description: servicio.seoDescripcion,
+    alternates: { canonical: `/servicios/${servicio.slug}` },
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function ServicioPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const servicio = getServicioBySlug(slug);
+  if (!servicio) notFound();
+
+  const [bloqueUno, bloqueDos] = servicio.bloques;
+
   return (
     <WhatsAppModalProvider>
       <QuoteModalProvider>
@@ -55,7 +81,11 @@ export default function ServicioFtl() {
         <Header topTone="dark" />
 
         <main className="flex-1">
-          <ServiceHero />
+          <ServiceHero
+            eyebrow={servicio.heroEyebrow}
+            titulo={servicio.heroTitulo}
+            parrafo={servicio.heroParrafo}
+          />
 
           {/* Cada bloque alternado es su PROPIA sección, con <Certifications>
               intercalada entre los dos como un separador delgado, no como una
@@ -68,9 +98,9 @@ export default function ServicioFtl() {
               queda pegado a la banda de certificaciones se recorta aparte. */}
           <div className="mx-auto max-w-7xl px-6 pt-20 pb-10">
             <ServiceFeatureBlock
-              eyebrow="Ventaja 1"
-              title="[Título de marcador] Cobertura dedicada de punta a punta"
-              description="[Texto de marcador de posición] Párrafo describiendo el primer beneficio o característica del servicio FTL, con el nivel de detalle de una sección real: qué incluye, en qué se diferencia y a qué tipo de operación sirve."
+              eyebrow={bloqueUno.eyebrow}
+              title={bloqueUno.titulo}
+              description={bloqueUno.parrafo}
               imageSide="left"
               imageLabel="[Imagen de marcador de posición — 1200×900]"
             />
@@ -94,16 +124,22 @@ export default function ServicioFtl() {
 
           <div className="mx-auto max-w-7xl px-6 pb-20">
             <ServiceFeatureBlock
-              eyebrow="Ventaja 2"
-              title="[Título de marcador] Visibilidad y control en tiempo real"
-              description="[Texto de marcador de posición] Párrafo describiendo el segundo beneficio o característica del servicio FTL, con el nivel de detalle de una sección real: qué incluye, en qué se diferencia y a qué tipo de operación sirve."
+              eyebrow={bloqueDos.eyebrow}
+              title={bloqueDos.titulo}
+              description={bloqueDos.parrafo}
               imageSide="right"
               imageLabel="[Imagen de marcador de posición — 1200×900]"
             />
           </div>
 
-          <ServiceMetrics />
-          <ServiceFaq />
+          <ServiceMetrics
+            titulo={servicio.metricasTitulo}
+            metricas={servicio.metricas}
+          />
+          <ServiceFaq
+            rotulo={servicio.preguntasRotulo}
+            preguntas={servicio.preguntas}
+          />
           <RelatedServicesCarousel />
         </main>
 
