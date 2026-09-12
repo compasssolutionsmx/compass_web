@@ -4,12 +4,13 @@ import Eyebrow from "./Eyebrow";
 
 /* ---------------------------------------------------------------------------
    MÉTRICAS REALES — editar aquí.
-   Confirmadas contra el sitio actual. Se guardan con su magnitud real; el
-   formato de pantalla lo pone el JSX ("+10k" sale de dividir entre mil).
+   Cifras definitivas validadas por el cliente. Son las mismas tres, en el
+   mismo orden y con el mismo copy, que las de <ImportStats> en la landing:
+   si se tocan aquí, hay que tocarlas allá.
    --------------------------------------------------------------------------- */
-const EFFECTIVENESS = 95.3;
-const OPERATIONS_COUNT = 10000;
-const PARTNERS_COUNT = 200;
+const COUNTRIES_COUNT = 50;
+const EFFECTIVENESS = 95;
+const CLIENTS_COUNT = 50;
 
 export default function StatsSection() {
   return (
@@ -61,33 +62,57 @@ export default function StatsSection() {
         </div>
 
         {/* ---------- Bloque inferior: las tres métricas ---------- */}
-        {/* Tarjetas blancas sobre la caja clara, con el número en brand-900:
-            15.07:1. Antes el 95.3% flotaba sobre la foto; ahora es una de las
-            tres, con el mismo tratamiento que las otras dos. */}
+        {/* Tarjetas blancas sobre la caja clara, con la cifra en brand-900:
+            15.07:1.
+
+            JERARQUÍA DE TRES LÍNEAS —cifra, rótulo corto, descripción— tomada
+            de <ImportStats> en la landing, para que las mismas tres métricas se
+            lean igual en las dos páginas. Los tamaños y pesos son los de allá:
+            cifra en `text-4xl font-bold`, rótulo en `text-sm font-bold` y misma
+            font-heading que la cifra (es su continuación, no un párrafo), y
+            descripción en `text-sm` slate-600. Lo único que NO se copia es el
+            fondo: aquí la tarjeta sigue siendo blanca sobre la caja brand-100,
+            mientras que en la landing es brand-100 sobre blanco. Sobre blanco
+            el rótulo en brand-900 da los mismos 15.07:1 de la cifra y la
+            descripción en slate-600 da 7.58:1.
+
+            `mt-1` entre las tres líneas, y no el `mt-2` que llevaba la
+            descripción cuando colgaba directamente de la cifra: con el rótulo
+            en medio, 8px de separación uniforme mantienen las tres como un solo
+            bloque en vez de partirlo en dos. */}
         <ul className="mt-10 grid gap-4 sm:grid-cols-3 lg:mt-14">
           <li className="rounded-2xl bg-white p-6 shadow-sm shadow-brand-950/5">
             <p className="font-heading text-4xl font-bold text-brand-900">
-              <AnimatedCounter target={EFFECTIVENESS} decimals={1} />%
+              +<AnimatedCounter target={COUNTRIES_COUNT} />
             </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Efectividad en servicios expeditados solicitados por nuestros
-              clientes.
+            <p className="mt-1 font-heading text-sm font-bold text-brand-900">
+              Países
             </p>
-          </li>
-          <li className="rounded-2xl bg-white p-6 shadow-sm shadow-brand-950/5">
-            <p className="font-heading text-4xl font-bold text-brand-900">
-              +<AnimatedCounter target={OPERATIONS_COUNT / 1000} />k
-            </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Operaciones aéreas, marítimas y terrestres realizadas con éxito.
+            <p className="mt-1 text-sm text-slate-600">
+              Cobertura internacional para sus operaciones de comercio exterior.
             </p>
           </li>
           <li className="rounded-2xl bg-white p-6 shadow-sm shadow-brand-950/5">
             <p className="font-heading text-4xl font-bold text-brand-900">
-              +<AnimatedCounter target={PARTNERS_COUNT} />
+              <AnimatedCounter target={EFFECTIVENESS} />%
             </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Asociados de negocio alineados a nuestros estándares de servicio.
+            <p className="mt-1 font-heading text-sm font-bold text-brand-900">
+              Efectividad
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Comprometidos con la eficiencia y cumplimiento de cada operación.
+            </p>
+          </li>
+          <li className="rounded-2xl bg-white p-6 shadow-sm shadow-brand-950/5">
+            <p className="font-heading text-4xl font-bold text-brand-900">
+              +<AnimatedCounter target={CLIENTS_COUNT} />
+            </p>
+            <p className="mt-1 font-heading text-sm font-bold text-brand-900">
+              Clientes satisfechos
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Empresas que confían en Compass Solutions para sus operaciones
+              logísticas.
             </p>
           </li>
         </ul>

@@ -7,7 +7,7 @@ const ANIMATION_DURATION_MS = 1600;
 type AnimatedCounterProps = {
   /** Valor final al que sube el contador. */
   target: number;
-  /** Decimales a mostrar. 0 por defecto; el 95.3% necesita 1. */
+  /** Decimales a mostrar. 0 por defecto. */
   decimals?: number;
   className?: string;
 };

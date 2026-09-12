@@ -7,47 +7,39 @@ import AnimatedCounter from "../AnimatedCounter";
  *
  * POR QUÉ NO SE PARAMETRIZÓ StatsSection: el mockup no pide "las mismas tres
  * métricas con otro número", pide otra sección. Cambia el layout (dos columnas
- * con foto y CTA a la izquierda, rejilla 2x2 a la derecha, contra el bloque
- * foto+texto y fila de tres del home), cambia el número de métricas (4 contra
- * 3), y cada métrica gana un rótulo corto que en el home no existe. Doblar
- * StatsSection para cubrir las dos formas habría dejado un componente con más
- * ramas que contenido. Lo que sí se comparte de verdad es <AnimatedCounter> y
- * los tokens.
+ * con texto a la izquierda y rejilla a la derecha, contra el bloque foto+texto
+ * y fila de tres del home) y cambia el fondo de la tarjeta (brand-100 sobre
+ * blanco aquí, blanca sobre brand-100 allá). Doblar StatsSection para cubrir
+ * las dos formas habría dejado un componente con más ramas que contenido. Lo
+ * que sí se comparte de verdad es <AnimatedCounter> y los tokens.
  *
- * TODO(cliente): estas cuatro cifras NO son las mismas que las del home
- * (+10k operaciones contra +15k aquí; 200 asociados contra +400 clientes).
- * Vienen del mockup de la landing, que a su vez las tomó del sitio en vivo.
- * Hay que confirmar cuál juego es el bueno antes de publicar: hoy el sitio
- * afirmaría dos cosas distintas en dos páginas.
+ * LAS CIFRAS SÍ SON LAS MISMAS QUE LAS DEL HOME, y ese es el punto: son las
+ * definitivas validadas por el cliente, en el mismo orden y con el mismo copy
+ * que en <StatsSection>. Antes cada página afirmaba cosas distintas (+15k aquí
+ * contra +10k allá; +400 clientes contra 200 asociados). Si se tocan aquí, hay
+ * que tocarlas allá.
  */
 const METRICS = [
   {
-    target: 15,
+    target: 50,
     prefix: "+",
-    suffix: "k",
-    label: "Operaciones anuales",
-    description: "Operaciones anuales gestionadas con precisión quirúrgica.",
+    label: "Países",
+    description:
+      "Cobertura internacional para sus operaciones de comercio exterior.",
   },
   {
-    target: 95.3,
-    decimals: 1,
+    target: 95,
     suffix: "%",
     label: "Efectividad",
     description:
-      "De efectividad en servicios expeditados y entregas just-in-time.",
+      "Comprometidos con la eficiencia y cumplimiento de cada operación.",
   },
   {
-    target: 400,
+    target: 50,
     prefix: "+",
     label: "Clientes satisfechos",
     description:
-      "Clientes satisfechos que confían su cadena de suministro en nosotros.",
-  },
-  {
-    target: 120,
-    prefix: "+",
-    label: "Países cubiertos",
-    description: "Países cubiertos a través de nuestra red global de agentes.",
+      "Empresas que confían en Compass Solutions para sus operaciones logísticas.",
   },
 ];
 
@@ -111,51 +103,76 @@ export default function ImportStats() {
         </div>
 
         {/* `max-lg:gap-4`: con tarjeta propia, los 32px de `gap-8` separaban de
-            más — el padding de cada una ya hace de aire y cuatro huecos de 32px
+            más — el padding de cada una ya hace de aire y los huecos de 32px
             estiraban la pila sin necesidad. */}
         <ul className="grid grid-cols-1 gap-8 sm:grid-cols-2 max-lg:gap-4">
-          {METRICS.map((metric) => (
-            /* TARJETA `bg-brand-100` EN MÓVIL. Apiladas sin nada que las separe,
-               las cuatro métricas se leían como un párrafo corrido y la cifra de
-               una se pegaba a la descripción de la anterior.
+          {METRICS.map((metric, index) => {
+            // TERCERA TARJETA CENTRADA. Con un número impar de métricas en dos
+            // columnas, la última se queda sola en la segunda fila y pegada a
+            // la izquierda. Abarca las dos columnas y se centra dentro de ellas.
+            //
+            // POR QUÉ CON ANCHO EXPLÍCITO Y NO SÓLO `justify-self-center`: un
+            // elemento de rejilla centrado deja de estirarse y se encoge a su
+            // contenido, así que la tarjeta saldría más angosta que las dos de
+            // arriba. Fijarle el ancho de una columna —`calc(50% - gap/2)`— es
+            // lo que iguala las tres.
+            //
+            // Los dos anchos son los dos `gap` que tiene esta rejilla: 1rem por
+            // debajo de `lg` (`max-lg:gap-4`) y 2rem de ahí para arriba
+            // (`gap-8`). Si se cambia un `gap`, hay que cambiar su `w`.
+            //
+            // Nada de esto aplica en móvil: por debajo de `sm` la rejilla es de
+            // una sola columna y no hay huérfana que centrar.
+            const isOrphan =
+              METRICS.length % 2 === 1 && index === METRICS.length - 1;
 
-               Se eligió el tinte de marca y no la tarjeta blanca con anillo
-               (`ring-1 ring-slate-200`, la de las tarjetas del blog) por dos
-               razones: esta sección va sobre blanco, así que una tarjeta blanca
-               necesitaría el borde para existir y ese borde da 1.44:1 contra el
-               fondo — por debajo del 3:1 que pide un elemento no textual que
-               delimita; y porque brand-100 es el lenguaje que el sitio ya usa
-               para las cifras (la franja de <StatsSection> en el home) y para
-               las tarjetas sobre blanco (<VacanteCard>).
+            return (
+              /* TARJETA `bg-brand-100` EN MÓVIL. Apiladas sin nada que las
+                 separe, las métricas se leían como un párrafo corrido y la
+                 cifra de una se pegaba a la descripción de la anterior.
 
-               CONTRASTE sobre brand-100: cifra y rótulo en brand-900 12.82:1,
-               descripción en slate-600 6.45:1. Los tres pasan AA. El tinte
-               contra el blanco de sección es 1.18:1, y no hace falta más: la
-               tarjeta agrupa, no codifica ninguna información por color. */
-            <li
-              key={metric.label}
-              className="max-lg:rounded-2xl max-lg:bg-brand-100 max-lg:p-5"
-            >
-              {/* `max-lg:text-3xl`: 30px contra los 36 de `text-4xl`. Dentro de
-                  una tarjeta de 5rem de alto útil, 36px competía con el rótulo
-                  en vez de encabezarlo. La cifra más ancha es "95.3%" y a 30px
-                  mide 89px, contra los 216px de caja útil a 320px. */}
-              <p className="font-heading text-4xl font-bold text-brand-900 max-lg:text-3xl">
-                {metric.prefix}
-                <AnimatedCounter
-                  target={metric.target}
-                  decimals={metric.decimals ?? 0}
-                />
-                {metric.suffix}
-              </p>
-              <p className="mt-1 font-heading text-sm font-bold text-brand-900">
-                {metric.label}
-              </p>
-              <p className="mt-1 max-w-[30ch] text-sm text-slate-600">
-                {metric.description}
-              </p>
-            </li>
-          ))}
+                 Se eligió el tinte de marca y no la tarjeta blanca con anillo
+                 (`ring-1 ring-slate-200`, la de las tarjetas del blog) por dos
+                 razones: esta sección va sobre blanco, así que una tarjeta
+                 blanca necesitaría el borde para existir y ese borde da 1.44:1
+                 contra el fondo — por debajo del 3:1 que pide un elemento no
+                 textual que delimita; y porque brand-100 es el lenguaje que el
+                 sitio ya usa para las cifras (la franja de <StatsSection> en el
+                 home) y para las tarjetas sobre blanco (<VacanteCard>).
+
+                 CONTRASTE sobre brand-100: cifra y rótulo en brand-900 12.82:1,
+                 descripción en slate-600 6.45:1. Los tres pasan AA. El tinte
+                 contra el blanco de sección es 1.18:1, y no hace falta más: la
+                 tarjeta agrupa, no codifica ninguna información por color. */
+              <li
+                key={metric.label}
+                className={`max-lg:rounded-2xl max-lg:bg-brand-100 max-lg:p-5 ${
+                  isOrphan
+                    ? "sm:col-span-2 sm:col-start-1 sm:w-[calc(50%_-_0.5rem)] sm:justify-self-center lg:w-[calc(50%_-_1rem)]"
+                    : ""
+                }`}
+              >
+                {/* `max-lg:text-3xl`: 30px contra los 36 de `text-4xl`. Dentro
+                    de una tarjeta de 5rem de alto útil, 36px competía con el
+                    rótulo en vez de encabezarlo. La cifra más ancha es "95%" y
+                    a 30px cabe de sobra en los 216px de caja útil a 320px. */}
+                <p className="font-heading text-4xl font-bold text-brand-900 max-lg:text-3xl">
+                  {metric.prefix}
+                  {/* Sin `decimals`: las tres cifras definitivas son enteras
+                    (antes el 95.3% pedía 1). <AnimatedCounter> ya trae 0 por
+                    defecto. */}
+                  <AnimatedCounter target={metric.target} />
+                  {metric.suffix}
+                </p>
+                <p className="mt-1 font-heading text-sm font-bold text-brand-900">
+                  {metric.label}
+                </p>
+                <p className="mt-1 max-w-[30ch] text-sm text-slate-600">
+                  {metric.description}
+                </p>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>
