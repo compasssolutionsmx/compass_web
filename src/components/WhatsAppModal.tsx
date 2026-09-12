@@ -36,6 +36,12 @@ import { useSmoothScroll } from "./SmoothScroll";
 import HoneypotField from "./HoneypotField";
 import { buildWhatsAppUrl } from "@/lib/site";
 import { readHoneypot } from "@/lib/bot-trap";
+import {
+  REFERRAL_OTHER,
+  REFERRAL_OTHER_PLACEHOLDER,
+  REFERRAL_SOURCES,
+  resolveReferral,
+} from "@/lib/referral-sources";
 
 type WhatsAppModalContextValue = {
   isOpen: boolean;
@@ -177,6 +183,9 @@ function WhatsAppDialog() {
   const [correo, setCorreo] = useState("");
   const [tipo, setTipo] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [comoNosConocio, setComoNosConocio] = useState("");
+  /** Texto libre que revela la opción "Otro". Vacío mientras no se elija. */
+  const [comoNosConocioOtro, setComoNosConocioOtro] = useState("");
 
   // Escape, focus trap y bloqueo del scroll del body. Mismo estándar que
   // <QuoteModal>.
@@ -301,6 +310,9 @@ function WhatsAppDialog() {
         correo: correo.trim(),
         tipo: tipo || undefined,
         mensaje: mensaje.trim() || undefined,
+        // SIN `|| undefined`: viaja siempre, igual que en el cotizador. Ver
+        // `lib/referral-sources`.
+        comoNosConocio: resolveReferral(comoNosConocio, comoNosConocioOtro),
       },
       whatsappMessage,
       "whatsapp",
@@ -449,6 +461,60 @@ function WhatsAppDialog() {
                   onChange={(e) => setMensaje(e.target.value)}
                   className={FIELD}
                 />
+              </div>
+
+              {/* ---------- Atribución, el último campo del formulario ----------
+                  Mismo campo y mismas reglas que el del cotizador: este modal
+                  comparte con él `useLeadSubmit`, el endpoint `/api/lead` y el
+                  esquema de `Lead.datos`, así que la clave `comoNosConocio` es
+                  la misma y `crmPayload` la aplana igual para el webhook.
+
+                  NO entra en `buildMessage`. Ese texto es lo que el usuario le
+                  dice al agente al abrir WhatsApp; la atribución es dato
+                  interno y ahí sólo sería ruido delante del cliente.
+
+                  Mismo <select> nativo con la constante FIELD que el "Tipo de
+                  servicio" de aquí arriba: ningún estilo nuevo. */}
+              <div>
+                <label htmlFor="wa-como-nos-conocio" className={LABEL}>
+                  ¿Cómo se enteró de nosotros?{" "}
+                  <span className="font-normal text-slate-500">(opcional)</span>
+                </label>
+                <select
+                  id="wa-como-nos-conocio"
+                  value={comoNosConocio}
+                  onChange={(e) => setComoNosConocio(e.target.value)}
+                  className={FIELD}
+                >
+                  <option value="">Seleccione una opción</option>
+                  {REFERRAL_SOURCES.map((fuente) => (
+                    <option key={fuente} value={fuente}>
+                      {fuente}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Etiqueta `sr-only` por lo mismo que en el cotizador: el
+                    placeholder no es nombre accesible, y en pantalla la
+                    pregunta de arriba ya dice de qué va. */}
+                {comoNosConocio === REFERRAL_OTHER && (
+                  <div className="mt-3">
+                    <label
+                      htmlFor="wa-como-nos-conocio-otro"
+                      className="sr-only"
+                    >
+                      {REFERRAL_OTHER_PLACEHOLDER}
+                    </label>
+                    <input
+                      id="wa-como-nos-conocio-otro"
+                      type="text"
+                      value={comoNosConocioOtro}
+                      onChange={(e) => setComoNosConocioOtro(e.target.value)}
+                      placeholder={REFERRAL_OTHER_PLACEHOLDER}
+                      className={FIELD}
+                    />
+                  </div>
+                )}
               </div>
 
               {error && (

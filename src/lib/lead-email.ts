@@ -268,6 +268,14 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     ["correo", "Correo"],
     ["telefono", "Teléfono"],
     ["contactoPreferido", "Contacto preferido"],
+    // CIERRA LA TABLA en los dos formularios de venta: es atribución de
+    // marketing, no un dato para atender la solicitud, así que va después de
+    // todo lo que ventas necesita leer para contestar.
+    //
+    // Siempre trae valor —"No especificado" cuando se dejó en blanco—, así que
+    // esta fila no se salta nunca. Lo resuelve el cliente en
+    // `lib/referral-sources`, no esta capa.
+    ["comoNosConocio", "Cómo se enteró de nosotros"],
   ],
   whatsapp: [
     ["nombre", "Nombre"],
@@ -275,6 +283,7 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     ["telefono", "Teléfono"],
     ["tipo", "Tipo de servicio"],
     ["mensaje", "Mensaje"],
+    ["comoNosConocio", "Cómo se enteró de nosotros"],
   ],
   /**
    * La empresa va PRIMERO, al revés que en los otros dos: aquí quien se
@@ -850,10 +859,12 @@ export function buildAckHtml(lead: Lead): string {
   // `escapeHtml` envuelve la frase ENTERA, y con ella el nombre: es entrada de
   // usuario y va a parar a un documento HTML. Un nombre con `&` o con `<` se
   // pinta tal cual en vez de romper el marcado.
-  const parrafos = ackParagraphs(lead).map(
-    (texto) =>
-      `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.6;">${escapeHtml(texto)}</p>`,
-  ).join("");
+  const parrafos = ackParagraphs(lead)
+    .map(
+      (texto) =>
+        `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.6;">${escapeHtml(texto)}</p>`,
+    )
+    .join("");
 
   return `<!doctype html>
 <html lang="es">

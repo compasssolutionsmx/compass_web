@@ -36,6 +36,12 @@ import OptionSelect from "./OptionSelect";
 import { useSmoothScroll } from "./SmoothScroll";
 import HoneypotField from "./HoneypotField";
 import { readHoneypot } from "@/lib/bot-trap";
+import {
+  REFERRAL_OTHER,
+  REFERRAL_OTHER_PLACEHOLDER,
+  REFERRAL_SOURCES,
+  resolveReferral,
+} from "@/lib/referral-sources";
 
 type TypeValue = (typeof REQUEST_TYPES)[number]["value"];
 
@@ -435,6 +441,9 @@ export default function QuoteWizard({
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [contactoPreferido, setContactoPreferido] = useState("");
+  const [comoNosConocio, setComoNosConocio] = useState("");
+  /** Texto libre que revela la opción "Otro". Vacío mientras no se elija. */
+  const [comoNosConocioOtro, setComoNosConocioOtro] = useState("");
 
   const wizardRef = useRef<HTMLDivElement>(null);
   const stepHeadingRef = useRef<HTMLParagraphElement>(null);
@@ -628,6 +637,8 @@ export default function QuoteWizard({
     setCorreo("");
     setTelefono("");
     setContactoPreferido("");
+    setComoNosConocio("");
+    setComoNosConocioOtro("");
     setError(null);
     resetLead();
   }
@@ -672,6 +683,13 @@ export default function QuoteWizard({
         correo: correo.trim(),
         telefono: telefono.trim() || undefined,
         contactoPreferido: contactoPreferido || undefined,
+        /**
+         * SIN `|| undefined`, al revés que todos los de arriba: este campo
+         * viaja SIEMPRE. `resolveReferral` nunca devuelve cadena vacía, así que
+         * el aviso interno trae su fila tanto si se contestó como si no. Ver el
+         * porqué en `lib/referral-sources`.
+         */
+        comoNosConocio: resolveReferral(comoNosConocio, comoNosConocioOtro),
       },
       selectedType.label,
       website,
@@ -1294,6 +1312,73 @@ export default function QuoteWizard({
                   </Chip>
                 ))}
               </div>
+            </div>
+
+            {/* ---------- Atribución, el último campo del formulario ----------
+                Opcional, igual que el de arriba: no se valida y no bloquea el
+                envío.
+
+                `<select>` NATIVO, y no el <OptionSelect> que este mismo paso
+                usa en móvil para el contacto preferido. Ese componente existe
+                —lo dice su cabecera— porque las opciones del paso 1 llevan
+                ícono y línea de apoyo, cosas que no caben en un <option>; estas
+                siete son texto plano, así que el control nativo las cubre y trae
+                gratis el selector de rueda del sistema en móvil. Es además lo
+                que ya hace el "Tipo de servicio" del modal de WhatsApp, que es
+                el otro desplegable de texto plano del sitio.
+
+                Sin estilos nuevos: mismas constantes LABEL y FIELD que los
+                campos de contacto de arriba, así que borde, radio, tipografía,
+                foco y altura son los suyos. */}
+            <div className="mt-4">
+              <label htmlFor={idDe("como-nos-conocio")} className={LABEL}>
+                ¿Cómo se enteró de nosotros?{" "}
+                <span className="font-normal text-slate-500">(opcional)</span>
+              </label>
+              <select
+                id={idDe("como-nos-conocio")}
+                value={comoNosConocio}
+                onChange={(e) => setComoNosConocio(e.target.value)}
+                className={FIELD}
+              >
+                <option value="">Seleccione una opción</option>
+                {REFERRAL_SOURCES.map((fuente) => (
+                  <option key={fuente} value={fuente}>
+                    {fuente}
+                  </option>
+                ))}
+              </select>
+
+              {/* El texto libre sólo existe si se eligió "Otro". Se desmonta al
+                  cambiar de opción, pero su estado NO se limpia: quien vuelve a
+                  "Otro" recupera lo que había escrito. Lo que se manda lo decide
+                  `resolveReferral`, que sólo mira este texto cuando la opción
+                  elegida es "Otro", así que un resto olvidado aquí no puede
+                  colarse en el correo.
+
+                  ETIQUETA `sr-only`: el campo necesita nombre accesible y el
+                  placeholder NO lo es —desaparece al escribir y varios lectores
+                  de pantalla no lo anuncian—, pero en pantalla la pregunta de
+                  arriba ya dice de qué va. Mismo criterio que el <span
+                  class="sr-only"> de <OptionSelect>. */}
+              {comoNosConocio === REFERRAL_OTHER && (
+                <div className="mt-3">
+                  <label
+                    htmlFor={idDe("como-nos-conocio-otro")}
+                    className="sr-only"
+                  >
+                    {REFERRAL_OTHER_PLACEHOLDER}
+                  </label>
+                  <input
+                    id={idDe("como-nos-conocio-otro")}
+                    type="text"
+                    value={comoNosConocioOtro}
+                    onChange={(e) => setComoNosConocioOtro(e.target.value)}
+                    placeholder={REFERRAL_OTHER_PLACEHOLDER}
+                    className={FIELD}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}

@@ -43,6 +43,16 @@ export type QuoteFormData = {
   telefono?: string;
   /** "Correo" · "WhatsApp" · "Llamada". Opcional, no bloquea el envío. */
   contactoPreferido?: string;
+  /**
+   * Atribución: cómo se enteró de nosotros. El CAMPO es opcional en pantalla,
+   * pero la propiedad NO lo es en el payload — cuando se deja en blanco viaja
+   * "No especificado", para que el correo del lead tenga siempre la misma
+   * forma. Ver `lib/referral-sources`.
+   *
+   * Si se eligió "Otro", aquí llega el texto que escribió el usuario, no la
+   * palabra "Otro".
+   */
+  comoNosConocio: string;
 };
 
 /**
