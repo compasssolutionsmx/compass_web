@@ -50,9 +50,15 @@ const AMACARGA: Certification = {
   alt: "AMACARGA",
   color: true,
 };
+/**
+ * CANACAR va con `color`: el cliente entregó el logotipo oficial a color
+ * (camiones rojo y gris, texto negro), recortado al bounding box de la tinta y
+ * reducido a 240px de alto (386x240, proporción 1.61).
+ */
 const CANACAR: Certification = {
-  src: "/logo-certs/canacar-trim.png",
+  src: "/logo-certs/canacar-color.png",
   alt: "CANACAR",
+  color: true,
 };
 const WCA: Certification = {
   src: "/logo-certs/WCA-LOGO.svg",
