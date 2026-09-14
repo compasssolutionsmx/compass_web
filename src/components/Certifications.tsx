@@ -40,9 +40,15 @@ type Certification = {
   color?: boolean;
 };
 
+/**
+ * AMACARGA va con `color`: el cliente entregó el logotipo oficial a color
+ * (flechas verdes, texto gris y subrayado naranja), recortado al bounding box
+ * de la tinta (434x180, proporción 2.41). Enmascararlo lo aplanaría a navy.
+ */
 const AMACARGA: Certification = {
-  src: "/logo-certs/amacarga-trim.png",
+  src: "/logo-certs/amacarga-color.png",
   alt: "AMACARGA",
+  color: true,
 };
 const CANACAR: Certification = {
   src: "/logo-certs/canacar-trim.png",
