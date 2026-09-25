@@ -276,6 +276,18 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     // esta fila no se salta nunca. Lo resuelve el cliente en
     // `lib/referral-sources`, no esta capa.
     ["comoNosConocio", "Cómo se enteró de nosotros"],
+    // Atribución de campaña, capturada de la URL de llegada (ver
+    // `lib/attribution`). Sólo aparecen las filas que traen valor: quien llegó
+    // sin campaña no ve ninguna.
+    ["gclid", "Clic de Google Ads"],
+    ["wbraid", "Clic de Google Ads (iOS web)"],
+    ["gbraid", "Clic de Google Ads (iOS app)"],
+    ["fbclid", "Clic de Meta (Facebook o Instagram)"],
+    ["utm_source", "Fuente de la campaña"],
+    ["utm_medium", "Medio de la campaña"],
+    ["utm_campaign", "Nombre de la campaña"],
+    ["utm_term", "Término de la campaña"],
+    ["utm_content", "Contenido de la campaña"],
   ],
   whatsapp: [
     ["nombre", "Nombre"],

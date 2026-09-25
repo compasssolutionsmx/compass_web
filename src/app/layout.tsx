@@ -3,6 +3,7 @@ import { Archivo, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ConsentProvider from "@/components/ConsentProvider";
 import GoogleTagManagerGate from "@/components/GoogleTagManagerGate";
+import AttributionCapture from "@/components/AttributionCapture";
 import CookieBanner from "@/components/CookieBanner";
 import SmoothScroll from "@/components/SmoothScroll";
 import { consentBootstrapScript } from "@/lib/consent";
@@ -115,8 +116,9 @@ export default function RootLayout({
       className={`${dmSans.variable} ${archivo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        {/* Estado por defecto de Google Consent Mode v2 (todo denegado) más la
-            reproducción de la decisión ya guardada. El cuerpo se genera en
+        {/* Estado por defecto de Google Consent Mode v2 (todo concedido: el
+            modelo es opt-out) más la reproducción de la decisión ya guardada,
+            que vuelve a denegar a quien se opuso. El cuerpo se genera en
             lib/consent, para que no se desincronice de las constantes que usa
             el resto de la app.
 
@@ -149,6 +151,10 @@ export default function RootLayout({
             __html: JSON.stringify(buildSiteJsonLd(SITE_URL)),
           }}
         />
+        {/* Guarda gclid, fbclid y UTM de la URL de llegada para el cotizador.
+            Fuera del provider: no depende del consentimiento. Ver
+            lib/attribution. */}
+        <AttributionCapture />
         <ConsentProvider>
           {/* GTM va DENTRO del provider porque lee el consentimiento, y sólo se
               monta cuando lo hay. Ver <GoogleTagManagerGate>. */}

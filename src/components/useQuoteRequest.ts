@@ -11,6 +11,7 @@
 
 import { useCallback, useState } from "react";
 import { useLeadSubmit } from "./useLeadSubmit";
+import { attributionFields } from "@/lib/attribution";
 
 // REQUEST_TYPES se mudó a `lib/request-types` para que el Route Handler del
 // correo pueda traducir el slug a etiqueta sin importar un módulo de cliente.
@@ -99,7 +100,20 @@ export function useQuoteRequest() {
     async (payload: QuoteFormData, tipoLabel: string, website: string) => {
       setError(null);
       await submitLead(
-        payload,
+        /**
+         * ATRIBUCIÓN DE CAMPAÑA (gclid, wbraid, gbraid, fbclid y los cinco
+         * UTM), leída de `localStorage` al enviar. Va DETRÁS de `payload`: la
+         * genera el sistema, así que prevalece sobre cualquier campo homónimo
+         * del formulario. Sin registro, o con uno caducado, no añade ninguna
+         * clave y el envío sale igual. Ver `lib/attribution`.
+         *
+         * OJO CON EL TOPE: `parseLead` rechaza el lead ENTERO si `datos` trae
+         * más de 30 claves (`MAX_CAMPOS` en `lib/lead-email`). El cotizador
+         * usa 13 y la atribución puede sumar 9: 22. Quien añada campos al
+         * cotizador tiene margen para 8 más antes de que los leads con
+         * atribución completa empiecen a rebotar.
+         */
+        { ...payload, ...attributionFields() },
         buildWhatsAppMessage(tipoLabel, payload.sub),
         "cotizador",
         // Campo trampa, tal cual salió del <form>. Este hook no lo mira: sólo
