@@ -279,15 +279,11 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     // Atribución de campaña, capturada de la URL de llegada (ver
     // `lib/attribution`). Sólo aparecen las filas que traen valor: quien llegó
     // sin campaña no ve ninguna.
-    ["gclid", "Clic de Google Ads"],
-    ["wbraid", "Clic de Google Ads (iOS web)"],
-    ["gbraid", "Clic de Google Ads (iOS app)"],
-    ["fbclid", "Clic de Meta (Facebook o Instagram)"],
+    ["click_id", "Identificador de clic"],
+    ["click_source", "Plataforma de origen"],
     ["utm_source", "Fuente de la campaña"],
     ["utm_medium", "Medio de la campaña"],
     ["utm_campaign", "Nombre de la campaña"],
-    ["utm_term", "Término de la campaña"],
-    ["utm_content", "Contenido de la campaña"],
   ],
   whatsapp: [
     ["nombre", "Nombre"],
@@ -473,7 +469,29 @@ function stamp(): string {
   }).format(new Date());
 }
 
-/** Campos en orden de lectura, ya con etiqueta y con `tipo` traducido. */
+/**
+ * Plataforma legible para `click_source`, SÓLO en el correo interno: el CRM
+ * sigue recibiendo el nombre crudo del parámetro (ver `lib/attribution`). Un
+ * valor fuera de esta lista se muestra tal cual en vez de perderse.
+ */
+const CLICK_SOURCE_LABELS: Record<string, string> = {
+  gclid: "Google Ads",
+  wbraid: "Google Ads (iOS web)",
+  gbraid: "Google Ads (iOS app)",
+  fbclid: "Meta Ads",
+};
+
+/** Valor para mostrar: `tipo` y `click_source` se traducen, el resto no. */
+function displayValue(key: string, value: string): string {
+  if (key === "tipo") return requestTypeLabel(value) ?? value;
+  if (key === "click_source") return CLICK_SOURCE_LABELS[value] ?? value;
+  return value;
+}
+
+/**
+ * Campos en orden de lectura, ya con etiqueta y con `tipo` y `click_source`
+ * traducidos. Lo usan `buildHtml` y `buildText`.
+ */
 function orderedFields(lead: Lead): [string, string][] {
   const known = FIELD_LABELS[lead.formulario];
   const used = new Set<string>();
@@ -483,10 +501,7 @@ function orderedFields(lead: Lead): [string, string][] {
     const value = lead.datos[key];
     used.add(key);
     if (!value) continue;
-    rows.push([
-      label,
-      key === "tipo" ? (requestTypeLabel(value) ?? value) : value,
-    ]);
+    rows.push([label, displayValue(key, value)]);
   }
 
   // Lo que no estaba previsto, al final y con su nombre crudo.

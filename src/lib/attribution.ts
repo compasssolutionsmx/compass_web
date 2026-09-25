@@ -1,5 +1,5 @@
 /**
- * Atribución de campaña: identificadores de clic y UTM de la URL de llegada,
+ * Atribución de campaña: identificador de clic y UTM de la URL de llegada,
  * guardados en `localStorage` para mandarlos con el cotizador.
  *
  * Sin React y sin DOM más allá de `localStorage`, igual que `lib/consent`, del
@@ -11,13 +11,20 @@
  * Es una decisión tomada, no un olvido. El registro no sale del navegador
  * salvo dentro de un envío del cotizador, que la persona hace a propósito.
  *
+ * ─── UN SOLO IDENTIFICADOR DE CLIC ────────────────────────────────────────
+ *
+ * Los cuatro parámetros de clic pagado (gclid, wbraid, gbraid, fbclid) se
+ * guardan colapsados en dos campos: `click_id` con el valor y `click_source`
+ * con el nombre del parámetro del que salió. Si una URL trajera varios, gana
+ * el primero de `CLICK_ID_PARAMS`, sin depender del orden de la query string.
+ *
  * ─── ÚLTIMO CLIC ──────────────────────────────────────────────────────────
  *
- *   - Si la URL trae gclid, wbraid, gbraid o fbclid, el registro se SOBRESCRIBE
+ *   - Si la URL trae cualquiera de los cuatro, el registro se SOBRESCRIBE
  *     entero con lo que traiga la URL y el reloj de 90 días vuelve a empezar.
- *   - Si no trae ninguno de los cuatro, el registro existente se conserva
- *     INTACTO, aunque la URL traiga UTM: unos UTM sueltos no pisan un clic
- *     pagado. Sólo se escriben si no había registro vigente.
+ *   - Si no trae ninguno, el registro existente se conserva INTACTO, aunque la
+ *     URL traiga UTM: unos UTM sueltos no pisan un clic pagado. Sólo se
+ *     escriben si no había registro vigente.
  *
  * ─── NUNCA LANZA ──────────────────────────────────────────────────────────
  *
@@ -32,22 +39,27 @@ export const ATTRIBUTION_STORAGE_KEY = "compass:attribution";
 /** Vigencia desde la captura. Más viejo que esto se descarta al leer. */
 export const ATTRIBUTION_MAX_AGE_DAYS = 90;
 
-/** Identificadores de clic pagado. Son los únicos que sobrescriben. */
-export const CLICK_ID_KEYS = ["gclid", "wbraid", "gbraid", "fbclid"] as const;
+/**
+ * Parámetros de clic pagado, EN ORDEN DE PRIORIDAD: es el desempate cuando
+ * llegan varios en la misma URL. Son los únicos que sobrescriben el registro,
+ * y sus nombres son los valores posibles de `click_source`.
+ */
+export const CLICK_ID_PARAMS = ["gclid", "wbraid", "gbraid", "fbclid"] as const;
 
-export const UTM_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_term",
-  "utm_content",
-] as const;
+export type ClickSource = (typeof CLICK_ID_PARAMS)[number];
 
 /**
- * Los nueve campos, en el orden en que se leen. Los nombres son los mismos en
- * la URL, en `localStorage`, en el payload y en el CRM: no se traducen.
+ * Sólo estos tres. `utm_term` y `utm_content` ya no se capturan, y si un
+ * registro guardado los trae se ignoran al leer: la lectura reconstruye el
+ * objeto con esta lista y nada más.
  */
-export const ATTRIBUTION_KEYS = [...CLICK_ID_KEYS, ...UTM_KEYS] as const;
+export const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign"] as const;
+
+/**
+ * Los cinco campos, en el orden en que se leen. Los nombres son los mismos en
+ * `localStorage`, en el payload y en el CRM: no se traducen.
+ */
+export const ATTRIBUTION_KEYS = ["click_id", "click_source", ...UTM_KEYS] as const;
 
 export type AttributionKey = (typeof ATTRIBUTION_KEYS)[number];
 
@@ -68,20 +80,53 @@ const MAX_LARGO_VALOR = 500;
 
 const MAX_AGE_MS = ATTRIBUTION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
-/** Sólo claves conocidas y con contenido. Nunca devuelve cadenas vacías. */
-function cleanValues(source: (key: AttributionKey) => unknown): AttributionValues {
+type Source = (key: string) => unknown;
+
+/** Texto recortado y con contenido, o `undefined`. Nunca una cadena vacía. */
+function clean(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const value = raw.trim().slice(0, MAX_LARGO_VALOR);
+  return value || undefined;
+}
+
+function isClickSource(value: unknown): value is ClickSource {
+  return (CLICK_ID_PARAMS as readonly unknown[]).includes(value);
+}
+
+/** El primer parámetro de clic con valor, según la prioridad de la lista. */
+function clickFromParams(source: Source): AttributionValues {
+  for (const param of CLICK_ID_PARAMS) {
+    const value = clean(source(param));
+    if (value) return { click_id: value, click_source: param };
+  }
+  return {};
+}
+
+function utmFrom(source: Source): AttributionValues {
   const values: AttributionValues = {};
-  for (const key of ATTRIBUTION_KEYS) {
-    const raw = source(key);
-    if (typeof raw !== "string") continue;
-    const value = raw.trim().slice(0, MAX_LARGO_VALOR);
+  for (const key of UTM_KEYS) {
+    const value = clean(source(key));
     if (value) values[key] = value;
   }
   return values;
 }
 
-function hasClickId(values: AttributionValues): boolean {
-  return CLICK_ID_KEYS.some((key) => Boolean(values[key]));
+/**
+ * Clic de un registro GUARDADO. Acepta el formato actual y, si no lo
+ * encuentra, CONVIERTE el anterior, que guardaba gclid, wbraid, gbraid o
+ * fbclid como claves sueltas: se les aplica la misma prioridad que a una URL.
+ *
+ * Un `click_id` sin `click_source` válido se descarta: sin saber de qué
+ * plataforma salió, el valor no le sirve a nadie.
+ */
+function clickFromStored(stored: Record<string, unknown>): AttributionValues {
+  const clickId = clean(stored.click_id);
+  if (clickId) {
+    return isClickSource(stored.click_source)
+      ? { click_id: clickId, click_source: stored.click_source }
+      : {};
+  }
+  return clickFromParams((key) => stored[key]);
 }
 
 /**
@@ -126,7 +171,10 @@ export function readAttribution(): AttributionRecord | null {
     // Se reconstruye en vez de reenviar el objeto del JSON: así no se cuelan
     // claves extra ni valores que no sean texto.
     const stored = record.values as Record<string, unknown>;
-    const values = cleanValues((key) => stored[key]);
+    const values: AttributionValues = {
+      ...clickFromStored(stored),
+      ...utmFrom((key) => stored[key]),
+    };
     if (Object.keys(values).length === 0) return null;
 
     return { values, capturedAt: record.capturedAt };
@@ -149,11 +197,15 @@ export function captureAttribution(search: string): void {
     return;
   }
 
-  const values = cleanValues((key) => params.get(key));
+  const get: Source = (key) => params.get(key);
+  const values: AttributionValues = {
+    ...clickFromParams(get),
+    ...utmFrom(get),
+  };
   if (Object.keys(values).length === 0) return;
 
   // Sin identificador de clic, cualquier registro vigente se queda como está.
-  if (!hasClickId(values) && readAttribution()) return;
+  if (!values.click_id && readAttribution()) return;
 
   const record: AttributionRecord = {
     values,
