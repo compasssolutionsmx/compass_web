@@ -101,16 +101,16 @@ export function useQuoteRequest() {
       setError(null);
       await submitLead(
         /**
-         * ATRIBUCIÓN DE CAMPAÑA (`click_id`, `click_source` y los tres UTM),
-         * leída de `localStorage` al enviar. Va DETRÁS de `payload`: la
-         * genera el sistema, así que prevalece sobre cualquier campo homónimo
-         * del formulario. Sin registro, o con uno caducado, no añade ninguna
+         * ATRIBUCIÓN DE CAMPAÑA (`click_id`, `click_source`, los tres UTM y
+         * `referrer`), leída de `localStorage` al enviar. Va DETRÁS de
+         * `payload`: la genera el sistema, así que prevalece sobre cualquier
+         * campo homónimo del formulario. Sin registro, o con uno caducado, no añade ninguna
          * clave y el envío sale igual. Ver `lib/attribution`.
          *
          * OJO CON EL TOPE: `parseLead` rechaza el lead ENTERO si `datos` trae
          * más de 30 claves (`MAX_CAMPOS` en `lib/lead-email`). El cotizador
-         * usa 13 y la atribución puede sumar 5: 18. Quien añada campos al
-         * cotizador tiene margen para 12 más antes de que los leads con
+         * usa 13 y la atribución puede sumar 6: 19 de 30. Quien añada campos
+         * al cotizador tiene margen para 11 más antes de que los leads con
          * atribución completa empiecen a rebotar.
          */
         { ...payload, ...attributionFields() },

@@ -1,6 +1,7 @@
 /**
- * Atribución de campaña: identificador de clic y UTM de la URL de llegada,
- * guardados en `localStorage` para mandarlos con el cotizador.
+ * Atribución de campaña: identificador de clic y UTM de la URL de llegada, más
+ * el dominio externo del que venía la persona, guardados en `localStorage` para
+ * mandarlos con el cotizador.
  *
  * Sin React y sin DOM más allá de `localStorage`, igual que `lib/consent`, del
  * que copia el patrón: una clave, un objeto con timestamp, try/catch en cada
@@ -23,8 +24,15 @@
  *   - Si la URL trae cualquiera de los cuatro, el registro se SOBRESCRIBE
  *     entero con lo que traiga la URL y el reloj de 90 días vuelve a empezar.
  *   - Si no trae ninguno, el registro existente se conserva INTACTO, aunque la
- *     URL traiga UTM: unos UTM sueltos no pisan un clic pagado. Sólo se
- *     escriben si no había registro vigente.
+ *     URL traiga UTM o haya referrer: ninguno de los dos pisa un clic pagado.
+ *     Sólo se escriben si no había registro vigente.
+ *
+ * ─── REFERRER ─────────────────────────────────────────────────────────────
+ *
+ * Sólo el hostname de `document.referrer` (chatgpt.com, linkedin.com), sin
+ * protocolo ni ruta. No se guarda si viene vacío ni si es el propio sitio: lo
+ * que interesa es el origen externo, y una navegación interna diría siempre
+ * "compasssolutions.com.mx". Viaja en la misma escritura que el resto.
  *
  * ─── NUNCA LANZA ──────────────────────────────────────────────────────────
  *
@@ -56,10 +64,15 @@ export type ClickSource = (typeof CLICK_ID_PARAMS)[number];
 export const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign"] as const;
 
 /**
- * Los cinco campos, en el orden en que se leen. Los nombres son los mismos en
+ * Los seis campos, en el orden en que se leen. Los nombres son los mismos en
  * `localStorage`, en el payload y en el CRM: no se traducen.
  */
-export const ATTRIBUTION_KEYS = ["click_id", "click_source", ...UTM_KEYS] as const;
+export const ATTRIBUTION_KEYS = [
+  "click_id",
+  "click_source",
+  ...UTM_KEYS,
+  "referrer",
+] as const;
 
 export type AttributionKey = (typeof ATTRIBUTION_KEYS)[number];
 
@@ -109,6 +122,28 @@ function utmFrom(source: Source): AttributionValues {
     if (value) values[key] = value;
   }
   return values;
+}
+
+/** El `www.` no distingue sitios: el ápice redirige a www en producción. */
+function sinWww(hostname: string): string {
+  return hostname.toLowerCase().replace(/^www\./, "");
+}
+
+/**
+ * Hostname externo de un referrer, o nada. Vacío, ilegible o del propio sitio
+ * cuentan igual: no hay origen externo que guardar.
+ */
+function referrerFrom(referrer: string): AttributionValues {
+  if (!referrer) return {};
+  try {
+    const hostname = new URL(referrer).hostname;
+    if (!hostname) return {};
+    if (sinWww(hostname) === sinWww(window.location.hostname)) return {};
+    const value = clean(hostname);
+    return value ? { referrer: value } : {};
+  } catch {
+    return {};
+  }
 }
 
 /**
@@ -174,6 +209,7 @@ export function readAttribution(): AttributionRecord | null {
     const values: AttributionValues = {
       ...clickFromStored(stored),
       ...utmFrom((key) => stored[key]),
+      ...(clean(stored.referrer) ? { referrer: clean(stored.referrer) } : {}),
     };
     if (Object.keys(values).length === 0) return null;
 
@@ -184,10 +220,11 @@ export function readAttribution(): AttributionRecord | null {
 }
 
 /**
- * Captura desde la query string de la URL de llegada (`window.location.search`).
- * Aplica la regla de último clic de la cabecera. No escribe registros vacíos.
+ * Captura desde la query string de la URL de llegada (`window.location.search`)
+ * y desde `document.referrer`. Aplica la regla de último clic de la cabecera.
+ * No escribe registros vacíos.
  */
-export function captureAttribution(search: string): void {
+export function captureAttribution(search: string, referrer = ""): void {
   if (typeof window === "undefined") return;
 
   let params: URLSearchParams;
@@ -201,6 +238,7 @@ export function captureAttribution(search: string): void {
   const values: AttributionValues = {
     ...clickFromParams(get),
     ...utmFrom(get),
+    ...referrerFrom(referrer),
   };
   if (Object.keys(values).length === 0) return;
 

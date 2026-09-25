@@ -20,7 +20,13 @@ import { captureAttribution } from "@/lib/attribution";
 
 export default function AttributionCapture() {
   useEffect(() => {
-    captureAttribution(window.location.search);
+    let referrer = "";
+    try {
+      referrer = document.referrer;
+    } catch {
+      // Sin referrer legible se captura el resto igual.
+    }
+    captureAttribution(window.location.search, referrer);
   }, []);
 
   return null;

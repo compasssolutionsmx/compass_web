@@ -34,6 +34,7 @@ import "server-only";
 
 import { requestTypeLabel } from "./request-types";
 import { buildWhatsAppUrl } from "./site";
+import { ATTRIBUTION_KEYS } from "./attribution";
 // Sin ciclo en ejecución: `crm.ts` sólo importa tipos de este archivo, y los
 // `import type` se borran al compilar. Ver `buildCrmAlertHtml`.
 import { crmPayload } from "./crm";
@@ -276,14 +277,16 @@ const FIELD_LABELS: Record<LeadSource, [string, string][]> = {
     // esta fila no se salta nunca. Lo resuelve el cliente en
     // `lib/referral-sources`, no esta capa.
     ["comoNosConocio", "Cómo se enteró de nosotros"],
-    // Atribución de campaña, capturada de la URL de llegada (ver
-    // `lib/attribution`). Sólo aparecen las filas que traen valor: quien llegó
-    // sin campaña no ve ninguna.
+    // Atribución de campaña, capturada de la URL de llegada y del referrer
+    // (ver `lib/attribution`). En el correo van aparte, bajo su propio
+    // encabezado "Atribución" (ver `orderedFields`). Sólo aparecen las filas
+    // que traen valor: quien llegó sin campaña ni referrer no ve la sección.
     ["click_id", "Identificador de clic"],
     ["click_source", "Plataforma de origen"],
     ["utm_source", "Fuente de la campaña"],
     ["utm_medium", "Medio de la campaña"],
     ["utm_campaign", "Nombre de la campaña"],
+    ["referrer", "Sitio de procedencia"],
   ],
   whatsapp: [
     ["nombre", "Nombre"],
@@ -488,29 +491,46 @@ function displayValue(key: string, value: string): string {
   return value;
 }
 
+/** Claves que el correo agrupa bajo "Atribución", separadas del lead. */
+const ATTRIBUTION_FIELDS = new Set<string>(ATTRIBUTION_KEYS);
+
+/** Encabezado de la sección de atribución, en el HTML y en el texto. */
+const ATTRIBUTION_HEADING = "Atribución";
+
+type Row = [string, string];
+
 /**
  * Campos en orden de lectura, ya con etiqueta y con `tipo` y `click_source`
  * traducidos. Lo usan `buildHtml` y `buildText`.
+ *
+ * Salen en DOS grupos: `datos`, lo que ventas necesita para atender, y
+ * `atribucion`, de dónde llegó la persona. Lo no previsto se queda en `datos`,
+ * al final y con su nombre crudo, como siempre. `atribucion` vacío significa
+ * que no hay sección que pintar.
  */
-function orderedFields(lead: Lead): [string, string][] {
+function orderedFields(lead: Lead): { datos: Row[]; atribucion: Row[] } {
   const known = FIELD_LABELS[lead.formulario];
   const used = new Set<string>();
-  const rows: [string, string][] = [];
+  const datos: Row[] = [];
+  const atribucion: Row[] = [];
 
   for (const [key, label] of known) {
     const value = lead.datos[key];
     used.add(key);
     if (!value) continue;
-    rows.push([label, displayValue(key, value)]);
+    (ATTRIBUTION_FIELDS.has(key) ? atribucion : datos).push([
+      label,
+      displayValue(key, value),
+    ]);
   }
 
   // Lo que no estaba previsto, al final y con su nombre crudo.
   for (const [key, value] of Object.entries(lead.datos)) {
     if (used.has(key) || !value) continue;
-    rows.push([key, value]);
+    datos.push([key, value]);
   }
 
-  return rows;
+  return { datos, atribucion };
 }
 
 /**
@@ -601,15 +621,32 @@ export function buildHtml(lead: Lead): string {
     </tr>`
     : "";
 
-  const rows = orderedFields(lead)
-    .map(
-      ([label, value]) => `
+  const { datos, atribucion } = orderedFields(lead);
+  const toHtml = (filas: Row[]) =>
+    filas
+      .map(
+        ([label, value]) => `
       <tr>
         <td style="padding:10px 16px 10px 0;vertical-align:top;color:#64748b;font-size:13px;white-space:nowrap;">${escapeHtml(label)}</td>
         <td style="padding:10px 0;vertical-align:top;color:#012a3a;font-size:15px;font-weight:600;">${escapeHtml(value).replace(/\n/g, "<br>")}</td>
       </tr>`,
-    )
-    .join("");
+      )
+      .join("");
+
+  /**
+   * Sección de atribución: una fila de encabezado a todo el ancho, con la misma
+   * línea divisoria que separa el pie, y debajo sus filas con el estilo de
+   * siempre. Dentro de la MISMA tabla para que las dos columnas queden
+   * alineadas con las de arriba. Sin filas, no hay encabezado.
+   */
+  const seccionAtribucion = atribucion.length
+    ? `
+      <tr>
+        <td colspan="2" style="padding:18px 0 4px;border-top:1px solid #e2e8f0;color:#012a3a;font-size:14px;font-weight:700;">${escapeHtml(ATTRIBUTION_HEADING)}</td>
+      </tr>${toHtml(atribucion)}`
+    : "";
+
+  const rows = toHtml(datos) + seccionAtribucion;
 
   return `<!doctype html>
 <html lang="es">
@@ -930,9 +967,15 @@ export function buildAckText(lead: Lead): string {
 
 /** Alternativa en texto plano. Va siempre: mejora la entregabilidad. */
 export function buildText(lead: Lead): string {
-  const rows = orderedFields(lead)
-    .map(([label, value]) => `${label}: ${value}`)
-    .join("\n");
+  const { datos, atribucion } = orderedFields(lead);
+  const toText = (filas: Row[]) =>
+    filas.map(([label, value]) => `${label}: ${value}`).join("\n");
+
+  // Misma sección que en el HTML: encabezado y filas tras una línea en blanco,
+  // o nada si no hay atribución.
+  const rows = atribucion.length
+    ? `${toText(datos)}\n\n${ATTRIBUTION_HEADING}\n${toText(atribucion)}`
+    : toText(datos);
 
   // Mismo orden que en el HTML: el aviso antes de los datos, nunca después.
   const aviso = lead.flagged
