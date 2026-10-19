@@ -32,11 +32,10 @@
  * vistazo sigue sirviendo al revés: si algún texto de aquí vuelve a traer
  * corchetes, es que quedó a medias.
  *
- * LO QUE SIGUE PENDIENTE SON LAS IMÁGENES. Las tres de cada página (el hero y
- * una por bloque alternado) son todavía las cajas con borde punteado que
- * traen los componentes, sin archivo real detrás. Los números de la banda de
- * métricas siguen igual: el componente pinta "Pendiente" porque `ServicioMetrica`
- * no lleva cifra.
+ * LO QUE SIGUE PENDIENTE SON LAS IMÁGENES. El hero y cada bloque alternado
+ * llevan todavía el degradado de marca en la medida exacta que tendrá la
+ * foto, sin archivo real detrás. Ya no son marcadores con borde punteado ni
+ * etiqueta: el hueco no se anuncia como hueco en una página que ya se indexa.
  *
  * LAS 18 PÁGINAS YA SON INDEXABLES. El `noindex, nofollow` que llevaban se
  * puso cuando el texto era de relleno y se retiró al quedar el copy real:
@@ -50,11 +49,10 @@
  *  - LOS ENLACES INTERNOS. Ninguna navegación del sitio apunta a estas rutas:
  *    ni el nav, ni el pie (que sigue listando `/tipo-solucion/*` como texto
  *    inerte), ni el blog. Un buscador sólo llega a ellas por el sitemap.
- *  - EL ARTE Y LAS CIFRAS. Los componentes de `components/servicios/` siguen
- *    pintando sus marcadores: las tres cajas de imagen con borde punteado, el
- *    "Pendiente" de la banda de métricas y los dos textos entre corchetes de
- *    <ServiceFaq> y <RelatedServicesCarousel>. Este archivo ya no tiene ni un
- *    marcador, pero la página renderizada sí.
+ *  - EL ARTE. Las cajas de imagen de `components/servicios/` siguen con el
+ *    degradado de marca en lugar de la foto. Ni este archivo ni la página
+ *    renderizada tienen ya ningún marcador de posición visible: nada entre
+ *    corchetes ni ningún "Pendiente".
  */
 
 /** Uno de los bloques alternados de imagen y texto (de dos a cinco). */
@@ -66,25 +64,6 @@ export type ServicioBloque = {
   vinetas?: string[];
   /** Secuencia de pasos separados por flechas, debajo del párrafo. */
   flujo?: string[];
-};
-
-/**
- * Una de las tres tarjetas de la banda de métricas.
- *
- * `cifra` ES OPCIONAL Y HOY NO LA TRAE NINGUNA DE LAS 18 ENTRADAS. Mientras
- * falte, <ServiceMetrics> no renderiza la sección: antes pintaba la palabra
- * "Pendiente" en lugar del número, que es un marcador visible en una página
- * ya indexable. El día que el cliente confirme números reales, se escriben
- * aquí y la banda aparece sola, sin tocar el componente.
- *
- * NO SE INVENTA NI SE PONE UN 0 DE RELLENO: un cero se leería como un dato
- * real y negativo, y la regla del proyecto es que ningún dato salga sin venir
- * del cliente o de fuente oficial.
- */
-export type ServicioMetrica = {
-  nombre: string;
-  descripcion: string;
-  cifra?: string;
 };
 
 /** Una de las preguntas frecuentes de la página (de tres a siete). */
@@ -160,10 +139,8 @@ type ServicioPreguntas =
 /**
  * El contenido completo de una página de servicio.
  *
- * `metricas` es una TUPLA de longitud fija (3): la banda es una rejilla
- * `sm:grid-cols-3` y una métrica de menos o de más rompería la maqueta.
  * `bloques` (de 2 a 5) y `preguntas` (de 3 a 7) admiten longitud variable,
- * pero acotada con uniones de tuplas: la banda de certificaciones va siempre
+ * acotada con uniones de tuplas: la banda de certificaciones va siempre
  * entre el primer y el segundo bloque, así que hacen falta al menos dos. Con
  * tuplas los límites los atrapa el compilador al escribir el contenido, no el
  * navegador al revisarlo.
@@ -180,9 +157,6 @@ export type ServicioContenido = {
   seoTitulo: string;
   seoDescripcion: string;
   bloques: ServicioBloques;
-  /** Título de la banda de métricas. */
-  metricasTitulo: string;
-  metricas: [ServicioMetrica, ServicioMetrica, ServicioMetrica];
   /**
    * Rótulo <h2> de la sección de preguntas. TIENE QUE EMPEZAR por "Preguntas
    * frecuentes": ese prefijo es el que reconoce `extractFaq()` (lib/blog.ts) y
@@ -217,24 +191,6 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "De la naviera a su almacén, con un solo interlocutor",
         parrafo:
           "Un embarque marítimo requiere coordinar naviera, documentación, despacho aduanal y transporte terrestre. Integramos estas etapas en una sola operación y damos seguimiento de origen a destino. Así tiene un solo punto de contacto para coordinar su embarque y mantener el control de cada etapa.",
-      },
-    ],
-    metricasTitulo: "El impacto de FCL en su operación",
-    metricas: [
-      {
-        nombre: "Puertos atendidos",
-        descripcion:
-          "Cobertura en los principales puertos de contenedores del país.",
-      },
-      {
-        nombre: "Coordinación puerta a puerta",
-        descripcion:
-          "Naviera, aduana y transporte terrestre en una sola operación.",
-      },
-      {
-        nombre: "Visibilidad del embarque",
-        descripcion:
-          "Seguimiento desde la reserva hasta la entrega en destino.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre FCL",
@@ -298,24 +254,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Liberación",
           "Entrega",
         ],
-      },
-    ],
-    metricasTitulo: "El impacto de LCL en su operación",
-    metricas: [
-      {
-        nombre: "Orígenes consolidados",
-        descripcion:
-          "Frecuencia de salidas desde los principales orígenes de importación.",
-      },
-      {
-        nombre: "Volumen mínimo",
-        descripcion:
-          "Servicio disponible para embarques que no llenan un contenedor.",
-      },
-      {
-        nombre: "Seguimiento por embarque",
-        descripcion:
-          "Trazabilidad individual dentro de un contenedor compartido.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre LCL",
@@ -409,21 +347,6 @@ export const SERVICIOS: ServicioContenido[] = [
         ],
       },
     ],
-    metricasTitulo: "El impacto del flat rack en su operación",
-    metricas: [
-      {
-        nombre: "Dimensiones admisibles",
-        descripcion: "Capacidad para carga que excede el contenedor estándar.",
-      },
-      {
-        nombre: "Cálculo de sobremedida",
-        descripcion: "Estimación del espacio adicional antes de la cotización.",
-      },
-      {
-        nombre: "Coordinación de maniobra",
-        descripcion: "Grúa y sujeción gestionadas en origen y destino.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre flat rack",
     preguntas: [
       {
@@ -500,22 +423,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "A diferencia del flat rack, el open top mantiene las cuatro paredes, lo que ofrece más protección durante el tránsito y facilita la sujeción de la carga. Cuando la mercancía sobresale por encima del marco superior, aplica un cargo por sobrealtura que Compass calcula antes de cotizar.",
       },
     ],
-    metricasTitulo: "El impacto del open top en su operación",
-    metricas: [
-      {
-        nombre: "Altura disponible",
-        descripcion:
-          "Capacidad para carga que no ingresa por la puerta del contenedor.",
-      },
-      {
-        nombre: "Protección lateral",
-        descripcion: "Paredes completas frente a una plataforma abierta.",
-      },
-      {
-        nombre: "Cálculo de sobrealtura",
-        descripcion: "Estimación del cargo adicional antes de la cotización.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre open top",
     preguntas: [
       {
@@ -556,21 +463,6 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Cada producto tiene sus requisitos",
         parrafo:
           "El transporte de líquidos a granel está regulado según la naturaleza del producto, y las mercancías peligrosas tienen requisitos específicos de clasificación, documentación y manejo. Compass verifica que el embarque cumpla con lo aplicable antes de la reserva, no cuando la carga ya está en puerto.",
-      },
-    ],
-    metricasTitulo: "El impacto de los isotanques en su operación",
-    metricas: [
-      {
-        nombre: "Capacidad por unidad",
-        descripcion: "Volumen de producto transportado sin trasvase.",
-      },
-      {
-        nombre: "Compatibilidad del equipo",
-        descripcion: "Selección de tanque según la naturaleza del producto.",
-      },
-      {
-        nombre: "Revisión documental",
-        descripcion: "Verificación normativa previa a la reserva del embarque.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre isotanques",
@@ -640,22 +532,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Transporte terrestre",
           "Entrega",
         ],
-      },
-    ],
-    metricasTitulo: "El impacto del Ro-Ro en su operación",
-    metricas: [
-      {
-        nombre: "Servicios disponibles",
-        descripcion:
-          "Rutas con buque de carga rodante hacia los destinos requeridos.",
-      },
-      {
-        nombre: "Tiempo de maniobra",
-        descripcion: "Carga y descarga sin izaje ni contenedor.",
-      },
-      {
-        nombre: "Validación del equipo",
-        descripcion: "Revisión de elegibilidad previa a la reserva.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre Ro-Ro",
@@ -740,23 +616,6 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "El peso máximo depende de la configuración y la ruta",
         parrafo:
           "El peso máximo depende del tipo de contenedor, la configuración del equipo, la ruta y las restricciones de peso aplicables. Antes de programar el traslado validamos el peso bruto de la carga y las condiciones de la operación para determinar el equipo adecuado y evitar exceder los límites permitidos.",
-      },
-    ],
-    metricasTitulo:
-      "El impacto del transporte en portacontenedor en su operación",
-    metricas: [
-      {
-        nombre: "Servicios disponibles",
-        descripcion:
-          "Opciones de naviera e itinerario según origen y urgencia.",
-      },
-      {
-        nombre: "Anticipación de reserva",
-        descripcion: "Gestión de espacio antes del cierre de documentación.",
-      },
-      {
-        nombre: "Seguimiento del itinerario",
-        descripcion: "Monitoreo de zarpe, tránsito y arribo del embarque.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre transporte de contenedores",
@@ -857,23 +716,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Embalaje adecuado al peso y dimensiones",
           "Identificación visible del embarque",
         ],
-      },
-    ],
-    metricasTitulo: "El impacto de LTL en su operación",
-    metricas: [
-      {
-        nombre: "Rutas consolidadas",
-        descripcion:
-          "Frecuencia de salidas en los corredores de mayor demanda.",
-      },
-      {
-        nombre: "Ahorro frente a unidad completa",
-        descripcion: "Costo proporcional al espacio ocupado por su carga.",
-      },
-      {
-        nombre: "Trazabilidad por embarque",
-        descripcion:
-          "Seguimiento individual aunque la unidad transporte varios embarques.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre LTL",
@@ -987,23 +829,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Seguimiento en tránsito",
           "Entrega",
         ],
-      },
-    ],
-    metricasTitulo: "El impacto de FTL en su operación",
-    metricas: [
-      {
-        nombre: "Corredores atendidos",
-        descripcion:
-          "Cobertura terrestre en las principales rutas industriales del país.",
-      },
-      {
-        nombre: "Tiempo de asignación",
-        descripcion:
-          "Confirmación de unidad para embarques programados con anticipación.",
-      },
-      {
-        nombre: "Visibilidad del tránsito",
-        descripcion: "Seguimiento documentado desde la carga hasta la entrega.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre FTL",
@@ -1132,24 +957,6 @@ export const SERVICIOS: ServicioContenido[] = [
         ],
       },
     ],
-    metricasTitulo: "El impacto del lowboy en su operación",
-    metricas: [
-      {
-        nombre: "Dimensiones atendidas",
-        descripcion:
-          "Capacidad para carga que excede los límites de una plataforma estándar.",
-      },
-      {
-        nombre: "Gestión de permisos",
-        descripcion:
-          "Tramitación ante autoridad previa a la salida de la unidad.",
-      },
-      {
-        nombre: "Estudio de ruta",
-        descripcion:
-          "Validación de gálibos y restricciones en el trayecto completo.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre lowboy",
     preguntas: [
       {
@@ -1271,24 +1078,6 @@ export const SERVICIOS: ServicioContenido[] = [
         ],
       },
     ],
-    metricasTitulo: "El impacto de las plataformas en su operación",
-    metricas: [
-      {
-        nombre: "Configuraciones disponibles",
-        descripcion:
-          "Distintos tipos de plataforma según dimensiones y peso de la carga.",
-      },
-      {
-        nombre: "Tiempo de maniobra",
-        descripcion:
-          "Carga y descarga por costados y por arriba con grúa o montacargas.",
-      },
-      {
-        nombre: "Equipo de sujeción",
-        descripcion:
-          "Amarre verificado según el tipo de mercancía transportada.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre plataformas",
     preguntas: [
       {
@@ -1405,23 +1194,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Maniobra",
           "Unidad",
         ],
-      },
-    ],
-    metricasTitulo: "El impacto de las unidades con rampa en su operación",
-    metricas: [
-      {
-        nombre: "Capacidad de la rampa",
-        descripcion:
-          "Peso máximo admisible según la configuración de la unidad.",
-      },
-      {
-        nombre: "Puntos sin infraestructura",
-        descripcion:
-          "Operación en sitios sin grúa, andén ni equipo de maniobra.",
-      },
-      {
-        nombre: "Reducción de maniobra",
-        descripcion: "Menor dependencia de terceros en origen y destino.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre unidades con rampa",
@@ -1573,22 +1345,6 @@ export const SERVICIOS: ServicioContenido[] = [
         ],
       },
     ],
-    metricasTitulo: "El impacto de la carga aérea en su operación",
-    metricas: [
-      {
-        nombre: "Orígenes atendidos",
-        descripcion:
-          "Conexiones hacia los principales hubs de carga internacional.",
-      },
-      {
-        nombre: "Tiempo de tránsito",
-        descripcion: "Días de vuelo frente a semanas de tránsito marítimo.",
-      },
-      {
-        nombre: "Coordinación documental",
-        descripcion: "Guía aérea, despacho y entrega en una sola operación.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre carga aérea",
     preguntas: [
       {
@@ -1669,22 +1425,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Desde el almacén, la mercancía sale hacia sucursales, clientes o plantas según su programación. Compass coordina el transporte de cada salida con la misma trazabilidad que el tramo internacional, para que usted tenga visibilidad continua desde el origen hasta la entrega final.",
       },
     ],
-    metricasTitulo: "El impacto del almacenaje en su operación",
-    metricas: [
-      {
-        nombre: "Cobertura de distribución",
-        descripcion: "Salidas hacia los principales destinos del país.",
-      },
-      {
-        nombre: "Manejo de inventario",
-        descripcion: "Recepción, verificación y preparación de salidas.",
-      },
-      {
-        nombre: "Continuidad de la cadena",
-        descripcion:
-          "Coordinación entre el tramo internacional y la entrega final.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre almacenaje y distribución",
     preguntas: [
       {
@@ -1725,22 +1465,6 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "La madera y el marcado tienen reglas",
         parrafo:
           "Cuando una operación internacional utiliza embalaje de madera, no basta con que la mercancía esté bien protegida. La madera debe cumplir con los requisitos fitosanitarios y de marcado aplicables al país de destino. Un incumplimiento puede generar inspecciones, retenciones, costos adicionales o demoras en la liberación de la carga. Por eso, estos requisitos deben revisarse antes de embarcar y no cuando la mercancía ya llegó a destino.",
-      },
-    ],
-    metricasTitulo: "El impacto del embalaje en su operación",
-    metricas: [
-      {
-        nombre: "Modos cubiertos",
-        descripcion:
-          "Soluciones de embalaje para transporte marítimo, aéreo y terrestre.",
-      },
-      {
-        nombre: "Cumplimiento normativo",
-        descripcion: "Verificación de requisitos fitosanitarios y de marcado.",
-      },
-      {
-        nombre: "Reducción de incidencias",
-        descripcion: "Menor riesgo de daño por manipulación y estiba.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre empaque y embalaje",
@@ -1785,21 +1509,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "En una operación urgente se evalúan alternativas que normalmente no se considerarían: cambio de modo, aeropuerto alterno, ruta terrestre directa o combinación de tramos. Compass compara las opciones reales disponibles en ese momento y presenta la que resuelve, con su costo y su tiempo.",
       },
     ],
-    metricasTitulo: "El impacto del servicio expeditado en su operación",
-    metricas: [
-      {
-        nombre: "Tiempo de cotización",
-        descripcion: "Propuesta con tiempos y costo en menos de tres horas.",
-      },
-      {
-        nombre: "Efectividad en expeditados",
-        descripcion: "Porcentaje de operaciones urgentes resueltas en tiempo.",
-      },
-      {
-        nombre: "Alternativas evaluadas",
-        descripcion: "Comparación de modos y rutas disponibles en el momento.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre el servicio expeditado",
     preguntas: [
       {
@@ -1842,21 +1551,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "El riesgo de un contenedor sellado en tránsito directo no es el mismo que el de una carga consolidada con dos transbordos. La cobertura se define según el modo, el recorrido, el tipo de mercancía y el embalaje. Compass coordina la contratación con el alcance que corresponde a cada embarque.",
       },
     ],
-    metricasTitulo: "El impacto del seguro de carga en su operación",
-    metricas: [
-      {
-        nombre: "Cobertura sobre valor declarado",
-        descripcion: "Protección dimensionada al valor real de la mercancía.",
-      },
-      {
-        nombre: "Modos cubiertos",
-        descripcion: "Cobertura para tramos marítimo, aéreo y terrestre.",
-      },
-      {
-        nombre: "Gestión de siniestros",
-        descripcion: "Acompañamiento documental en caso de incidencia.",
-      },
-    ],
     preguntasRotulo: "Preguntas frecuentes sobre el seguro de carga",
     preguntas: [
       {
@@ -1897,22 +1591,6 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Cantidad, condición y documentación",
         parrafo:
           "La verificación en origen permite revisar que la cantidad y características de la mercancía correspondan con lo declarado, que se encuentre en la condición esperada y que el embalaje sea adecuado para el trayecto. También se valida que el marcado y la documentación disponible sean consistentes con la carga. El resultado de la revisión se documenta y se comparte antes de la salida del embarque, para identificar cualquier inconsistencia y atenderla oportunamente.",
-      },
-    ],
-    metricasTitulo: "El impacto del previo en origen en su operación",
-    metricas: [
-      {
-        nombre: "Orígenes cubiertos",
-        descripcion:
-          "Verificación disponible en los principales orígenes de importación.",
-      },
-      {
-        nombre: "Incidencias detectadas",
-        descripcion: "Discrepancias identificadas antes del embarque.",
-      },
-      {
-        nombre: "Evidencia documentada",
-        descripcion: "Reporte con registro fotográfico previo a la salida.",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre el previo en origen",

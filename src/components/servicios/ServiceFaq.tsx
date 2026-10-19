@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import type { ServicioPregunta } from "@/lib/servicios-contenido";
 import Eyebrow from "../Eyebrow";
 import { WhatsAppButton } from "../WhatsAppModal";
@@ -44,6 +45,17 @@ export type ServiceFaqProps = {
  * aplica aquí: como primer elemento de su columna no necesita el aire
  * superior que sí necesita colgando de un párrafo anterior.
  *
+ * ACORDEÓN CON <details>/<summary> NATIVOS, todas cerradas de entrada. Las
+ * respuestas van en el HTML desde el render del servidor aunque estén
+ * colapsadas: <details> sólo oculta su contenido, no lo saca del DOM, y
+ * eso es requisito de SEO. Los nativos dan gratis el teclado (Tab al
+ * <summary>, Enter o Espacio para abrir) y anuncian el estado
+ * expandido/colapsado a lectores de pantalla, sin `aria-expanded` a mano.
+ * El <h3> va DENTRO del <summary> (el modelo de contenido lo permite) para
+ * conservar la jerarquía h2 > h3 que reconoce `extractFaq()`. Mismo
+ * chevron con `group-open:rotate-180` que el índice móvil de ArticleToc.tsx;
+ * tarjeta con la sombra suave de las tarjetas blancas de <StatsSection>.
+ *
  * EL RÓTULO Y LAS PREGUNTAS LLEGAN POR PROPS desde
  * `lib/servicios-contenido.ts`. El rótulo sigue empezando por "Preguntas
  * frecuentes" en las 18 entradas: ese prefijo es lo que reconoce
@@ -75,16 +87,27 @@ export default function ServiceFaq({ rotulo, preguntas }: ServiceFaqProps) {
             {rotulo}
           </h2>
 
-          {preguntas.map((item) => (
-            <div key={item.pregunta}>
-              <h3 className="mt-8 font-heading text-xl font-bold text-brand-900 md:text-2xl">
-                {item.pregunta}
-              </h3>
-              <p className="mt-5 leading-relaxed text-slate-700">
-                {item.respuesta}
-              </p>
-            </div>
-          ))}
+          <div className="mt-8 space-y-4">
+            {preguntas.map((item) => (
+              <details
+                key={item.pregunta}
+                className="group rounded-2xl bg-white shadow-sm shadow-brand-950/5"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl p-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-900 [&::-webkit-details-marker]:hidden">
+                  <h3 className="font-heading text-lg font-bold text-brand-900 md:text-xl">
+                    {item.pregunta}
+                  </h3>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="h-5 w-5 shrink-0 text-brand-900 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                  />
+                </summary>
+                <p className="px-6 pb-6 leading-relaxed text-slate-700">
+                  {item.respuesta}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
       </div>
     </section>

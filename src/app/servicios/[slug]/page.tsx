@@ -9,7 +9,6 @@ import ServiceCotizar from "@/components/servicios/ServiceCotizar";
 import ServiceFaq from "@/components/servicios/ServiceFaq";
 import ServiceFeatureBlock from "@/components/servicios/ServiceFeatureBlock";
 import ServiceHero from "@/components/servicios/ServiceHero";
-import ServiceMetrics from "@/components/servicios/ServiceMetrics";
 import RelatedServicesCarousel from "@/components/servicios/RelatedServicesCarousel";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { WhatsAppModalProvider } from "@/components/WhatsAppModal";
@@ -44,8 +43,7 @@ import {
  * faltando es el ARTE: las tres cajas de imagen (hero y una por bloque
  * alternado) llevan el degradado de marca en la medida exacta que tendrá la
  * foto, sin borde punteado ni etiqueta, para que el hueco no se anuncie como
- * hueco en una página que ya se indexa. <ServiceMetrics> directamente no se
- * renderiza mientras sus entradas no traigan `cifra`.
+ * hueco en una página que ya se indexa.
  */
 
 /** Rutas estáticas: una por entrada de `lib/servicios-contenido.ts`. */
@@ -149,10 +147,6 @@ export default async function ServicioPage({
             ))}
           </div>
 
-          <ServiceMetrics
-            titulo={servicio.metricasTitulo}
-            metricas={servicio.metricas}
-          />
           <ServiceFaq
             rotulo={servicio.preguntasRotulo}
             preguntas={servicio.preguntas}
