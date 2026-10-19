@@ -4,6 +4,8 @@ import Certifications from "@/components/Certifications";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { QuoteModalProvider } from "@/components/QuoteModal";
+import ServiceCierre from "@/components/servicios/ServiceCierre";
+import ServiceCotizar from "@/components/servicios/ServiceCotizar";
 import ServiceFaq from "@/components/servicios/ServiceFaq";
 import ServiceFeatureBlock from "@/components/servicios/ServiceFeatureBlock";
 import ServiceHero from "@/components/servicios/ServiceHero";
@@ -76,7 +78,7 @@ export default async function ServicioPage({
   const servicio = getServicioBySlug(slug);
   if (!servicio) notFound();
 
-  const [bloqueUno, bloqueDos] = servicio.bloques;
+  const [bloqueUno, ...restoBloques] = servicio.bloques;
 
   return (
     <WhatsAppModalProvider>
@@ -106,6 +108,8 @@ export default async function ServicioPage({
               eyebrow={bloqueUno.eyebrow}
               title={bloqueUno.titulo}
               description={bloqueUno.parrafo}
+              vinetas={bloqueUno.vinetas}
+              flujo={bloqueUno.flujo}
               imageSide="left"
             />
           </div>
@@ -126,13 +130,23 @@ export default async function ServicioPage({
               propio componente. */}
           <Certifications />
 
-          <div className="mx-auto max-w-7xl px-6 pb-20">
-            <ServiceFeatureBlock
-              eyebrow={bloqueDos.eyebrow}
-              title={bloqueDos.titulo}
-              description={bloqueDos.parrafo}
-              imageSide="right"
-            />
+          {/* Del segundo bloque en adelante, todos después de la banda. La
+              alternancia sigue la posición en `servicio.bloques`: el segundo
+              a la derecha, el tercero a la izquierda y así. `gap-20` es el
+              mismo `py-20` de ritmo entre secciones; con dos bloques sólo hay
+              un hijo y el resultado es idéntico al de antes. */}
+          <div className="mx-auto flex max-w-7xl flex-col gap-20 px-6 pb-20">
+            {restoBloques.map((bloque, i) => (
+              <ServiceFeatureBlock
+                key={bloque.titulo}
+                eyebrow={bloque.eyebrow}
+                title={bloque.titulo}
+                description={bloque.parrafo}
+                vinetas={bloque.vinetas}
+                flujo={bloque.flujo}
+                imageSide={i % 2 === 0 ? "right" : "left"}
+              />
+            ))}
           </div>
 
           <ServiceMetrics
@@ -143,6 +157,8 @@ export default async function ServicioPage({
             rotulo={servicio.preguntasRotulo}
             preguntas={servicio.preguntas}
           />
+          {servicio.cotizar ? <ServiceCotizar {...servicio.cotizar} /> : null}
+          {servicio.cierre ? <ServiceCierre {...servicio.cierre} /> : null}
           <RelatedServicesCarousel
             servicios={serviciosRelacionados(servicio.slug)}
           />

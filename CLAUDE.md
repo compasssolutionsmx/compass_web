@@ -35,7 +35,7 @@
 
 ## Contenido y copy
 - Compass es un freight forwarder u operador de logística internacional. Nunca "agente de carga", "agencia" ni "agente".
-- Compass coordina proveedores. No es dueño de camiones ni los renta.
+- Compass es freight forwarder como actividad principal: coordina proveedores. Cuenta además con unidades propias, complementadas con una red de asociados de negocio. No renta unidades a terceros.
 - Todo el copy va en usted, nunca tú. Sentence case en todos los encabezados. Sin em-dashes: usar paréntesis.
 - No inventes cifras, datos regulatorios ni copy. Todo dato debe venir de fuente oficial (SAT, DOF, RGCE, Ley Aduanera) o estar confirmado por el cliente.
 - Las certificaciones ISO 9001 e ISO 28000 están en proceso. No mencionarlas sin autorización explícita.

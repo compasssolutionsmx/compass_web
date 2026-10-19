@@ -57,11 +57,15 @@
  *    marcador, pero la página renderizada sí.
  */
 
-/** Uno de los dos bloques alternados de imagen y texto. */
+/** Uno de los bloques alternados de imagen y texto (de dos a cinco). */
 export type ServicioBloque = {
   eyebrow: string;
   titulo: string;
   parrafo: string;
+  /** Lista con viñetas debajo del párrafo, con el estilo de lista del blog. */
+  vinetas?: string[];
+  /** Secuencia de pasos separados por flechas, debajo del párrafo. */
+  flujo?: string[];
 };
 
 /**
@@ -83,22 +87,86 @@ export type ServicioMetrica = {
   cifra?: string;
 };
 
-/** Una de las tres preguntas frecuentes de la página. */
+/** Una de las preguntas frecuentes de la página (de tres a siete). */
 export type ServicioPregunta = {
   pregunta: string;
   respuesta: string;
 };
 
 /**
+ * Sección "cómo cotizar": va entre las preguntas frecuentes y el carrusel de
+ * servicios relacionados. `titulo` se pinta como <h2>.
+ */
+export type ServicioCotizar = {
+  titulo: string;
+  parrafo?: string;
+  requisitos: string[];
+};
+
+/**
+ * Bloque de cierre con botón de cotización: va después de la sección de
+ * cotizar y antes del carrusel. `textoBoton` es la etiqueta del botón.
+ */
+export type ServicioCierre = {
+  titulo: string;
+  parrafo: string;
+  textoBoton: string;
+};
+
+/**
+ * Longitudes permitidas como UNIÓN DE TUPLAS y no como `T[]`: el compilador
+ * sigue atrapando una entrada con un bloque de menos o una pregunta de más.
+ */
+type ServicioBloques =
+  | [ServicioBloque, ServicioBloque]
+  | [ServicioBloque, ServicioBloque, ServicioBloque]
+  | [ServicioBloque, ServicioBloque, ServicioBloque, ServicioBloque]
+  | [
+      ServicioBloque,
+      ServicioBloque,
+      ServicioBloque,
+      ServicioBloque,
+      ServicioBloque,
+    ];
+
+type ServicioPreguntas =
+  | [ServicioPregunta, ServicioPregunta, ServicioPregunta]
+  | [ServicioPregunta, ServicioPregunta, ServicioPregunta, ServicioPregunta]
+  | [
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+    ]
+  | [
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+    ]
+  | [
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+      ServicioPregunta,
+    ];
+
+/**
  * El contenido completo de una página de servicio.
  *
- * `bloques`, `metricas` y `preguntas` son TUPLAS de longitud fija (2, 3 y 3),
- * no arrays sueltos: el diseño de la plantilla tiene exactamente esos huecos
- * —dos bloques alternados separados por la banda de certificaciones, tres
- * tarjetas en una rejilla `sm:grid-cols-3`, tres preguntas— y una entrada con
- * una métrica de menos o cuatro preguntas rompería la maqueta. Con tuplas eso
- * lo atrapa el compilador al escribir el contenido, no el navegador al
- * revisarlo.
+ * `metricas` es una TUPLA de longitud fija (3): la banda es una rejilla
+ * `sm:grid-cols-3` y una métrica de menos o de más rompería la maqueta.
+ * `bloques` (de 2 a 5) y `preguntas` (de 3 a 7) admiten longitud variable,
+ * pero acotada con uniones de tuplas: la banda de certificaciones va siempre
+ * entre el primer y el segundo bloque, así que hacen falta al menos dos. Con
+ * tuplas los límites los atrapa el compilador al escribir el contenido, no el
+ * navegador al revisarlo.
  */
 export type ServicioContenido = {
   /** Segmento de URL. Único en la lista. La ruta es `/servicios/<slug>`. */
@@ -111,7 +179,7 @@ export type ServicioContenido = {
   /** Sin el sufijo de marca: se lo añade la página. */
   seoTitulo: string;
   seoDescripcion: string;
-  bloques: [ServicioBloque, ServicioBloque];
+  bloques: ServicioBloques;
   /** Título de la banda de métricas. */
   metricasTitulo: string;
   metricas: [ServicioMetrica, ServicioMetrica, ServicioMetrica];
@@ -122,7 +190,9 @@ export type ServicioContenido = {
    * propio pipeline de datos estructurados.
    */
   preguntasRotulo: string;
-  preguntas: [ServicioPregunta, ServicioPregunta, ServicioPregunta];
+  preguntas: ServicioPreguntas;
+  cotizar?: ServicioCotizar;
+  cierre?: ServicioCierre;
 };
 
 export const SERVICIOS: ServicioContenido[] = [
@@ -131,22 +201,22 @@ export const SERVICIOS: ServicioContenido[] = [
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "FCL: contenedor marítimo completo",
     heroParrafo:
-      "Cuando el volumen justifica un contenedor entero, el FCL es la opción más eficiente en costo por unidad y la más segura para la mercancía. Su carga viaja sola, sellada desde origen, sin consolidación ni desconsolidación en el camino. Compass coordina la naviera, el despacho aduanal y el transporte terrestre hasta su almacén.",
-    seoTitulo: "FCL: contenedor completo para importación y exportación",
+      "Cuando su carga ocupa un contenedor completo, el FCL permite trasladarla de origen a destino en un espacio exclusivo, sin compartirlo con otras mercancías. La carga viaja sellada desde origen, reduciendo manipulaciones durante el trayecto. Coordinamos la naviera, el despacho aduanal y el transporte terrestre hasta su almacén.",
+    seoTitulo: "FCL: contenedor marítimo completo",
     seoDescripcion:
-      "Servicio FCL con contenedor exclusivo para su carga. Coordinamos naviera, despacho aduanal y entrega hasta su almacén.",
+      "Servicio FCL con contenedor exclusivo para su carga. Coordinamos naviera, despacho aduanal y transporte terrestre hasta su almacén.",
     bloques: [
       {
         eyebrow: "Contenedor exclusivo",
-        titulo: "Un solo sello desde origen hasta destino",
+        titulo: "Su carga viaja sola, de origen a destino",
         parrafo:
-          "En un embarque FCL el contenedor se cierra en la planta de origen y se abre en destino. No hay manipulación intermedia ni carga de terceros compartiendo espacio. Eso reduce el riesgo de daño, de faltante y de contaminación cruzada, y simplifica la revisión aduanera porque el contenido corresponde a un solo embarcador.",
+          "En un embarque FCL, el contenedor se cierra en origen y se abre en destino, sin compartir espacio con mercancía de otros embarcadores. Al reducir las manipulaciones durante el trayecto, disminuye el riesgo de daños o faltantes y se mantiene un mayor control sobre la carga.",
       },
       {
         eyebrow: "Operación completa",
         titulo: "De la naviera a su almacén, con un solo interlocutor",
         parrafo:
-          "Un embarque marítimo tiene varios eslabones: reserva con la naviera, documentación, despacho aduanal a través de agente y transporte terrestre desde puerto. Compass coordina todos y responde por el conjunto, para que usted no tenga que perseguir a cuatro proveedores cuando algo se mueve de fecha.",
+          "Un embarque marítimo requiere coordinar naviera, documentación, despacho aduanal y transporte terrestre. Integramos estas etapas en una sola operación y damos seguimiento de origen a destino. Así tiene un solo punto de contacto para coordinar su embarque y mantener el control de cada etapa.",
       },
     ],
     metricasTitulo: "El impacto de FCL en su operación",
@@ -172,17 +242,17 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Cuándo conviene FCL frente a LCL?",
         respuesta:
-          "El FCL conviene cuando el volumen se acerca a llenar un contenedor, cuando la mercancía no admite manipulación adicional o cuando el tiempo de tránsito es crítico. Por debajo de cierto volumen, el costo de un contenedor completo deja de justificarse frente al consolidado.",
+          "El FCL conviene cuando su carga requiere un contenedor completo, cuando busca reducir la manipulación o cuando las características de la mercancía hacen conveniente viajar sin compartir espacio con otras cargas.",
       },
       {
         pregunta: "¿Qué tamaños de contenedor existen?",
         respuesta:
-          "Los más utilizados en comercio internacional son el de veinte pies y el de cuarenta pies, este último también en versión de mayor altura. La elección depende del volumen y del peso de la carga, ya que un contenedor puede llenarse por espacio antes que por peso o al revés.",
+          "Los tamaños más utilizados son 20 y 40 pies, además de contenedores de 40 pies High Cube. La elección depende del volumen, peso y características de la carga.",
       },
       {
         pregunta: "¿Compass realiza el despacho aduanal?",
         respuesta:
-          "El despacho lo realiza un agente aduanal, que es la figura autorizada para ello. Compass coordina al agente, reúne la documentación necesaria y da seguimiento al proceso, de modo que usted trate con un solo interlocutor durante toda la operación.",
+          "El despacho aduanal lo realiza un agente aduanal. Nosotros coordinamos su participación, la documentación y el seguimiento del proceso para mantener un solo punto de contacto durante la operación.",
       },
     ],
   },
@@ -191,22 +261,43 @@ export const SERVICIOS: ServicioContenido[] = [
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "LCL: transporte marítimo consolidado",
     heroParrafo:
-      "No todo embarque justifica un contenedor completo. El servicio LCL le permite pagar solo por el volumen que ocupa su carga, compartiendo contenedor con otros embarques hacia el mismo destino. Es la puerta de entrada al comercio marítimo para volúmenes que no llenan un contenedor.",
-    seoTitulo: "LCL: carga marítima consolidada desde origen",
+      "Envíe su mercancía sin esperar a llenar un contenedor. El servicio LCL permite transportar mercancía que no requiere un contenedor completo, compartiendo el espacio con otros embarques compatibles. Coordinamos su operación de origen a destino, desde la recolección y consolidación en origen hasta el transporte marítimo, desconsolidación, liberación y entrega en destino.",
+    seoTitulo: "LCL: transporte marítimo consolidado",
     seoDescripcion:
-      "Servicio LCL para embarques que no llenan un contenedor. Consolidación en origen, despacho aduanal y entrega coordinada.",
+      "Servicio LCL para embarques que no requieren un contenedor completo. Consolidación en origen, despacho aduanal y entrega coordinada.",
     bloques: [
       {
-        eyebrow: "Costo por volumen",
-        titulo: "Pague por lo que embarca, no por el contenedor",
+        eyebrow: "Costo por espacio ocupado",
+        titulo: "Pague solo por el espacio que ocupa su carga",
         parrafo:
-          "En un embarque consolidado el flete se calcula por metro cúbico o por tonelada, según cuál resulte mayor. Para volúmenes pequeños y medianos esa diferencia frente al contenedor completo es sustancial, y permite importar con frecuencia sin acumular inventario esperando llenar un contenedor.",
+          "Si no cuenta con suficiente mercancía para llenar un contenedor, no necesita esperar a reunir un FCL para realizar su embarque. Con el servicio LCL puede transportar cargas pequeñas y medianas compartiendo espacio con otros embarques, optimizando el uso del contenedor y evitando contratar la capacidad completa cuando no la necesita.",
+        vinetas: [
+          "Cargas pequeñas y medianas",
+          "Embarques de prueba o primeras operaciones internacionales",
+          "Compras internacionales con volúmenes reducidos",
+          "Mercancía que no justifica un contenedor completo",
+          "Operaciones que requieren embarques marítimos de manera recurrente",
+        ],
       },
       {
-        eyebrow: "Consolidación y desconsolidación",
-        titulo: "Los puntos donde el consolidado se gana o se pierde",
+        eyebrow: "Red de consolidadores",
+        titulo: "Conectamos su carga con diferentes destinos del mundo",
         parrafo:
-          "La carga se consolida en origen y se desconsolida en destino, y en cada uno de esos puntos hay manipulación y tiempo. Un embalaje adecuado y una documentación correcta evitan que su embarque sea el que retrasa al contenedor completo. Compass coordina ambos extremos y le informa el estado real de cada etapa.",
+          "Contamos con una red de aliados y consolidadores internacionales que nos permite acceder a diferentes alternativas de servicio y rutas para sus embarques LCL. Esta red nos permite buscar opciones de consolidación de acuerdo con el origen, destino, volumen y fecha requerida para su mercancía, combinando frecuencia, tiempos de tránsito y costo logístico según las necesidades de su operación.",
+      },
+      {
+        eyebrow: "Coordinación por etapas",
+        titulo: "De origen a destino, coordinamos cada etapa",
+        parrafo:
+          "Un embarque LCL requiere una coordinación adicional debido a los procesos de consolidación y desconsolidación de la mercancía. Damos seguimiento a las principales etapas de su operación, de manera que cuente con un solo equipo coordinando el embarque.",
+        flujo: [
+          "Recolección",
+          "Consolidación en origen",
+          "Transporte marítimo",
+          "Desconsolidación en destino",
+          "Liberación",
+          "Entrega",
+        ],
       },
     ],
     metricasTitulo: "El impacto de LCL en su operación",
@@ -232,41 +323,90 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Cómo se cobra el flete en un embarque LCL?",
         respuesta:
-          "Se cobra por metro cúbico o por tonelada, aplicando el que resulte mayor entre volumen y peso. Por eso una carga ligera pero voluminosa puede costar más de lo esperado. Conocer las medidas y el peso real antes de cotizar evita diferencias entre lo presupuestado y lo facturado.",
+          "El costo de un embarque LCL se determina de acuerdo con las características de la carga y la tarifa aplicable a la operación. Dependiendo del servicio, pueden considerarse el volumen y el peso de la mercancía. Por esta razón, necesitamos conocer las medidas y el peso bruto de su carga para calcular la cotización correctamente.",
       },
       {
-        pregunta: "¿Cuánto más tarda un embarque LCL que uno FCL?",
+        pregunta: "¿LCL es más barato que FCL?",
         respuesta:
-          "El tránsito marítimo es el mismo, la diferencia está en los extremos. La consolidación en origen espera a completar el contenedor y la desconsolidación en destino toma días adicionales. Ese tiempo se estima al cotizar según el origen y la frecuencia de salidas.",
+          "No necesariamente. La conveniencia de LCL o FCL depende principalmente del volumen, peso, ruta, costos asociados y características de la operación. Cuando la carga ocupa una parte pequeña de un contenedor, LCL puede ser una alternativa eficiente. Conforme aumenta el volumen, puede ser conveniente comparar el costo total contra un contenedor completo.",
       },
       {
-        pregunta: "¿Qué embalaje requiere la carga consolidada?",
+        pregunta: "¿Cuánto tarda un embarque LCL?",
         respuesta:
-          "La mercancía debe soportar manipulación en consolidación y desconsolidación, y convivir con carga de terceros. Eso implica tarima en buen estado, embalaje resistente a estiba y marcado visible. Compass revisa estos requisitos antes del embarque para evitar rechazos o daños.",
+          "El tiempo de tránsito marítimo depende de la ruta y del servicio contratado. Sin embargo, el LCL puede requerir procesos adicionales de consolidación en origen y desconsolidación en destino, por lo que el tiempo total de la operación puede ser diferente al de un FCL. Contamos con diferentes alternativas de servicio y salidas según el origen y destino.",
+      },
+      {
+        pregunta: "¿Qué tipo de mercancía puedo enviar por LCL?",
+        respuesta:
+          "El LCL puede utilizarse para diferentes tipos de mercancía siempre que sus características sean compatibles con el servicio y con las condiciones de manejo y transporte. Si su mercancía es frágil, peligrosa, perecedera o sobredimensionada, es importante informarlo antes de cotizar para determinar la viabilidad del embarque.",
+      },
+      {
+        pregunta: "¿Puedo utilizar LCL para importaciones y exportaciones?",
+        respuesta:
+          "Sí. Podemos coordinar operaciones LCL tanto de importación como de exportación, dependiendo del origen, destino y características de la carga, manteniendo comunicación con el agente aduanal y los demás participantes de la cadena logística.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar su embarque LCL?",
+      parrafo:
+        "Las dimensiones y el peso son especialmente importantes en LCL, ya que el costo del transporte puede estar determinado por el volumen, el peso o el factor aplicable a la tarifa. Una mercancía ligera pero con un volumen considerable puede generar un costo mayor al esperado. Entre más precisa sea la información de su carga, más precisa será nuestra cotización.",
+      requisitos: [
+        "Tipo de mercancía",
+        "Largo, ancho y alto",
+        "Peso bruto",
+        "Origen",
+        "Destino",
+        "Fecha estimada de embarque",
+      ],
+    },
   },
   {
     slug: "flat-rack",
     heroEyebrow: "Transporte marítimo",
-    heroTitulo: "Flat rack: carga que excede el contenedor",
+    heroTitulo: "Flat rack: solución para carga sobredimensionada",
     heroParrafo:
-      "Cuando la mercancía no cabe por las puertas de un contenedor estándar, el flat rack resuelve. Es una plataforma con paredes en los extremos y sin techo ni laterales, que permite cargar por arriba y por los costados. Es la unidad para maquinaria, estructura y equipo de gran dimensión.",
-    seoTitulo: "Flat rack: contenedor para carga sobredimensionada",
+      "Cuando su mercancía no cabe en un contenedor convencional, buscamos una solución. El flat rack es un equipo especializado para transportar mercancías que, por sus dimensiones, peso o características, no pueden cargarse de manera convencional dentro de un contenedor estándar. Cuenta con una plataforma abierta sin paredes laterales ni techo, lo que permite realizar la carga por la parte superior o por los costados.",
+    seoTitulo: "Flat rack: solución para carga sobredimensionada",
     seoDescripcion:
-      "Transporte marítimo en flat rack para carga que excede las dimensiones de un contenedor estándar.",
+      "Transporte marítimo en flat rack para mercancía que no puede cargarse dentro de un contenedor convencional.",
     bloques: [
       {
-        eyebrow: "Sin laterales ni techo",
-        titulo: "Carga por arriba y por los costados",
+        eyebrow: "Cargas fuera de dimensiones",
+        titulo:
+          "Diseñado para cargas que salen de las dimensiones convencionales",
         parrafo:
-          "El flat rack elimina la restricción de la puerta del contenedor. La carga se coloca con grúa desde arriba o se ingresa lateralmente, lo que permite mover piezas que superan el ancho o la altura de un contenedor cerrado. Los extremos abatibles de algunos modelos amplían aún más el margen.",
+          "El flat rack puede utilizarse para transportar diferentes tipos de mercancía que requieren condiciones especiales de carga y estiba. Cada operación debe evaluarse individualmente para determinar la factibilidad del equipo, método de carga, estiba, sujeción y ruta.",
+        vinetas: [
+          "Maquinaria industrial",
+          "Equipos y componentes industriales",
+          "Maquinaria para plantas y proyectos",
+          "Estructuras metálicas",
+          "Equipo pesado y maquinaria",
+          "Cargas sobredimensionadas",
+          "Piezas industriales de grandes dimensiones",
+        ],
       },
       {
-        eyebrow: "Sujeción y sobremedida",
-        titulo: "La estiba determina el costo del embarque",
+        eyebrow: "Métodos de carga",
+        titulo: "Carga por arriba o por los costados",
         parrafo:
-          "La carga en flat rack se amarra directamente a la plataforma y queda expuesta durante el tránsito. Cuando la pieza excede el largo o el ancho de la unidad, la naviera cobra el espacio adicional que bloquea. Compass calcula ese impacto antes de cotizar para que el costo real no aparezca después.",
+          "Una de las principales ventajas del flat rack es la posibilidad de cargar mercancía que no puede ingresar por las puertas de un contenedor convencional. Dependiendo del equipo seleccionado, la carga puede realizarse por la parte superior mediante maniobras de izaje, por los costados cuando el ancho o la geometría dificultan el ingreso convencional, o por los extremos en equipos con extremos abatibles. Esto permite transportar determinadas mercancías sin necesidad de desarmarlas.",
+      },
+      {
+        eyebrow: "Coordinación de la operación",
+        titulo: "Coordinamos su carga especial de origen a destino",
+        parrafo:
+          "Una operación en flat rack requiere una planeación más detallada que un embarque convencional. Antes de programar el embarque analizamos las características de la carga para identificar los requerimientos específicos de la operación.",
+        flujo: [
+          "Evaluación de carga",
+          "Selección de equipo",
+          "Recolección",
+          "Carga y estiba",
+          "Transporte marítimo",
+          "Liberación",
+          "Transporte terrestre",
+          "Entrega",
+        ],
       },
     ],
     metricasTitulo: "El impacto del flat rack en su operación",
@@ -287,28 +427,62 @@ export const SERVICIOS: ServicioContenido[] = [
     preguntasRotulo: "Preguntas frecuentes sobre flat rack",
     preguntas: [
       {
-        pregunta: "¿Cuándo se necesita un flat rack en lugar de un contenedor?",
+        pregunta: "¿Qué tipo de mercancía se transporta en flat rack?",
         respuesta:
-          "Cuando la carga excede el ancho o la altura de la puerta de un contenedor estándar, o cuando por su forma no puede ingresar por la parte trasera. También cuando la pieza requiere maniobra con grúa desde arriba y no admite deslizamiento hacia el interior.",
+          "Principalmente mercancías que, por sus dimensiones, peso o características, no pueden transportarse adecuadamente dentro de un contenedor convencional. Entre ellas pueden encontrarse maquinaria, estructuras, equipos industriales y diferentes tipos de carga sobredimensionada.",
       },
       {
-        pregunta: "¿Cómo se cobra la carga que sobresale de la plataforma?",
+        pregunta:
+          "¿Toda carga sobredimensionada puede transportarse en flat rack?",
         respuesta:
-          "Cuando la pieza excede las dimensiones del flat rack, la naviera cobra los espacios contiguos que quedan bloqueados. Ese cargo se calcula según cuántas posiciones ocupa la carga en el buque, y puede modificar de forma importante el costo total del embarque.",
+          "No necesariamente. Cada embarque debe evaluarse considerando las dimensiones, peso, centro de gravedad, puntos de apoyo, método de carga, estiba, sujeción, ruta y disponibilidad del equipo. Nuestro equipo puede analizar la información de su mercancía para determinar la alternativa adecuada.",
       },
       {
-        pregunta: "¿La carga en flat rack viaja descubierta?",
+        pregunta: "¿Cómo se carga un flat rack?",
         respuesta:
-          "La plataforma no tiene techo ni laterales, así que la carga queda expuesta a la intemperie durante el tránsito. Cuando la mercancía lo requiere se utiliza lona o protección adicional, que debe considerarse desde el embalaje en origen.",
+          "Dependiendo de las características del equipo y de la mercancía, la carga puede realizarse mediante izaje por la parte superior o carga lateral, entre otras alternativas. El método adecuado depende del peso, dimensiones, geometría y puntos de sujeción de la carga.",
+      },
+      {
+        pregunta: "¿La mercancía puede sobresalir del flat rack?",
+        respuesta:
+          "En determinadas operaciones puede existir carga que sobresalga de las dimensiones del equipo. Sin embargo, esto debe evaluarse y declararse previamente, ya que puede generar requerimientos especiales de transporte, estiba, permisos, ruta y costos adicionales.",
+      },
+      {
+        pregunta:
+          "¿Qué diferencia hay entre un flat rack y un contenedor open top?",
+        respuesta:
+          "El open top conserva las paredes laterales de un contenedor convencional y está diseñado principalmente para mercancías que requieren carga por la parte superior. El flat rack ofrece una plataforma mucho más abierta, adecuada para determinadas cargas que exceden las dimensiones convencionales. La elección depende de las características específicas de la mercancía.",
+      },
+      {
+        pregunta:
+          "¿Compass Solutions coordina el transporte terrestre de la carga?",
+        respuesta:
+          "Sí. Podemos coordinar las diferentes etapas de la operación, incluyendo transporte terrestre, maniobras y entrega, de acuerdo con las características y requerimientos de la carga.",
       },
     ],
+    cotizar: {
+      titulo: "La información de su carga es clave",
+      parrafo:
+        "Si cuenta con fotografías, planos o fichas técnicas, compartir esta información puede ayudarnos a evaluar con mayor precisión las características de la operación.",
+      requisitos: [
+        "Largo",
+        "Ancho",
+        "Alto",
+        "Peso",
+        "Tipo de mercancía",
+        "Origen",
+        "Destino",
+        "Forma y puntos de carga",
+        "Fecha estimada de embarque",
+      ],
+    },
   },
   {
     slug: "open-top",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "Open top: contenedor de techo abierto",
     heroParrafo:
-      "El contenedor open top conserva las paredes y el piso de un contenedor estándar, pero sustituye el techo rígido por una lona removible. Eso permite cargar con grúa desde arriba y transportar mercancía que excede la altura de la puerta. Es la opción intermedia entre el contenedor cerrado y el flat rack.",
+      "El open top cuenta con una cubierta removible que permite cargar la mercancía desde arriba mediante grúa. Es adecuado para cargas que exceden la altura de la puerta o requieren carga vertical. Conviene utilizarlo cuando la mercancía necesita mayor altura de carga, pero puede mantenerse contenida dentro de las paredes del contenedor.",
     seoTitulo: "Open top: contenedor con techo abierto",
     seoDescripcion:
       "Transporte marítimo en contenedor open top para carga que excede la altura del contenedor estándar.",
@@ -366,7 +540,7 @@ export const SERVICIOS: ServicioContenido[] = [
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "Isotanques: transporte de carga líquida",
     heroParrafo:
-      "El isotanque es un tanque cilíndrico montado en una estructura con las dimensiones de un contenedor estándar. Permite transportar líquidos a granel por vía marítima y terrestre sin trasvase, manteniendo el producto en el mismo recipiente desde origen hasta destino.",
+      "El isotanque es un tanque cilíndrico montado en una estructura con las dimensiones de un contenedor estándar. Permite transportar líquidos a granel por vía marítima y terrestre sin trasvase, manteniendo el producto en el mismo recipiente desde origen hasta destino. Su selección depende de las características del producto, capacidad requerida, requisitos de seguridad y condiciones de transporte.",
     seoTitulo: "Isotanques: transporte marítimo de carga líquida",
     seoDescripcion:
       "Transporte de líquidos a granel en isotanque, con la documentación y los protocolos que exige cada tipo de producto.",
@@ -422,24 +596,50 @@ export const SERVICIOS: ServicioContenido[] = [
   {
     slug: "ro-ro",
     heroEyebrow: "Transporte marítimo",
-    heroTitulo: "Ro-Ro: transporte de carga rodante",
+    heroTitulo: "Ro-Ro: transporte marítimo de carga rodante",
     heroParrafo:
-      "Ro-Ro significa roll-on roll-off: la carga sube al buque rodando por sus propios medios y baja de la misma forma. Es el método estándar para vehículos, maquinaria autopropulsada y equipo sobre ruedas, que no requiere contenedor ni maniobra con grúa.",
+      "Su vehículo o maquinaria puede embarcar sin necesidad de un contenedor. El Ro-Ro es una modalidad de transporte marítimo diseñada para vehículos, maquinaria y equipos que pueden entrar y salir del buque mediante rampas de acceso, rodando o siendo remolcados. Coordinamos la operación considerando las características de cada unidad, incluyendo dimensiones, peso, movilidad, puntos de embarque, ruta y condiciones de entrega.",
     seoTitulo: "Ro-Ro: transporte marítimo de carga rodante",
     seoDescripcion:
-      "Transporte en buque Ro-Ro para vehículos y maquinaria que embarca rodando, sin contenedor ni maniobra con grúa.",
+      "Transporte en buque Ro-Ro para vehículos y maquinaria que embarcan mediante rampas, sin necesidad de contenedor.",
     bloques: [
       {
-        eyebrow: "Sin izaje",
+        eyebrow: "Sistema de carga",
         titulo: "La carga entra y sale rodando",
         parrafo:
-          "El buque Ro-Ro tiene rampas y cubiertas continuas que permiten desplazar la carga hasta su posición de estiba. Eso elimina la maniobra con grúa, reduce el riesgo de daño por izaje y acorta los tiempos de carga y descarga frente a un embarque en contenedor.",
+          "La principal característica del servicio Ro-Ro es su sistema de carga y descarga. Las unidades ingresan al buque mediante rampas de acceso y son colocadas en las áreas destinadas para su transporte. Cuando la unidad no puede desplazarse por sus propios medios, puede requerir arrastre, plataforma rodante u otro equipo auxiliar, dependiendo de las condiciones del servicio.",
+        vinetas: [
+          "Automóviles y vehículos",
+          "Tractores y maquinaria agrícola",
+          "Maquinaria de construcción",
+          "Equipos industriales",
+          "Camiones y vehículos comerciales",
+          "Maquinaria autopropulsada",
+          "Equipos sobre ruedas",
+        ],
       },
       {
-        eyebrow: "Equipo elegible",
-        titulo: "Para lo que se desplaza por sus propios medios",
+        eyebrow: "Unidades con movilidad",
+        titulo: "Para vehículos y maquinaria que necesitan movilidad",
         parrafo:
-          "El Ro-Ro está pensado para vehículos, tractores, maquinaria de construcción y equipo con tren rodante. Cuando la unidad no se desplaza por sí sola puede embarcarse sobre plataforma rodante, según el servicio. Compass valida la elegibilidad del equipo antes de reservar.",
+          "El Ro-Ro es una alternativa diseñada para mercancías que cuentan con ruedas, sistemas de rodamiento o características que permiten su movimiento mediante arrastre. Esto puede simplificar determinadas operaciones de embarque y desembarque y evitar que la mercancía tenga que ser cargada dentro de un contenedor. La selección de esta modalidad depende de la movilidad, las dimensiones, el peso, la ruta, el tipo de unidad y las condiciones del buque, por lo que cada operación debe evaluarse antes de confirmar el embarque.",
+      },
+      {
+        eyebrow: "Coordinación de la operación",
+        titulo: "Coordinamos su operación de origen a destino",
+        parrafo:
+          "El transporte Ro-Ro requiere conocer las características exactas de cada unidad antes de programar el embarque. Nuestro equipo da seguimiento a la operación para coordinar las diferentes partes involucradas y facilitar el movimiento de su unidad hasta el destino final.",
+        flujo: [
+          "Evaluación de la unidad",
+          "Reserva",
+          "Recolección",
+          "Traslado a puerto",
+          "Embarque Ro-Ro",
+          "Transporte marítimo",
+          "Desembarque",
+          "Transporte terrestre",
+          "Entrega",
+        ],
       },
     ],
     metricasTitulo: "El impacto del Ro-Ro en su operación",
@@ -461,43 +661,85 @@ export const SERVICIOS: ServicioContenido[] = [
     preguntasRotulo: "Preguntas frecuentes sobre Ro-Ro",
     preguntas: [
       {
-        pregunta: "¿Qué carga puede embarcarse en Ro-Ro?",
+        pregunta: "¿Qué significa Ro-Ro?",
         respuesta:
-          "Vehículos, maquinaria autopropulsada, equipo agrícola y de construcción, y en general unidades con tren rodante que puedan desplazarse hasta su posición de estiba. Algunos servicios admiten carga estática sobre plataforma rodante, lo que se confirma según la naviera y la ruta.",
+          "Ro-Ro significa roll-on roll-off y describe un sistema de transporte marítimo en el que la carga ingresa y sale del buque mediante rampas, rodando o siendo remolcada.",
       },
       {
-        pregunta: "¿El Ro-Ro es más económico que el contenedor?",
+        pregunta: "¿Qué tipo de carga puede transportarse en Ro-Ro?",
         respuesta:
-          "Depende del equipo. Para unidades que ruedan, el Ro-Ro evita el costo del contenedor, del trincado y de la maniobra con grúa. Para carga que cabe holgadamente en un contenedor, el embarque convencional suele resultar más eficiente. La comparación se hace caso por caso.",
+          "Principalmente vehículos, maquinaria y equipos con ruedas o sistemas de rodamiento, siempre que sus características sean compatibles con el servicio y la ruta disponible. Cada unidad debe evaluarse de forma individual antes de confirmar el embarque, considerando sus dimensiones, peso y movilidad.",
       },
       {
-        pregunta: "¿La carga viaja expuesta a la intemperie?",
+        pregunta: "¿La maquinaria tiene que ser autopropulsada?",
         respuesta:
-          "Depende del buque y de la cubierta asignada. Muchos servicios cuentan con cubiertas cerradas que protegen la carga durante el tránsito. Para equipo sensible conviene confirmar el tipo de cubierta al momento de la reserva y considerar protección adicional.",
+          "No necesariamente. Si la unidad no puede desplazarse por sus propios medios, puede ser posible utilizar arrastre, plataforma rodante u otro equipo auxiliar, dependiendo de las condiciones del servicio.",
+      },
+      {
+        pregunta: "¿El Ro-Ro utiliza contenedores?",
+        respuesta:
+          "El servicio Ro-Ro está diseñado para transportar determinadas unidades sin necesidad de colocarlas dentro de un contenedor convencional. La unidad ingresa al buque por sus propios medios o mediante arrastre y se asegura en la cubierta destinada para ello, lo que evita las maniobras de izaje y el costo del contenedor.",
+      },
+      {
+        pregunta: "¿Es mejor Ro-Ro que transportar la maquinaria en flat rack?",
+        respuesta:
+          "Depende de las características de la carga. El Ro-Ro puede ser una alternativa para unidades con movilidad o que pueden ser remolcadas, mientras que el flat rack puede ser más adecuado para determinadas cargas sobredimensionadas que requieren una plataforma abierta. La decisión depende del tipo de unidad, dimensiones, peso, ruta, disponibilidad y costo total de la operación.",
+      },
+      {
+        pregunta: "¿Puedo transportar maquinaria que no funciona?",
+        respuesta:
+          "Puede ser posible, pero debe informarse desde la cotización. Una unidad que no puede desplazarse por sus propios medios puede requerir arrastre, equipo auxiliar o condiciones especiales de manejo.",
+      },
+      {
+        pregunta: "¿Compass Solutions coordina el transporte terrestre?",
+        respuesta:
+          "Sí. Podemos coordinar el transporte terrestre de la unidad desde el origen hasta el puerto y posteriormente desde el puerto de destino hasta el punto de entrega, sujeto a las características de la operación.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar un Ro-Ro?",
+      parrafo:
+        "También puede ser útil contar con fotografías, ficha técnica o información del fabricante para evaluar las características de la unidad.",
+      requisitos: [
+        "Tipo de vehículo o maquinaria",
+        "Largo",
+        "Ancho",
+        "Alto",
+        "Peso",
+        "Si es autopropulsada o requiere arrastre",
+        "Origen",
+        "Destino",
+        "Fecha estimada de embarque",
+      ],
+    },
   },
   {
     slug: "portacontenedor",
-    heroEyebrow: "Transporte marítimo",
-    heroTitulo: "Transporte en buque portacontenedor",
+    heroEyebrow: "Transporte terrestre",
+    heroTitulo: "Transporte terrestre de contenedores",
     heroParrafo:
-      "El buque portacontenedor es la columna vertebral del comercio internacional. Mueve la mayor parte de la carga que entra y sale de México por vía marítima, con salidas regulares hacia los principales orígenes y destinos. Compass coordina la reserva, la documentación y el seguimiento del embarque.",
-    seoTitulo: "Transporte en buque portacontenedor",
+      "Del puerto a su almacén, con una operación coordinada y segura. Coordinamos el transporte terrestre de contenedores desde las principales aduanas marítimas de México hacia el destino que necesite. Contamos con unidades portacontenedores propias y una red de proveedores especializados, lo que nos permite atender el movimiento de contenedores generales y, de acuerdo con las condiciones y requisitos aplicables, mercancías peligrosas.",
+    seoTitulo: "Transporte terrestre de contenedores desde puerto",
     seoDescripcion:
-      "Servicio de flete marítimo en buque portacontenedor hacia y desde los principales puertos de México.",
+      "Transporte terrestre de contenedores desde las principales aduanas marítimas de México hasta su almacén, planta o centro de distribución.",
     bloques: [
       {
-        eyebrow: "Frecuencia y rutas",
-        titulo: "Salidas regulares hacia los principales orígenes",
+        eyebrow: "Configuración del servicio",
+        titulo: "Transporte sencillo y full",
         parrafo:
-          "Las navieras operan servicios con itinerario y frecuencia establecidos, lo que permite planear con anticipación. La elección del servicio no depende solo del precio: el número de escalas, los transbordos y la confiabilidad del itinerario determinan cuándo llega realmente su carga.",
+          "Adaptamos el servicio a las características de su operación. El servicio sencillo transporta un contenedor por unidad, adecuado para operaciones individuales o cargas que por sus características requieren una unidad dedicada. El servicio full transporta dos contenedores en una misma operación, sujeto a las condiciones de peso, ruta, equipo y normatividad aplicable. En ambos casos, la operación se planifica considerando las restricciones de peso y las condiciones de tránsito.",
       },
       {
-        eyebrow: "Reserva y documentación",
-        titulo: "El espacio se asegura antes de que la carga esté lista",
+        eyebrow: "Tipos de carga",
+        titulo: "Contenedores generales y mercancías peligrosas",
         parrafo:
-          "En temporadas de alta demanda el espacio en buque se agota semanas antes de la salida. Compass gestiona la reserva con anticipación y prepara la documentación en paralelo, para que un requisito faltante no deje su carga en puerto esperando el siguiente zarpe.",
+          "Atendemos el transporte de contenedores generales y podemos coordinar operaciones que involucren mercancías peligrosas, siempre sujetas a la disponibilidad de equipo, ruta, documentación, clasificación de la mercancía y requisitos normativos aplicables. Para mercancías peligrosas es importante proporcionar la información correspondiente desde la cotización para validar las condiciones necesarias para su transporte.",
+      },
+      {
+        eyebrow: "Restricciones de peso",
+        titulo: "El peso máximo depende de la configuración y la ruta",
+        parrafo:
+          "El peso máximo depende del tipo de contenedor, la configuración del equipo, la ruta y las restricciones de peso aplicables. Antes de programar el traslado validamos el peso bruto de la carga y las condiciones de la operación para determinar el equipo adecuado y evitar exceder los límites permitidos.",
       },
     ],
     metricasTitulo:
@@ -517,46 +759,104 @@ export const SERVICIOS: ServicioContenido[] = [
         descripcion: "Monitoreo de zarpe, tránsito y arribo del embarque.",
       },
     ],
-    preguntasRotulo: "Preguntas frecuentes sobre transporte en portacontenedor",
+    preguntasRotulo: "Preguntas frecuentes sobre transporte de contenedores",
     preguntas: [
       {
-        pregunta: "¿Con cuánta anticipación se debe reservar espacio?",
+        pregunta: "¿Cuál es la diferencia entre un servicio sencillo y full?",
         respuesta:
-          "Depende de la ruta y de la temporada. En periodos de alta demanda el espacio puede agotarse varias semanas antes del zarpe. La recomendación general es iniciar la reserva en cuanto se confirme la orden de compra, no cuando la mercancía ya está lista para embarcar.",
+          "En un servicio sencillo se transporta un contenedor por unidad. En un servicio full se transportan dos contenedores en una misma operación, siempre que las condiciones de peso, equipo, ruta y normatividad aplicable lo permitan.",
       },
       {
-        pregunta: "¿Qué es un transbordo y cómo afecta mi carga?",
+        pregunta: "¿Puedo transportar dos contenedores en un mismo viaje?",
         respuesta:
-          "Un transbordo es el cambio de contenedor de un buque a otro en un puerto intermedio. Suma tiempo al tránsito y añade un punto donde el embarque puede perder conexión. Un servicio directo cuesta más pero reduce la variabilidad del tiempo de entrega.",
+          "Sí, mediante una operación full, siempre que las características de los contenedores, pesos, ruta y equipo sean compatibles con las condiciones aplicables al servicio. La validación se realiza antes de programar el traslado.",
       },
       {
-        pregunta: "¿Qué pasa si el buque se retrasa?",
+        pregunta: "¿Pueden transportar mercancías peligrosas?",
         respuesta:
-          "Los retrasos de itinerario son parte de la operación marítima y pueden deberse a congestión portuaria, condiciones climáticas o cancelaciones de zarpe. Compass da seguimiento al itinerario e informa los cambios en cuanto ocurren, para que usted ajuste su planeación con tiempo.",
+          "Podemos coordinar el transporte de mercancías peligrosas sujeto a la clasificación de la mercancía conforme a su hoja de datos de seguridad, documentación, disponibilidad de equipo, ruta y requisitos normativos aplicables. Es importante informar desde la cotización que se trata de mercancía peligrosa.",
+      },
+      {
+        pregunta: "¿Desde qué puertos pueden transportar mi contenedor?",
+        respuesta:
+          "Podemos analizar servicios desde las principales aduanas y puertos marítimos de México, dependiendo del origen, destino, disponibilidad de equipo y características de la operación. La cobertura de cada ruta se confirma al momento de cotizar, considerando el tipo de contenedor y la fecha requerida.",
+      },
+      {
+        pregunta: "¿Pueden entregar el contenedor directamente en mi almacén?",
+        respuesta:
+          "Sí. Podemos coordinar el transporte desde el puerto hasta el almacén, planta, centro de distribución o punto de entrega indicado, de acuerdo con las condiciones de la operación.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar su transporte de contenedor?",
+      parrafo:
+        "Con esta información podemos evaluar la ruta, el tipo de equipo y las condiciones necesarias para realizar el servicio.",
+      requisitos: [
+        "Origen",
+        "Destino",
+        "Tipo y tamaño de contenedor",
+        "Número de contenedores",
+        "Peso bruto de la mercancía",
+        "Tipo de mercancía",
+        "Clasificación aplicable, si se trata de mercancía peligrosa",
+        "Fecha requerida de recolección",
+        "Condiciones y requisitos de entrega",
+      ],
+    },
   },
   {
     slug: "ltl",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "LTL: transporte terrestre consolidado",
     heroParrafo:
-      "No toda la carga justifica una unidad completa. El servicio LTL le permite pagar solo por el espacio que ocupa su mercancía, compartiendo unidad con otros embarques que van en la misma dirección. Es la opción eficiente para volúmenes medianos con tiempos de entrega flexibles.",
+      "Mueva su mercancía sin contratar una unidad completa. Con un servicio LTL, su carga comparte capacidad con otros embarques que siguen rutas compatibles, permitiéndole aprovechar mejor el espacio disponible y evitar contratar una unidad completa cuando su volumen no lo requiere. Es una alternativa para embarques pequeños y medianos con cierta flexibilidad en sus tiempos de entrega.",
     seoTitulo: "LTL: transporte terrestre consolidado",
     seoDescripcion:
-      "Servicio LTL para embarques que no ocupan una unidad completa. Consolidación, seguimiento y entrega en las principales rutas del país.",
+      "Servicio LTL para embarques que no requieren una unidad completa. Su carga comparte capacidad con otros embarques en rutas compatibles.",
     bloques: [
       {
-        eyebrow: "Costo proporcional",
-        titulo: "Paga por el espacio que usa, no por la unidad completa",
+        eyebrow: "Costo por capacidad",
+        titulo: "Pague solo por la capacidad que necesita",
         parrafo:
-          "En un servicio consolidado el costo se distribuye entre los embarques que comparten la unidad. Para volúmenes que no llenan un camión, esa diferencia frente al servicio dedicado es considerable. La contrapartida es el tiempo: la carga pasa por centros de consolidación antes de llegar a destino.",
+          "En un servicio LTL su mercancía comparte la unidad con otros embarques. El costo se determina considerando factores como peso, volumen, dimensiones, ruta, tipo de mercancía y condiciones de manejo. Esto permite aprovechar la capacidad disponible sin asumir el costo de una unidad completa. Si su carga ocupa una parte importante de la unidad o necesita una entrega directa, conviene comparar el LTL contra el FTL.",
+        vinetas: [
+          "Su embarque no requiere una unidad completa",
+          "Tiene volúmenes pequeños o medianos",
+          "Busca optimizar el costo de transporte",
+          "Puede trabajar con una ventana de entrega flexible",
+          "La ruta cuenta con servicio consolidado disponible",
+          "La mercancía puede ser manipulada durante los procesos de consolidación",
+        ],
       },
       {
-        eyebrow: "Manejo y trazabilidad",
+        eyebrow: "Seguimiento de la operación",
         titulo: "Consolidar no significa perder el control",
         parrafo:
-          "El riesgo del consolidado está en la manipulación: cada transbordo es un punto donde la carga se mueve. Compass coordina el embalaje adecuado, la documentación por embarque y el seguimiento en cada etapa, para que usted sepa dónde está su mercancía aunque viaje acompañada.",
+          "Aunque su mercancía comparta espacio con otros embarques, la operación puede mantenerse bajo seguimiento y coordinación durante todo el recorrido. Nuestro objetivo es que tenga un solo equipo coordinando su embarque, aun cuando la mercancía viaje dentro de una operación consolidada.",
+        flujo: [
+          "Solicitud",
+          "Análisis de carga",
+          "Selección del servicio",
+          "Recolección",
+          "Consolidación",
+          "Transporte",
+          "Desconsolidación",
+          "Entrega",
+        ],
+      },
+      {
+        eyebrow: "Preparación de la carga",
+        titulo: "Preparamos su embarque para una operación segura",
+        parrafo:
+          "La mercancía debe contar con un embalaje adecuado para las maniobras de carga, descarga, consolidación y desconsolidación que puede involucrar un servicio LTL. Si se trata de mercancía frágil, sobredimensionada, peligrosa o con requerimientos especiales de manejo, es importante indicarlo desde la cotización.",
+        vinetas: [
+          "Tarima o pallet",
+          "Película stretch",
+          "Fleje o sujeción",
+          "Protección en esquinas",
+          "Embalaje adecuado al peso y dimensiones",
+          "Identificación visible del embarque",
+        ],
       },
     ],
     metricasTitulo: "El impacto de LTL en su operación",
@@ -581,41 +881,112 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Cuál es el volumen mínimo para un embarque LTL?",
         respuesta:
-          "El mínimo depende de la ruta y del tipo de mercancía. Como referencia general, el LTL es conveniente cuando la carga ocupa menos de la mitad de una unidad. Por encima de ese punto conviene evaluar si el servicio dedicado resulta más eficiente en costo por tonelada.",
+          "No existe un volumen mínimo universal. La conveniencia del LTL depende del peso, volumen, dimensiones, ruta y características de la mercancía. Cuando el espacio requerido se acerca a la capacidad de una unidad completa, conviene comparar el costo y las condiciones de un servicio FTL.",
       },
       {
-        pregunta: "¿Cuánto más tarda un embarque consolidado?",
+        pregunta: "¿Cuánto tarda un embarque LTL?",
         respuesta:
-          "El tránsito depende de la ruta y de la frecuencia de salidas hacia el destino. La diferencia frente a un servicio dedicado viene del paso por centros de consolidación, donde la carga espera a completar unidad. Ese tiempo se estima al cotizar, no se descubre en el camino.",
+          "El tiempo de tránsito depende de la ruta, la frecuencia de salidas y la operación del servicio. A diferencia de un transporte dedicado, el LTL puede involucrar procesos de consolidación y desconsolidación, por lo que estos factores deben considerarse en la programación de entrega.",
       },
       {
         pregunta: "¿Qué embalaje requiere la carga consolidada?",
         respuesta:
-          "La mercancía debe soportar manipulación en cada transbordo. Eso implica embalaje adecuado al peso, tarima en buen estado cuando aplique, y etiquetado visible por embarque. Compass revisa estos puntos antes de aceptar la carga para evitar daños en tránsito.",
+          "La mercancía debe estar preparada para las maniobras propias de un servicio consolidado. Para que su mercancía viaje segura es recomendable enviarla paletizada, con película plástica y esquineros para evitar daños. Si la carga no puede estibarse, es importante informarlo para cotizar considerando esa restricción.",
+      },
+      {
+        pregunta: "¿Puedo enviar mercancía internacional mediante LTL?",
+        respuesta:
+          "Sí. Dependiendo de la ruta y las condiciones de la operación, podemos coordinar servicios terrestres internacionales consolidados, incluyendo operaciones de comercio exterior. La disponibilidad del servicio consolidado varía según el corredor, por lo que se confirma al cotizar.",
+      },
+      {
+        pregunta: "¿El LTL es siempre más barato que el FTL?",
+        respuesta:
+          "No necesariamente. El LTL puede ser más eficiente cuando su carga ocupa una parte de la capacidad disponible, pero cuando el volumen aumenta puede resultar más conveniente contratar una unidad completa. Por eso es importante comparar ambas opciones antes de tomar una decisión.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar su LTL?",
+      parrafo:
+        "Con esta información podemos evaluar la disponibilidad del servicio y determinar si el LTL o el FTL es la alternativa más conveniente.",
+      requisitos: [
+        "Origen y destino",
+        "Tipo de mercancía",
+        "Número de piezas",
+        "Peso total",
+        "Dimensiones de cada pieza",
+        "Volumen, cuando esté disponible",
+        "Tipo de embalaje",
+        "Fecha estimada de recolección",
+        "Requerimientos especiales de manejo o entrega",
+      ],
+    },
   },
   {
     slug: "ftl",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "FTL: transporte terrestre dedicado",
     heroParrafo:
-      "Cuando su carga necesita una unidad completa, el servicio FTL elimina los transbordos y las paradas intermedias. La mercancía sube en origen y baja en destino, sin manipulación adicional. Coordinamos la unidad, la ruta y el monitoreo para que usted tenga un solo interlocutor durante toda la operación.",
-    seoTitulo: "FTL: transporte terrestre dedicado en México",
+      "Una unidad exclusiva para su carga, de origen a destino. El servicio FTL utiliza una unidad de transporte dedicada exclusivamente a un embarque, permitiendo que la mercancía viaje directamente desde el punto de origen hasta el destino. Al no compartir la unidad con otros embarques, se reducen las maniobras de consolidación y desconsolidación, proporcionando mayor control sobre la operación, la ruta y la programación de entrega.",
+    seoTitulo: "FTL: transporte terrestre dedicado",
     seoDescripcion:
-      "Servicio FTL con unidad exclusiva para su carga. Coordinamos transportistas certificados, monitoreo satelital y entrega directa sin transbordos.",
+      "Servicio FTL con unidad dedicada exclusivamente a su embarque, de origen a destino, para operaciones nacionales e internacionales.",
     bloques: [
       {
-        eyebrow: "Sin transbordos",
-        titulo: "Su carga viaja sola, de principio a fin",
+        eyebrow: "Unidad dedicada",
+        titulo: "Su carga viaja en una unidad dedicada",
         parrafo:
-          "En un servicio dedicado la unidad se asigna a un solo embarque. Eso reduce el riesgo de daño por manipulación, elimina los tiempos muertos en centros de consolidación y acorta el tránsito frente a un servicio consolidado. Para operaciones con ventanas de entrega ajustadas o mercancía sensible, esa diferencia es la que evita un paro de línea.",
+          "Cuando su operación requiere control, continuidad y una ventana de entrega definida, el FTL puede ser la alternativa adecuada. La unidad se asigna exclusivamente a su embarque y la mercancía permanece en ella durante el trayecto, evitando las transferencias asociadas a un servicio consolidado.",
+        vinetas: [
+          "Cargas de alto volumen",
+          "Mercancía que requiere menor manipulación",
+          "Embarques con ventanas de entrega definidas",
+          "Operaciones sensibles al tiempo",
+          "Rutas directas entre origen y destino",
+          "Mercancía que requiere condiciones específicas de transporte",
+          "Operaciones de importación y exportación con transporte terrestre dedicado",
+        ],
       },
       {
-        eyebrow: "Coordinación de la red",
-        titulo: "La unidad se asigna antes de que la necesite",
+        eyebrow: "Planeación anticipada",
+        titulo: "Planeamos su transporte antes de que la carga esté lista",
         parrafo:
-          "Compass coordina una red de transportistas con capacidad en los principales corredores del país. La asignación se trabaja con anticipación al arribo, no cuando la mercancía ya está liberada y el reloj del almacenaje corriendo. Usted recibe la confirmación de unidad, el seguimiento del tránsito y la evidencia de entrega desde un mismo canal.",
+          "Una operación FTL requiere coordinar previamente unidad, operador, ruta, horarios y condiciones de entrega. Trabajamos con una red de proveedores especializados para identificar la alternativa de transporte adecuada para cada operación. La programación anticipada ayuda a reducir el riesgo de falta de disponibilidad, especialmente durante temporadas de alta demanda o en rutas con capacidad limitada.",
+        flujo: [
+          "Tipo de unidad",
+          "Peso",
+          "Volumen",
+          "Ruta",
+          "Ventana de carga",
+          "Ventana de entrega",
+          "Requerimientos especiales",
+        ],
+      },
+      {
+        eyebrow: "Selección de equipo",
+        titulo: "La unidad adecuada para su carga",
+        parrafo:
+          "No todas las mercancías requieren el mismo tipo de equipo. Dependiendo de las características de su operación, podemos analizar diferentes alternativas de transporte terrestre. La selección depende de la mercancía, peso, dimensiones, ruta y requisitos de entrega.",
+        vinetas: [
+          "Caja seca, para mercancía general que requiere protección contra las condiciones ambientales",
+          "Caja refrigerada, para mercancías que requieren condiciones controladas de temperatura",
+          "Plataformas, para cargas que requieren acceso lateral o superior",
+          "Equipos especializados, para mercancías que por sus dimensiones, peso o características requieren condiciones particulares",
+        ],
+      },
+      {
+        eyebrow: "Coordinación de la operación",
+        titulo: "Coordinamos su operación de origen a destino",
+        parrafo:
+          "No solamente buscamos una unidad. Coordinamos el transporte de acuerdo con las necesidades de su operación y durante el trayecto damos seguimiento manteniendo comunicación con los participantes involucrados.",
+        flujo: [
+          "Solicitud",
+          "Análisis de carga",
+          "Selección de unidad",
+          "Programación",
+          "Recolección",
+          "Seguimiento en tránsito",
+          "Entrega",
+        ],
       },
     ],
     metricasTitulo: "El impacto de FTL en su operación",
@@ -640,42 +1011,125 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Cuándo conviene FTL frente a LTL?",
         respuesta:
-          "El FTL conviene cuando el volumen ocupa la unidad completa, cuando la mercancía no admite manipulación intermedia o cuando el tiempo de entrega es crítico. El LTL conviene para volúmenes menores donde compartir unidad reduce el costo y los tiempos permiten el paso por centros de consolidación.",
+          "El FTL puede ser conveniente cuando la carga requiere una unidad completa, cuando se busca reducir la manipulación o cuando el tiempo y la programación de entrega son factores importantes. El LTL permite compartir la capacidad de transporte con otros embarques y puede ser una alternativa para cargas de menor volumen. La decisión debe considerar el volumen, peso, ruta, tiempos y costo total de la operación.",
       },
       {
-        pregunta: "¿Compass es dueño de las unidades?",
+        pregunta: "¿Compass Solutions es dueño de las unidades?",
         respuesta:
-          "No. Compass es un freight forwarder: coordina una red de transportistas verificados y responde por la operación completa ante usted. Eso permite asignar la unidad adecuada a cada tipo de carga y ruta, en lugar de forzar la operación al equipo disponible de una flota propia.",
+          "Compass Solutions cuenta con unidades propias y, como freight forwarder, trabaja además con una red de asociados de negocio para cubrir la demanda de sus clientes. Seleccionamos y coordinamos la unidad de acuerdo con las características de la carga, la ruta y las condiciones requeridas para cada servicio.",
+      },
+      {
+        pregunta: "¿Qué tipos de unidades pueden utilizarse para un FTL?",
+        respuesta:
+          "La unidad depende de las características de la mercancía. Podemos analizar alternativas como caja seca, caja refrigerada, plataforma y equipos especializados, entre otras opciones disponibles para cada operación.",
       },
       {
         pregunta:
           "¿Qué documentación se requiere para un embarque FTL nacional?",
         respuesta:
-          "Todo traslado de mercancía por territorio nacional requiere carta porte con complemento vigente ante el SAT. Según el tipo de mercancía pueden aplicar permisos adicionales. Compass revisa la documentación antes del embarque para evitar que la unidad se detenga en tránsito por un requisito faltante.",
+          "El traslado de mercancías por territorio nacional requiere la documentación fiscal y de transporte correspondiente, incluyendo el CFDI con complemento carta porte cuando resulte aplicable. Dependiendo de la mercancía, ruta y características del servicio pueden requerirse permisos o documentación adicional. La documentación debe estar completa antes del inicio del traslado.",
+      },
+      {
+        pregunta: "¿Puedo utilizar FTL para transporte internacional?",
+        respuesta:
+          "Sí. Podemos coordinar transporte terrestre dedicado para operaciones nacionales e internacionales, sujeto a la ruta, aduana, tipo de mercancía, documentación y condiciones del servicio. En operaciones de comercio exterior la coordinación incluye los tiempos de cruce y la documentación correspondiente.",
+      },
+      {
+        pregunta: "¿Puedo solicitar una unidad con características especiales?",
+        respuesta:
+          "Sí. Si su mercancía requiere condiciones específicas de transporte, es importante indicarlo desde la cotización para analizar la disponibilidad del equipo adecuado y programar la operación con el tiempo necesario.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar un FTL?",
+      parrafo:
+        "Si se trata de mercancía peligrosa, refrigerada, sobredimensionada o con condiciones especiales de manejo, es importante indicarlo desde la cotización.",
+      requisitos: [
+        "Origen",
+        "Destino",
+        "Tipo de mercancía",
+        "Peso",
+        "Dimensiones y volumen",
+        "Tipo de unidad requerida, si ya lo conoce",
+        "Fecha y horario de carga",
+        "Fecha y ventana de entrega",
+        "Requerimientos especiales de la mercancía",
+      ],
+    },
+    cierre: {
+      titulo: "¿Necesita una unidad exclusiva para su carga?",
+      parrafo:
+        "Compártanos origen, destino, tipo de mercancía, peso, dimensiones y fecha requerida, y nuestro equipo analizará la alternativa de transporte dedicada más adecuada.",
+      textoBoton: "Solicitar cotización FTL",
+    },
   },
   {
     slug: "lowboy",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Lowboy: transporte de carga sobredimensionada",
     heroParrafo:
-      "Cuando la carga excede las dimensiones o el peso que admite una plataforma convencional, el lowboy es la unidad que resuelve. Su cama baja permite transportar maquinaria y equipo de gran altura respetando los gálibos de la ruta. Compass coordina la unidad, los permisos y el estudio de ruta como una sola operación.",
+      "Más capacidad para transportar maquinaria de gran altura y peso. El lowboy, también conocido como cama baja, es una configuración de transporte diseñada para movilizar maquinaria, equipos y cargas especiales que requieren una altura de plataforma reducida. Su menor altura de carga ayuda a disminuir la altura total de la unidad, lo que puede facilitar el tránsito de equipos de gran altura y ofrecer mayor margen frente a los gálibos de la ruta.",
     seoTitulo: "Lowboy: transporte de carga sobredimensionada",
     seoDescripcion:
-      "Transporte de maquinaria y carga sobredimensionada en plataforma lowboy. Permisos, escoltas y estudio de ruta coordinados por Compass.",
+      "Transporte en lowboy o cama baja para maquinaria y equipos de gran altura y peso, con estudio de ruta y permisos coordinados.",
     bloques: [
       {
-        eyebrow: "Cama baja",
-        titulo: "Altura disponible donde una plataforma no alcanza",
+        eyebrow: "Altura de plataforma reducida",
+        titulo: "Cuando una plataforma convencional no es suficiente",
         parrafo:
-          "El lowboy, también conocido como cama baja, tiene la plataforma de carga más cerca del piso que una plataforma convencional. Eso libera altura útil y permite mover equipo que de otro modo no pasaría bajo puentes ni pasos a desnivel. Es la unidad estándar para maquinaria de construcción, transformadores y equipo industrial pesado.",
+          "El lowboy coloca la carga a una altura menor que una plataforma convencional. Esto puede ser especialmente útil cuando necesita transportar equipos altos y reducir la altura total del conjunto. La selección del equipo depende de las dimensiones y peso de la carga, así como de la ruta y las condiciones específicas del traslado.",
+        vinetas: [
+          "Maquinaria de construcción",
+          "Excavadoras y maquinaria pesada",
+          "Transformadores",
+          "Equipos industriales",
+          "Maquinaria agrícola",
+          "Componentes para proyectos industriales",
+          "Equipos de gran altura o peso",
+        ],
       },
       {
-        eyebrow: "Permisos y ruta",
+        eyebrow: "Planeación previa",
         titulo: "El transporte especializado empieza antes de cargar",
         parrafo:
-          "Un embarque sobredimensionado requiere permiso de la autoridad correspondiente, estudio de ruta y, según las dimensiones, escolta. Ese trabajo se hace antes de que la unidad llegue. Compass coordina los permisos, valida el trayecto y programa la operación para que la carga salga cuando todo está autorizado.",
+          "Una carga sobredimensionada no se puede tratar como un embarque convencional. Coordinamos estos elementos con proveedores especializados para que el movimiento sea planeado antes de que la unidad llegue a cargar.",
+        vinetas: [
+          "Análisis o estudio de ruta",
+          "Permisos correspondientes",
+          "Señalización especial",
+          "Vehículos piloto o de apoyo",
+          "Escoltas, cuando sean requeridas",
+          "Restricciones o ventanas de circulación",
+          "Coordinación con autoridades y terceros",
+          "Planeación de maniobras de carga y descarga",
+        ],
+        flujo: [
+          "Carga",
+          "Dimensiones",
+          "Peso",
+          "Equipo",
+          "Ruta",
+          "Permisos",
+          "Apoyos",
+          "Traslado",
+        ],
+      },
+      {
+        eyebrow: "Selección de equipo",
+        titulo: "Elegimos el equipo de acuerdo con su carga",
+        parrafo:
+          "No todas las cargas sobredimensionadas necesitan un lowboy. Antes de cotizar un equipo específico analizamos las características de la carga y las condiciones del recorrido. Si no sabe qué equipo necesita, podemos ayudarle a determinar la alternativa adecuada.",
+        vinetas: [
+          "Peso total",
+          "Largo, ancho y altura",
+          "Centro de gravedad",
+          "Puntos de apoyo y sujeción",
+          "Tipo de maquinaria o equipo",
+          "Distancia del traslado",
+          "Condiciones de la ruta",
+          "Restricciones de circulación",
+          "Requerimientos de carga y descarga",
+        ],
       },
     ],
     metricasTitulo: "El impacto del lowboy en su operación",
@@ -701,41 +1155,120 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Lowboy y cama baja son lo mismo?",
         respuesta:
-          "Sí, son el mismo tipo de unidad. Lowboy es el término en inglés y cama baja es como se le conoce comúnmente en México. Se refiere a la plataforma cuya superficie de carga queda más baja que en una plataforma convencional, para ganar altura libre en el trayecto.",
+          "Sí. Lowboy es el término utilizado en inglés y cama baja es una denominación común en México. Se refiere a una configuración cuya plataforma de carga se encuentra a menor altura que una plataforma convencional, permitiendo reducir la altura total de la unidad.",
       },
       {
         pregunta: "¿Cuándo se considera que una carga es sobredimensionada?",
         respuesta:
-          "Una carga es sobredimensionada cuando excede las dimensiones o el peso máximo autorizado para circular sin permiso especial. Los límites varían según el tipo de camino y la configuración vehicular. Compass evalúa las medidas y el peso de su equipo para determinar qué permisos aplican.",
+          "Cuando sus dimensiones o peso exceden los límites establecidos para una circulación ordinaria, de acuerdo con la configuración vehicular y las condiciones de la ruta. Los requerimientos pueden variar dependiendo del peso, dimensiones, vehículo, ruta y jurisdicciones involucradas.",
+      },
+      {
+        pregunta: "¿Qué tipo de maquinaria puedo transportar en lowboy?",
+        respuesta:
+          "Puede utilizarse para diferentes tipos de maquinaria pesada y equipos industriales, como maquinaria de construcción, agrícola, transformadores y otros equipos que requieran una plataforma de baja altura. La viabilidad debe evaluarse de acuerdo con las dimensiones y peso de cada carga.",
+      },
+      {
+        pregunta:
+          "¿Se requieren permisos para transportar carga sobredimensionada?",
+        respuesta:
+          "Dependiendo de las dimensiones, peso, configuración vehicular y ruta, pueden requerirse permisos y condiciones especiales de circulación. Por eso es importante analizar la operación antes de programar el traslado.",
       },
       {
         pregunta: "¿Cuánto tiempo toma tramitar los permisos?",
         respuesta:
-          "El plazo depende de la autoridad, del trayecto y de las dimensiones de la carga. Un embarque que cruza varios estados requiere más gestión que uno local. Por eso la planeación empieza semanas antes del embarque y no cuando la unidad ya está lista.",
+          "El tiempo depende de la autoridad, ruta, dimensiones, peso y permisos requeridos. Los movimientos que atraviesan diferentes entidades pueden involucrar requisitos adicionales. Por ello recomendamos iniciar la planeación con anticipación.",
+      },
+      {
+        pregunta: "¿Compass Solutions cuenta con lowboys propios?",
+        respuesta:
+          "Compass Solutions cuenta con unidades propias y, como freight forwarder, trabaja además con una red de proveedores especializados en transporte de carga sobredimensionada. Esto nos permite seleccionar el equipo adecuado para cada operación de acuerdo con las características de la carga y la ruta requerida.",
+      },
+      {
+        pregunta: "¿Pueden transportar maquinaria que no está operativa?",
+        respuesta:
+          "Sí, dependiendo de sus características. Si la maquinaria no puede desplazarse por sus propios medios, deben analizarse previamente las maniobras de carga, descarga, sujeción y equipo auxiliar requerido.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar un lowboy?",
+      parrafo:
+        "Con estos datos podemos analizar el equipo requerido, las condiciones de la ruta y los posibles requerimientos de la operación.",
+      requisitos: [
+        "Origen y destino",
+        "Tipo de carga o maquinaria",
+        "Largo, ancho y altura",
+        "Peso total",
+        "Fotografías de la carga",
+        "Ficha técnica o planos, cuando estén disponibles",
+        "Puntos de carga y descarga",
+        "Fecha requerida de traslado",
+        "Información sobre condiciones especiales de maniobra",
+      ],
+    },
   },
   {
     slug: "plataformas",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Plataformas: transporte de carga abierta",
     heroParrafo:
-      "Hay carga que no cabe en una caja cerrada o que no la necesita. La plataforma permite cargar por los costados y por arriba, lo que facilita el manejo de estructura, tubería, maquinaria y material voluminoso. Compass coordina la unidad adecuada y el amarre correspondiente a cada tipo de carga.",
-    seoTitulo: "Plataformas: transporte de carga de gran volumen",
+      "Mayor flexibilidad para transportar mercancía que no requiere una caja cerrada. Las plataformas son unidades de transporte de carga abierta que permiten realizar maniobras por los costados y por la parte superior. Son una alternativa para mercancías que, por sus dimensiones, forma, peso o características de manipulación, no requieren las paredes de un vehículo cerrado.",
+    seoTitulo: "Plataformas: transporte de carga abierta",
     seoDescripcion:
-      "Transporte en plataforma para carga que no requiere caja cerrada. Maquinaria, estructura, tubería y material de construcción.",
+      "Transporte en plataforma para estructuras, tubería, maquinaria y materiales que requieren maniobras laterales o superiores.",
     bloques: [
       {
-        eyebrow: "Carga y descarga",
+        eyebrow: "Acceso a la carga",
         titulo: "Acceso por los costados y por arriba",
         parrafo:
-          "A diferencia de una caja cerrada, la plataforma se carga con grúa o montacargas desde cualquier ángulo. Eso reduce el tiempo de maniobra en planta y permite mover piezas que por su forma no entrarían por una puerta trasera. Es la unidad habitual para acero, tubería, estructura metálica y equipo industrial.",
+          "La configuración abierta de una plataforma permite adaptar la maniobra a la forma y dimensiones de cada pieza. La carga puede colocarse directamente sobre la superficie mediante grúa, montacargas, equipo de izaje o rampas y medios auxiliares, dependiendo de la carga. Esto resulta especialmente útil cuando la mercancía requiere maniobras verticales, laterales o equipos de carga que no pueden utilizarse dentro de una caja cerrada.",
+        vinetas: [
+          "Peso",
+          "Dimensiones",
+          "Centro de gravedad",
+          "Puntos de apoyo",
+          "Forma de la mercancía",
+          "Características de la ruta",
+          "Condiciones de carga y descarga",
+        ],
       },
       {
-        eyebrow: "Sujeción de la carga",
-        titulo: "El amarre es parte del servicio, no un extra",
+        eyebrow: "Tipos de mercancía",
+        titulo: "Qué tipo de mercancía puede transportarse en plataforma",
         parrafo:
-          "En carga abierta, la sujeción es lo que garantiza que la mercancía llegue completa y que la unidad circule sin riesgo. Cada tipo de carga requiere su método: cadenas, bandas, esquineros o lonas según el caso. Compass verifica que la unidad asignada traiga el equipo de sujeción correspondiente antes de la maniobra.",
+          "Las plataformas son una alternativa versátil para diferentes tipos de carga abierta. La viabilidad del servicio debe analizarse de acuerdo con las características específicas de cada embarque.",
+        vinetas: [
+          "Estructuras metálicas",
+          "Tubería",
+          "Perfiles y materiales de acero",
+          "Maquinaria y equipos",
+          "Materiales de construcción",
+          "Equipos industriales",
+          "Madera y productos de grandes dimensiones",
+          "Componentes para proyectos",
+          "Cargas que requieren maniobras superiores o laterales",
+        ],
+      },
+      {
+        eyebrow: "Sujeción y protección",
+        titulo: "Protegemos y aseguramos su carga durante el traslado",
+        parrafo:
+          "Transportar mercancía en una plataforma requiere una correcta planeación de la distribución, apoyo y sujeción de la carga. Dependiendo de las características del embarque, pueden utilizarse cadenas, tensores, estrobos, amarres u otros elementos de sujeción adecuados para la operación. Cuando la mercancía necesita protección contra lluvia, polvo u otros factores ambientales, pueden evaluarse soluciones como lonas o coberturas especiales. La protección y sujeción deben definirse antes de iniciar el traslado.",
+      },
+      {
+        eyebrow: "Coordinación de la operación",
+        titulo: "Coordinamos su operación de origen a destino",
+        parrafo:
+          "No se trata únicamente de asignar una plataforma. Coordinamos los diferentes elementos necesarios para que su carga pueda ser transportada de acuerdo con sus características, trabajando con proveedores especializados y dando seguimiento a las condiciones necesarias para el traslado.",
+        flujo: [
+          "Solicitud",
+          "Análisis de carga",
+          "Selección de plataforma",
+          "Planeación",
+          "Carga y sujeción",
+          "Transporte",
+          "Seguimiento",
+          "Entrega",
+        ],
       },
     ],
     metricasTitulo: "El impacto de las plataformas en su operación",
@@ -759,43 +1292,119 @@ export const SERVICIOS: ServicioContenido[] = [
     preguntasRotulo: "Preguntas frecuentes sobre plataformas",
     preguntas: [
       {
-        pregunta: "¿Qué diferencia hay entre plataforma y lowboy?",
+        pregunta: "¿Qué diferencia hay entre una plataforma y un lowboy?",
         respuesta:
-          "La plataforma tiene la superficie de carga a la altura estándar, mientras que el lowboy la tiene más baja para ganar altura libre. Se usa plataforma cuando la carga cabe dentro de los gálibos normales, y lowboy cuando la altura del equipo obligaría a exceder el límite permitido.",
+          "La plataforma mantiene una altura de carga convencional, mientras que el lowboy cuenta con una cama más baja para reducir la altura total de la unidad. La selección depende de las dimensiones, peso y características de la carga, así como de las condiciones de la ruta.",
       },
       {
-        pregunta: "¿La carga en plataforma va cubierta?",
+        pregunta: "¿Qué tipo de carga puedo transportar en una plataforma?",
         respuesta:
-          "Depende de la mercancía. Material que no se afecta por la intemperie puede viajar descubierto con el amarre correspondiente. Cuando la carga requiere protección se utiliza lona. Esa definición se toma al cotizar, en función del tipo de producto y del trayecto.",
+          "Puede utilizarse para estructuras, tubería, maquinaria, materiales de construcción, acero, equipos industriales y otras mercancías que puedan transportarse de forma segura sobre una superficie abierta.",
       },
       {
-        pregunta: "¿Qué mercancía se transporta habitualmente en plataforma?",
+        pregunta: "¿La carga en plataforma requiere algún tipo de sujeción?",
         respuesta:
-          "Acero, tubería, estructura metálica, maquinaria, material de construcción y equipo que por su forma o dimensiones no entra en una caja cerrada. También carga paletizada de gran volumen cuando la maniobra en planta se resuelve mejor con acceso lateral.",
+          "Sí. La mercancía debe asegurarse de acuerdo con su peso, dimensiones, centro de gravedad, puntos de apoyo y características físicas. El sistema puede incluir cadenas, tensores, estrobos u otros elementos adecuados para cada operación.",
+      },
+      {
+        pregunta: "¿La carga en plataforma puede viajar descubierta?",
+        respuesta:
+          "Sí, cuando las características de la mercancía lo permiten. Si requiere protección contra lluvia, polvo u otros factores externos, pueden evaluarse lonas u otras soluciones de cobertura definidas antes del traslado.",
+      },
+      {
+        pregunta: "¿Puedo transportar maquinaria en plataforma?",
+        respuesta:
+          "Sí, dependiendo de las dimensiones, peso, forma, condiciones de carga y características de la ruta. Cuando la maquinaria requiere una altura de carga menor, puede ser conveniente analizar una alternativa como el lowboy.",
+      },
+      {
+        pregunta: "¿Una plataforma es adecuada para carga sobredimensionada?",
+        respuesta:
+          "Puede serlo, dependiendo de las dimensiones y peso de la mercancía y de las condiciones de circulación. Si las dimensiones exceden los límites permitidos para circulación ordinaria, pueden requerirse permisos y condiciones especiales.",
+      },
+      {
+        pregunta:
+          "¿Qué información se necesita para cotizar una carga en plataforma?",
+        respuesta:
+          "Como mínimo necesitamos origen, destino, dimensiones, peso y características de la mercancía. También es importante conocer cómo se realizará la carga y descarga, así como los puntos disponibles para su apoyo y sujeción.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar una plataforma?",
+      parrafo:
+        "Con esta información podemos determinar la configuración de transporte más adecuada.",
+      requisitos: [
+        "Origen y destino",
+        "Tipo de mercancía",
+        "Número de piezas",
+        "Largo, ancho y alto",
+        "Peso total y peso por pieza",
+        "Fotografías de la carga",
+        "Centro de gravedad, cuando sea relevante",
+        "Puntos de apoyo o sujeción",
+        "Método de carga y descarga",
+        "Fecha requerida de recolección",
+        "Requerimientos especiales de protección o manejo",
+      ],
+    },
+    cierre: {
+      titulo: "Su carga no necesita una caja cerrada",
+      parrafo:
+        "Si tiene maquinaria, estructuras, tubería o mercancía que requiere una unidad abierta, compártanos origen, destino, dimensiones, peso y fotografías de su carga. Analizamos la unidad y las condiciones necesarias para transportarla.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "unidades-con-rampa",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Unidades con rampa hidráulica",
     heroParrafo:
-      "No todos los puntos de carga tienen grúa o andén. La unidad con rampa hidráulica permite subir y bajar equipo rodando, directamente desde el piso. Es la solución para maquinaria autopropulsada, equipo sobre ruedas y cargas que no admiten izaje.",
-    seoTitulo: "Unidades con rampa hidráulica para maniobra en piso",
+      "Carga y descarga a nivel de piso, sin necesidad de un andén. Una unidad con rampa hidráulica facilita la carga y descarga de maquinaria, equipos y mercancías directamente desde el nivel del piso, siempre que las características de la carga permitan realizar la maniobra por rodamiento. Es una solución práctica para maquinaria autopropulsada, equipos sobre ruedas u orugas y cargas que pueden acceder a la unidad mediante una rampa.",
+    seoTitulo: "Unidades con rampa hidráulica",
     seoDescripcion:
-      "Transporte con rampa hidráulica para equipo que se carga rodando. Maniobra sin grúa en origen y destino.",
+      "Transporte con rampa hidráulica para maquinaria y equipos que se cargan por rodamiento, sin necesidad de andén ni grúa.",
     bloques: [
       {
-        eyebrow: "Maniobra sin grúa",
-        titulo: "Carga a nivel de piso, sin equipo adicional",
+        eyebrow: "Sin infraestructura especializada",
+        titulo: "Carga a nivel de piso, sin depender de un andén",
         parrafo:
-          "La rampa hidráulica convierte la plataforma en una superficie continua desde el suelo. Eso permite cargar equipo que se desplaza por sus propios medios o con maniobra menor, sin depender de una grúa en sitio. Reduce el costo de la maniobra y elimina la coordinación con un tercero en cada punto.",
+          "La rampa hidráulica crea un acceso entre el nivel del piso y la superficie de carga de la unidad. Cuando el equipo puede desplazarse por sus propios medios o mediante un sistema de rodamiento compatible, la rampa permite realizar la carga y descarga sin depender necesariamente de equipo externo. Esto puede reducir o evitar costos adicionales de maniobra, dependiendo de las condiciones de la operación.",
+        vinetas: [
+          "Andén",
+          "Grúa",
+          "Montacargas adecuado",
+          "Equipo especializado para maniobras de izaje",
+        ],
       },
       {
-        eyebrow: "Tipo de carga",
-        titulo: "Para equipo que no admite izaje",
+        eyebrow: "Equipos elegibles",
+        titulo: "Para maquinaria que puede cargarse por rodamiento",
         parrafo:
-          "Hay maquinaria que por su diseño no tiene puntos de izaje seguros, y equipo cuyo valor hace preferible evitar la maniobra con grúa. En esos casos la rampa es la opción correcta. Compass evalúa el peso, las dimensiones y el modo de desplazamiento del equipo para asignar la unidad con la capacidad adecuada.",
+          "Las unidades con rampa hidráulica son especialmente útiles para equipos que pueden subir y bajar de la unidad mediante rodamiento. La viabilidad depende principalmente del peso, dimensiones, capacidad de la rampa, altura de acceso, pendiente y condiciones del punto de carga y descarga.",
+        vinetas: [
+          "Maquinaria autopropulsada",
+          "Montacargas",
+          "Equipos sobre ruedas",
+          "Maquinaria sobre orugas",
+          "Plataformas de trabajo",
+          "Generadores",
+          "Equipos industriales móviles",
+          "Maquinaria especializada",
+        ],
+      },
+      {
+        eyebrow: "Evaluación previa",
+        titulo: "Rampa o grúa, primero evaluamos su carga",
+        parrafo:
+          "No todos los equipos requieren la misma maniobra. Si el equipo puede desplazarse mediante rodamiento y la rampa tiene capacidad suficiente, una unidad con rampa puede ser una alternativa eficiente. Si la carga no puede desplazarse, es demasiado pesada para la rampa o requiere una maniobra de izaje, puede ser necesario utilizar grúa, montacargas u otro equipo especializado.",
+        flujo: [
+          "Equipo",
+          "Peso",
+          "Dimensiones",
+          "Movilidad",
+          "Acceso",
+          "Maniobra",
+          "Unidad",
+        ],
       },
     ],
     metricasTitulo: "El impacto de las unidades con rampa en su operación",
@@ -820,41 +1429,148 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Qué equipo se puede cargar con rampa hidráulica?",
         respuesta:
-          "Maquinaria autopropulsada, equipo sobre ruedas u orugas, vehículos y en general cualquier carga que pueda desplazarse hasta la plataforma sin izaje. El límite lo marca el peso admisible de la rampa y las dimensiones de la unidad, que se validan antes de programar la maniobra.",
+          "Principalmente maquinaria autopropulsada, equipos sobre ruedas u orugas y otras cargas que puedan acceder a la unidad mediante rodamiento. La viabilidad depende del peso, dimensiones, capacidad de la rampa y condiciones de acceso.",
       },
       {
-        pregunta: "¿Se requiere personal especializado para la maniobra?",
+        pregunta: "¿Qué capacidad tiene una rampa hidráulica?",
         respuesta:
-          "La operación de la rampa la realiza el operador de la unidad. Cuando el equipo se desplaza por sus propios medios, se requiere que alguien lo conduzca durante la maniobra. Esa coordinación se define al programar el servicio para que no haya sorpresas en sitio.",
+          "La capacidad depende del tipo de unidad y de las especificaciones de la rampa. Antes de programar el servicio deben validarse el peso y las dimensiones del equipo, así como las condiciones de acceso y la maniobra.",
       },
       {
-        pregunta: "¿Conviene rampa o grúa para mi equipo?",
+        pregunta: "¿Necesito un andén para utilizar este servicio?",
         respuesta:
-          "Depende de si el equipo puede rodar y de si tiene puntos de izaje seguros. La rampa evita el costo y la coordinación de una grúa en cada punto, pero exige que la carga se desplace. Compass revisa la ficha técnica del equipo para recomendar la opción adecuada.",
+          "No necesariamente. Una de las principales ventajas de este tipo de unidad es precisamente facilitar la carga y descarga desde el nivel del piso, cuando las condiciones del lugar lo permiten.",
+      },
+      {
+        pregunta: "¿Necesito una grúa para cargar mi equipo?",
+        respuesta:
+          "No necesariamente. Si el equipo puede desplazarse mediante rodamiento y la rampa tiene capacidad suficiente, puede realizarse la carga sin utilizar una grúa. Si el equipo no puede desplazarse por sus propios medios, debe evaluarse si se requiere equipo auxiliar para realizar la maniobra.",
+      },
+      {
+        pregunta: "¿Puedo cargar maquinaria que no funciona?",
+        respuesta:
+          "Puede ser posible, pero debe evaluarse previamente. Si la maquinaria no puede desplazarse, será necesario determinar cómo será colocada sobre la unidad y si se requiere un equipo auxiliar para realizar la carga.",
+      },
+      {
+        pregunta:
+          "¿La rampa hidráulica sirve para cualquier tipo de mercancía?",
+        respuesta:
+          "No. Deben evaluarse el peso, dimensiones, estabilidad, movilidad y características de la mercancía, además de las condiciones de acceso en origen y destino. Una carga que no puede desplazarse por rodamiento requiere otro tipo de unidad o equipo auxiliar para la maniobra.",
+      },
+      {
+        pregunta: "¿La rampa puede utilizarse en cualquier lugar?",
+        respuesta:
+          "Debe existir un acceso adecuado y condiciones suficientes para realizar la maniobra de manera segura. La pendiente, superficie, espacio disponible, altura de acceso y capacidad de la rampa son factores que deben revisarse antes de programar el servicio.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar?",
+      parrafo:
+        "Cuando sea posible, fotografías o videos del punto de carga y descarga pueden ayudarnos a evaluar mejor la operación.",
+      requisitos: [
+        "Origen y destino",
+        "Tipo de equipo o mercancía",
+        "Peso",
+        "Largo, ancho y alto",
+        "Fotografías del equipo",
+        "Si es autopropulsado o requiere asistencia para desplazarse",
+        "Condiciones de acceso en origen y destino",
+        "Fecha requerida de recolección",
+        "Cualquier requerimiento especial de carga o descarga",
+      ],
+    },
   },
   {
     slug: "carga-aerea",
     heroEyebrow: "Transporte aéreo",
-    heroTitulo: "Carga aérea: cuando el tiempo define la operación",
+    heroTitulo:
+      "Carga aérea: cuando el tiempo de entrega es parte de su negocio",
     heroParrafo:
-      "El flete aéreo no compite con el marítimo en costo, compite en tiempo. Cuando un paro de línea cuesta más que el flete, cuando la mercancía es de alto valor o cuando el volumen no justifica un contenedor, la vía aérea es la decisión correcta. Compass coordina la aerolínea, la documentación y el despacho.",
+      "Cuando necesita mover mercancía entre países con mayor rapidez y coordinación, el transporte aéreo puede ser la alternativa adecuada. Coordinamos embarques de carga aérea desde la recolección en origen hasta la entrega en destino, integrando transporte terrestre, documentación, despacho aduanal, espacio aéreo y entrega final. Analizamos las características de cada embarque para seleccionar la alternativa que mejor se adapte a su urgencia, tipo de mercancía, peso, volumen, ruta y presupuesto.",
     seoTitulo: "Carga aérea internacional y nacional",
     seoDescripcion:
-      "Flete aéreo para embarques urgentes y mercancía de alto valor. Coordinación de aerolínea, documentación y despacho aduanal.",
+      "Flete aéreo de importación y exportación, con recolección en origen, documentación, despacho aduanal y entrega en destino.",
     bloques: [
       {
-        eyebrow: "Tiempo de tránsito",
-        titulo: "Días en lugar de semanas",
+        eyebrow: "Cuándo conviene",
+        titulo: "Cuando el tiempo importa, elija transporte aéreo",
         parrafo:
-          "Un embarque marítimo desde Asia toma semanas. El mismo embarque por vía aérea llega en días. Esa diferencia deja de ser un lujo cuando la alternativa es detener una línea de producción, incumplir una entrega o perder una temporada comercial completa.",
+          "El transporte aéreo es una alternativa especialmente útil cuando necesita reducir los tiempos de tránsito frente a otras modalidades o cuando el valor de la mercancía justifica una solución más rápida.",
+        vinetas: [
+          "Embarques urgentes",
+          "Refacciones críticas",
+          "Componentes industriales",
+          "Productos de alto valor",
+          "Muestras y prototipos",
+          "Mercancía para proyectos",
+          "Reposición de inventarios",
+          "Productos con ciclos de entrega cortos",
+          "Embarques de importación y exportación",
+        ],
       },
       {
-        eyebrow: "Alto valor y volumen reducido",
-        titulo: "Cuando el flete pesa menos que la mercancía",
+        eyebrow: "Operación completa",
+        titulo: "Más que un vuelo, coordinamos toda la operación",
         parrafo:
-          "El costo aéreo se calcula sobre el peso real o el volumétrico, el que resulte mayor. Para mercancía compacta y de alto valor, el flete representa una fracción pequeña del valor del embarque. Componentes electrónicos, refacciones críticas y productos regulados suelen justificar la vía aérea con holgura.",
+          "Un embarque aéreo no comienza cuando la mercancía llega al aeropuerto. Para que la carga llegue correctamente a destino es necesario coordinar diferentes etapas, incluyendo los requerimientos de comercio exterior para la importación o exportación y el transporte terrestre hasta las instalaciones del destinatario.",
+        flujo: [
+          "Recolección",
+          "Preparación",
+          "Documentación",
+          "Aduana",
+          "Aeropuerto",
+          "Transporte aéreo",
+          "Aduana en destino",
+          "Entrega final",
+        ],
+      },
+      {
+        eyebrow: "Alternativas de servicio",
+        titulo: "Elija la solución de transporte adecuada",
+        parrafo:
+          "No todos los embarques aéreos tienen las mismas necesidades. Podemos analizar diferentes alternativas de servicio para encontrar el equilibrio adecuado entre tiempo de tránsito, costo y condiciones de operación.",
+        vinetas: [
+          "Peso y volumen",
+          "Origen y destino",
+          "Urgencia",
+          "Frecuencia de vuelos",
+          "Tipo de mercancía",
+          "Disponibilidad de espacio",
+          "Requisitos especiales de manejo",
+          "Presupuesto",
+        ],
+      },
+      {
+        eyebrow: "Tipos de carga",
+        titulo: "Carga general y soluciones especiales",
+        parrafo:
+          "Dependiendo de las características del embarque, podemos analizar alternativas para diferentes tipos de mercancía. Para mercancías peligrosas, perecederas o con condiciones especiales es necesario validar previamente los requisitos de aceptación, documentación, embalaje y manejo.",
+        vinetas: [
+          "Carga general",
+          "Mercancía de alto valor",
+          "Refacciones y componentes",
+          "Maquinaria y equipos",
+          "Muestras",
+          "Carga urgente",
+          "Mercancía con requerimientos especiales de manejo",
+          "Carga que requiere condiciones específicas de transporte",
+        ],
+      },
+      {
+        eyebrow: "Preparación de la carga",
+        titulo: "El embalaje también importa",
+        parrafo:
+          "Una carga aérea puede pasar por diferentes procesos de manipulación antes de llegar a su destino. Un buen embalaje protege la mercancía y puede ayudar a optimizar el espacio utilizado durante el transporte. Si su carga requiere preparación especial, también podemos coordinar soluciones de empaque y embalaje para transporte internacional.",
+        vinetas: [
+          "Peso y dimensiones",
+          "Fragilidad",
+          "Tipo de mercancía",
+          "Número de piezas",
+          "Manipulación aeroportuaria",
+          "Protección contra impactos",
+          "Aprovechamiento del espacio",
+          "Requisitos especiales del producto",
+        ],
       },
     ],
     metricasTitulo: "El impacto de la carga aérea en su operación",
@@ -876,21 +1592,59 @@ export const SERVICIOS: ServicioContenido[] = [
     preguntasRotulo: "Preguntas frecuentes sobre carga aérea",
     preguntas: [
       {
-        pregunta: "¿Cómo se calcula el costo de un embarque aéreo?",
+        pregunta: "¿Cuándo conviene utilizar transporte aéreo?",
         respuesta:
-          "Se calcula sobre el peso real o el peso volumétrico, aplicando el que resulte mayor. El peso volumétrico considera el espacio que ocupa la carga en la aeronave. Por eso una mercancía ligera pero voluminosa puede pagar más de lo que su peso real sugiere.",
+          "Cuando el tiempo de tránsito es un factor importante, necesita una reposición urgente o el valor de la mercancía justifica una alternativa de transporte más rápida. También puede ser conveniente para muestras, refacciones, componentes críticos y embarques de menor volumen.",
       },
       {
-        pregunta: "¿Cuándo conviene aéreo frente a marítimo?",
+        pregunta: "¿Qué peso máximo puedo enviar por avión?",
         respuesta:
-          "Conviene cuando el tiempo de entrega es crítico, cuando la mercancía es de alto valor respecto a su peso, o cuando el volumen es tan reducido que un contenedor no se justifica. En operaciones estacionales, muchas empresas combinan ambos modos según el momento del año.",
+          "No existe un límite único para todos los embarques. La capacidad depende de la aerolínea, aeronave, ruta, aeropuerto, dimensiones y tipo de mercancía. Para cargas de gran peso o dimensiones especiales es necesario validar previamente la disponibilidad.",
       },
       {
-        pregunta: "¿La carga aérea también requiere despacho aduanal?",
+        pregunta: "¿La carga aérea se cobra por peso o por volumen?",
         respuesta:
-          "Sí. Toda importación requiere despacho aduanal, sin importar el modo de transporte. La diferencia es que en aéreo los tiempos de aduana pesan proporcionalmente más, porque el tránsito es corto. Preparar la documentación antes del arribo evita perder la ventaja de tiempo.",
+          "Puede considerarse tanto el peso bruto como el peso volumétrico, aplicando el que resulte mayor. Por esa razón es importante conocer las dimensiones reales de cada pieza, ya que una mercancía ligera con volumen considerable puede generar un costo mayor al esperado.",
+      },
+      {
+        pregunta: "¿Puedo importar y exportar mercancía por vía aérea?",
+        respuesta:
+          "Sí. Podemos coordinar operaciones aéreas tanto de importación como de exportación, sujetas a las condiciones de la mercancía, ruta, documentación y requisitos aduanales aplicables. En ambos casos damos seguimiento al despacho y a la entrega en destino.",
+      },
+      {
+        pregunta: "¿Puedo transportar mercancía peligrosa por vía aérea?",
+        respuesta:
+          "Es posible para determinadas mercancías, pero están sujetas a requisitos específicos de clasificación, embalaje, marcado, documentación y aceptación por parte de la aerolínea. La carga debe validarse mediante su hoja de datos de seguridad antes de proceder con la reserva.",
+      },
+      {
+        pregunta: "¿Pueden recoger mi mercancía en mi almacén?",
+        respuesta:
+          "Sí. Podemos coordinar el transporte terrestre desde el punto de origen hasta el aeropuerto y posteriormente la entrega en destino, dependiendo de las condiciones de la operación.",
+      },
+      {
+        pregunta: "¿Puedo solicitar solamente el transporte aéreo?",
+        respuesta:
+          "Sí. Podemos cotizar únicamente el tramo aéreo o coordinar una solución integral puerta a puerta, dependiendo de lo que necesite su operación y del alcance que prefiera contratar.",
       },
     ],
+    cotizar: {
+      titulo: "¿Qué necesitamos para cotizar su carga aérea?",
+      parrafo:
+        "Para una cotización más precisa es recomendable proporcionar fotografías, ficha técnica o información adicional de la mercancía cuando se trate de carga especial.",
+      requisitos: [
+        "Aeropuerto o ciudad de origen",
+        "Aeropuerto o ciudad de destino",
+        "Tipo de mercancía",
+        "Número de piezas",
+        "Peso bruto",
+        "Dimensiones de cada pieza",
+        "Volumen, cuando esté disponible",
+        "Fecha requerida de embarque",
+        "Fecha requerida de entrega, si existe",
+        "Valor de la mercancía, cuando sea relevante",
+        "Requerimientos especiales de manejo",
+      ],
+    },
   },
   {
     slug: "almacenaje-y-distribucion",
@@ -955,7 +1709,7 @@ export const SERVICIOS: ServicioContenido[] = [
     heroEyebrow: "Almacenaje",
     heroTitulo: "Empaque y embalaje para transporte internacional",
     heroParrafo:
-      "El embalaje no es un detalle, es lo que determina si la mercancía llega completa. Cada modo de transporte impone exigencias distintas, y algunos destinos tienen requisitos normativos específicos. Compass coordina el embalaje adecuado al recorrido real que hará su carga.",
+      "Una carga bien protegida reduce riesgos durante la manipulación, el tránsito y la entrega. El tipo de empaque y embalaje debe considerar las características de la mercancía, el medio de transporte, las maniobras y el destino. En operaciones internacionales, una mala protección puede generar daños, retrasos o costos adicionales, por lo que cada embarque requiere una solución de embalaje acorde con su recorrido y condiciones de manejo.",
     seoTitulo: "Empaque y embalaje para exportación",
     seoDescripcion:
       "Servicio de empaque y embalaje conforme a los requisitos de cada modo de transporte y destino.",
@@ -970,7 +1724,7 @@ export const SERVICIOS: ServicioContenido[] = [
         eyebrow: "Requisitos normativos",
         titulo: "La madera y el marcado tienen reglas",
         parrafo:
-          "El embalaje de madera destinado a comercio internacional debe cumplir con el tratamiento y el marcado que exige la normativa fitosanitaria aplicable. Un embarque rechazado en destino por este motivo genera costos y demoras evitables. Compass verifica el cumplimiento antes de que la carga salga.",
+          "Cuando una operación internacional utiliza embalaje de madera, no basta con que la mercancía esté bien protegida. La madera debe cumplir con los requisitos fitosanitarios y de marcado aplicables al país de destino. Un incumplimiento puede generar inspecciones, retenciones, costos adicionales o demoras en la liberación de la carga. Por eso, estos requisitos deben revisarse antes de embarcar y no cuando la mercancía ya llegó a destino.",
       },
     ],
     metricasTitulo: "El impacto del embalaje en su operación",
@@ -1013,7 +1767,7 @@ export const SERVICIOS: ServicioContenido[] = [
     heroEyebrow: "Valor agregado",
     heroTitulo: "Servicio expeditado: cuando no hay margen",
     heroParrafo:
-      "Hay operaciones donde el retraso no se mide en días sino en pesos por hora. Un paro de línea, una entrega comprometida, una refacción crítica. El servicio expeditado prioriza el tiempo sobre cualquier otra variable y entrega la mejor opción disponible en tiempos y rutas, con cotización en menos de tres horas.",
+      "Cuando una carga no puede esperar, el tiempo se convierte en un factor operativo y económico. Un paro de línea, una refacción crítica o una entrega comprometida pueden requerir una solución fuera de los tiempos habituales. El servicio expeditado permite evaluar alternativas de transporte con prioridad en tiempo de tránsito, disponibilidad y ruta. La cotización se trabaja con la información disponible de la operación para identificar una opción viable en el menor tiempo posible.",
     seoTitulo: "Servicio expeditado para urgencias logísticas",
     seoDescripcion:
       "Servicio expeditado con cotización en menos de tres horas para paros de línea y entregas críticas.",
@@ -1068,9 +1822,9 @@ export const SERVICIOS: ServicioContenido[] = [
   {
     slug: "seguro-de-carga",
     heroEyebrow: "Valor agregado",
-    heroTitulo: "Seguro de carga: cobertura sobre el valor real",
+    heroTitulo: "Seguro de carga: proteja el valor de su mercancía",
     heroParrafo:
-      "La responsabilidad del transportista está limitada por convenio y rara vez cubre el valor de la mercancía. El seguro de carga cierra esa brecha, con una cobertura dimensionada al valor real del embarque y al riesgo del trayecto. Compass coordina la contratación como parte de la operación.",
+      "Transportar mercancía implica asumir determinados riesgos durante la carga, manipulación, tránsito, almacenamiento y entrega. La responsabilidad del transportista no necesariamente equivale al valor comercial de su mercancía. Coordinamos opciones de seguro de carga de acuerdo con las características de su embarque, su valor y el recorrido que realizará, así como lo necesario para que el seguro surta efecto en caso de un siniestro.",
     seoTitulo: "Seguro de carga para transporte internacional",
     seoDescripcion:
       "Cobertura de mercancía en tránsito internacional y nacional, dimensionada al valor real del embarque.",
@@ -1127,22 +1881,22 @@ export const SERVICIOS: ServicioContenido[] = [
     heroEyebrow: "Valor agregado",
     heroTitulo: "Previo en origen: verificar antes de que zarpe",
     heroParrafo:
-      "Un error detectado en destino cuesta demoras, almacenaje y a veces la operación completa. El previo en origen verifica la mercancía antes de que salga: que corresponda a lo comprado, que esté correctamente embalada y que la documentación coincida con la carga real.",
+      "Detectar un error en destino puede generar demoras, almacenajes y costos adicionales. El previo en origen permite verificar la mercancía antes de su salida y detectar inconsistencias a tiempo. Se revisan aspectos como cantidad, características de la mercancía, embalaje y correspondencia con la documentación disponible, de acuerdo con el alcance solicitado para la inspección. Compass coordina el previo en origen con el proveedor correspondiente, da seguimiento a la revisión y comparte los resultados.",
     seoTitulo: "Previo en origen: verificación antes de embarcar",
     seoDescripcion:
       "Verificación de mercancía en origen antes del embarque, para evitar sorpresas al llegar a destino.",
     bloques: [
       {
         eyebrow: "Antes del embarque",
-        titulo: "El momento en que corregir todavía es barato",
+        titulo: "El momento en que corregir todavía es sencillo",
         parrafo:
-          "Una discrepancia entre la factura y la mercancía se resuelve en origen con una corrección documental. La misma discrepancia detectada en la aduana de destino puede significar multa, demora y almacenaje. Verificar antes de embarcar convierte un problema costoso en un ajuste menor.",
+          "Una discrepancia entre la factura y la mercancía puede corregirse en origen antes de que el embarque salga. Detectarla hasta llegar a la aduana de destino puede generar multas, demoras y costos de almacenaje. Verificar la carga antes de embarcar permite detectar inconsistencias a tiempo y corregirlas antes de que afecten el despacho y la operación.",
       },
       {
         eyebrow: "Qué se revisa",
         titulo: "Cantidad, condición y documentación",
         parrafo:
-          "La verificación cubre que la cantidad corresponda a lo declarado, que la mercancía esté en la condición esperada, que el embalaje sea adecuado para el trayecto y que el marcado y la documentación coincidan con la carga. El resultado se entrega documentado antes de autorizar el embarque.",
+          "La verificación en origen permite revisar que la cantidad y características de la mercancía correspondan con lo declarado, que se encuentre en la condición esperada y que el embalaje sea adecuado para el trayecto. También se valida que el marcado y la documentación disponible sean consistentes con la carga. El resultado de la revisión se documenta y se comparte antes de la salida del embarque, para identificar cualquier inconsistencia y atenderla oportunamente.",
       },
     ],
     metricasTitulo: "El impacto del previo en origen en su operación",
@@ -1166,17 +1920,17 @@ export const SERVICIOS: ServicioContenido[] = [
       {
         pregunta: "¿Qué se revisa en un previo en origen?",
         respuesta:
-          "Se verifica la cantidad contra lo declarado, la condición aparente de la mercancía, la calidad del embalaje frente al trayecto previsto, y la correspondencia entre el marcado, la documentación y la carga real. El resultado se entrega con evidencia fotográfica antes del embarque.",
+          "Se verifica que la cantidad y características de la mercancía correspondan con lo declarado, así como su condición aparente y el estado del embalaje para el trayecto previsto. También se revisa la correspondencia entre el marcado, la documentación disponible y la carga. La revisión se documenta con evidencia fotográfica y se comparte antes del embarque.",
       },
       {
         pregunta: "¿Cuándo conviene contratar este servicio?",
         respuesta:
-          "Conviene con proveedores nuevos, con mercancía de alto valor, con embarques cuya discrepancia sería costosa de corregir en destino, y en operaciones donde una demora aduanal comprometería la producción o una fecha de entrega comprometida con su cliente.",
+          "Es recomendable cuando se trabaja con proveedores nuevos, mercancía de alto valor o embarques donde una discrepancia puede generar costos y demoras en destino. También es útil cuando una demora en el despacho puede afectar una producción, una fecha de entrega o el cumplimiento de un compromiso comercial.",
       },
       {
         pregunta: "¿El previo sustituye la inspección de calidad?",
         respuesta:
-          "No. El previo verifica correspondencia, condición aparente, embalaje y documentación con fines logísticos y aduanales. Una inspección de calidad evalúa el producto contra especificaciones técnicas y es un servicio distinto, que puede coordinarse en paralelo cuando la operación lo requiere.",
+          "No. El previo se enfoca en la verificación física y documental de la carga desde una perspectiva logística y aduanal. Una inspección de calidad evalúa el producto contra especificaciones técnicas, estándares o requisitos previamente definidos. Son servicios distintos y, cuando la operación lo requiere, ambos pueden coordinarse.",
       },
     ],
   },

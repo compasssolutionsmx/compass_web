@@ -5,6 +5,11 @@ export type ServiceFeatureBlockProps = {
   eyebrow: string;
   title: string;
   description: string;
+  /** Lista con viñetas debajo del párrafo. Mismo estilo que el `ul` de
+   *  ArticleBody.tsx. */
+  vinetas?: readonly string[];
+  /** Pasos separados por flechas, en una línea que hace wrap en móvil. */
+  flujo?: readonly string[];
   /** Qué lado de la rejilla lleva la imagen en escritorio. */
   imageSide: "left" | "right";
 };
@@ -41,6 +46,8 @@ export default function ServiceFeatureBlock({
   eyebrow,
   title,
   description,
+  vinetas,
+  flujo,
   imageSide,
 }: ServiceFeatureBlockProps) {
   const imagen = (
@@ -56,6 +63,32 @@ export default function ServiceFeatureBlock({
         {title}
       </h2>
       <p className="mt-5 text-slate-600">{description}</p>
+      {vinetas && vinetas.length > 0 ? (
+        <ul className="mt-5 list-disc space-y-2 pl-6 leading-relaxed text-slate-700">
+          {vinetas.map((vineta) => (
+            <li key={vineta}>{vineta}</li>
+          ))}
+        </ul>
+      ) : null}
+      {/* Lista ordenada: el orden de los pasos es el contenido. Las flechas
+          son decorativas (`aria-hidden`) y van dentro del <li> siguiente para
+          que el wrap nunca deje una flecha huérfana al final de una línea. */}
+      {flujo && flujo.length > 0 ? (
+        <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-3">
+          {flujo.map((paso, i) => (
+            <li key={paso} className="flex items-center gap-2">
+              {i > 0 ? (
+                <span aria-hidden="true" className="text-brand-900/40">
+                  →
+                </span>
+              ) : null}
+              <span className="rounded-full bg-brand-100 px-4 py-2 font-heading text-sm font-semibold text-brand-900">
+                {paso}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
       <QuoteButton className="mt-8 rounded-full bg-brand-900 px-8 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90">
         Solicitar cotización
       </QuoteButton>
