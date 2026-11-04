@@ -263,10 +263,14 @@ export default function CookieBanner() {
         {/* `sr-only`: la vista compacta no lleva título visible —es sólo
             párrafo + dos pastillas—, pero el diálogo necesita un nombre
             accesible para `aria-labelledby`. Sigue existiendo en el DOM,
-            simplemente no ocupa espacio en pantalla. */}
-        <h2 id="cookie-banner-titulo" className="sr-only">
+            simplemente no ocupa espacio en pantalla.
+
+            <p> Y NO <h2>: el banner va antes del contenido en el DOM, así que
+            un encabezado aquí era el primero de cada página, un H2 antes del
+            H1. `aria-labelledby` funciona igual con un <p>. */}
+        <p id="cookie-banner-titulo" className="sr-only">
           Cookies en este sitio
-        </h2>
+        </p>
 
         {/* COPY DESCRIPTIVO, no una petición de permiso: dice qué se usa, para
             qué, y que puede oponerse cuando quiera. El texto anterior ("Usamos

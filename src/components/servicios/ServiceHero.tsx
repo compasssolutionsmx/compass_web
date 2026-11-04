@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Eyebrow from "../Eyebrow";
 import { QuoteButton } from "../QuoteModal";
 
@@ -7,6 +8,12 @@ export type ServiceHeroProps = {
   /** Título del hero. Es el <h1> de la página. */
   titulo: string;
   parrafo: string;
+  /**
+   * Ruta de navegación visible encima del eyebrow y del <h1>: la página le
+   * pasa un <Breadcrumbs> ya armado (que emite también su `BreadcrumbList`).
+   * La usan las 18 páginas de servicio; el índice /servicios no la lleva.
+   */
+  migas?: ReactNode;
 };
 
 /**
@@ -35,6 +42,7 @@ export default function ServiceHero({
   eyebrow,
   titulo,
   parrafo,
+  migas,
 }: ServiceHeroProps) {
   return (
     <section className="relative overflow-hidden rounded-b-[2rem] bg-brand-950 pb-16 pt-32 md:pb-20 md:pt-40">
@@ -50,6 +58,8 @@ export default function ServiceHero({
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(1,27,38,0.85)_0%,rgba(1,27,38,0.45)_38%,rgba(1,27,38,0.92)_100%)]" />
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+        {migas ? <div className="mb-6">{migas}</div> : null}
+
         <Eyebrow tone="dark" className="mb-4">
           {eyebrow}
         </Eyebrow>

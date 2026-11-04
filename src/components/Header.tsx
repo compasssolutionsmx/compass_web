@@ -2,9 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Menu, X } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
+import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { QuoteButton } from "./QuoteModal";
+import { useServiciosMenu } from "./ServiciosMenu";
 import { useSmoothScroll } from "./SmoothScroll";
 import { NOSOTROS_LABEL } from "@/lib/site";
 
@@ -22,28 +31,26 @@ import { NOSOTROS_LABEL } from "@/lib/site";
  * 404 es peor que un nav más corto. La página está VACÍA por ahora —sólo el
  * chasis— pero ya no rompe la navegación.
  *
- * LOS DOS ANCLAS VAN CON BARRA (`/#soluciones`, `/#oferta`) y no sueltas. Sin
- * ella apuntaban a la PÁGINA ACTUAL: funcionaban en el home, pero desde /blog,
- * /nosotros, /vacantes, /proveedores o /apartado-legal no existen esas
- * secciones y el clic no hacía nada. Con la barra, desde fuera navegan al home
- * y bajan a la sección; dentro del home el destino no cambia.
- *
- * Y EL SCROLL SUAVE SE CONSERVA en el home, que era el riesgo: Lenis no busca
- * `href` que empiecen por "#", sino que resuelve cada enlace a URL absoluta y
- * compara `pathname` con el de la página actual (ver `onClick` en lenis.mjs).
- * Desde el home, `/#soluciones` resuelve a pathname "/" —el mismo— así que lo
- * sigue interceptando con su offset. Desde otra página los pathname difieren,
- * Lenis no interviene y navega <Link> con el salto nativo, que ya respeta el
- * `scroll-padding-top: 6rem` de globals.css.
+ * "SERVICIOS" SUSTITUYE A LAS DOS ANCLAS DEL HOME (`/#soluciones` y
+ * `/#oferta`). Es un enlace real a /servicios y, con `megaMenu`, además abre
+ * el panel con la agrupación oficial de servicios (ver `useServiciosMenu`).
+ * En escritorio el clic navega aunque el panel no llegue a abrirse; en móvil
+ * es un acordeón dentro del panel a pantalla completa.
  */
-const NAV_LINKS = [
-  { href: "/#soluciones", label: "Soluciones" },
-  { href: "/#oferta", label: "Oferta" },
+type NavLink = { href: string; label: string; megaMenu?: boolean };
+
+const NAV_LINKS: NavLink[] = [
+  { href: "/servicios", label: "Servicios", megaMenu: true },
   { href: "/nosotros", label: NOSOTROS_LABEL },
   { href: "/blog", label: "Blog" },
 ];
 
 const MOBILE_PANEL_ID = "menu-movil";
+const MEGA_PANEL_ID = "menu-servicios";
+const MOBILE_SERVICIOS_ID = "menu-movil-servicios";
+
+/** Retardo de cierre al salir el puntero: deja cruzar del disparador al panel. */
+const MEGA_CLOSE_DELAY_MS = 150;
 
 /** Por debajo de esto el header va suelto; por encima, condensado en pastilla. */
 const CONDENSE_AT_PX = 32;
@@ -92,7 +99,7 @@ export default function Header({
 }: {
   topTone: "dark" | "light";
   variant?: "full" | "conversion";
-  navLinks?: { href: string; label: string }[];
+  navLinks?: NavLink[];
 }) {
   const esConversion = variant === "conversion";
   /**
@@ -102,6 +109,135 @@ export default function Header({
   const enlaces = navLinks ?? (esConversion ? [] : NAV_LINKS);
   const hayNav = enlaces.length > 0;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const gruposServicios = useServiciosMenu();
+  const pathname = usePathname();
+
+  /* ---- Mega menú de escritorio ----
+     El estado guarda la RUTA en la que se abrió, no un booleano: así al
+     navegar el panel queda cerrado solo (la ruta deja de coincidir) sin un
+     efecto que llame a setState, que la regla react-hooks/set-state-in-effect
+     del proyecto rechaza. */
+  const [megaOpenAt, setMegaOpenAt] = useState<string | null>(null);
+  const isMegaOpen = megaOpenAt !== null && megaOpenAt === pathname;
+  const megaCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const megaTriggerRef = useRef<HTMLAnchorElement>(null);
+  const megaPanelRef = useRef<HTMLDivElement>(null);
+  const desktopNavRef = useRef<HTMLElement>(null);
+  const [isMobileServiciosOpen, setIsMobileServiciosOpen] = useState(false);
+  /* Grupos abiertos dentro del acordeón móvil de "Servicios". Independientes:
+     pueden abrirse varios a la vez, y todos arrancan cerrados. */
+  const [gruposMovilAbiertos, setGruposMovilAbiertos] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const toggleGrupoMovil = (slug: string) =>
+    setGruposMovilAbiertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  /* Al cerrar con Escape el foco vuelve al disparador, y su `onFocus` abriría
+     el panel otra vez. Esta marca hace que ese foco devuelto no lo reabra. */
+  const skipFocusOpen = useRef(false);
+
+  const cancelMegaClose = () => {
+    if (megaCloseTimer.current) {
+      clearTimeout(megaCloseTimer.current);
+      megaCloseTimer.current = null;
+    }
+  };
+  const openMega = () => {
+    cancelMegaClose();
+    setMegaOpenAt(pathname);
+  };
+  const closeMega = () => {
+    cancelMegaClose();
+    setMegaOpenAt(null);
+  };
+  const scheduleMegaClose = () => {
+    cancelMegaClose();
+    megaCloseTimer.current = setTimeout(
+      () => setMegaOpenAt(null),
+      MEGA_CLOSE_DELAY_MS,
+    );
+  };
+
+  // Sólo limpia el temporizador pendiente al desmontar; no toca estado.
+  useEffect(() => cancelMegaClose, []);
+
+  /** Cierra si el foco sale a algo que no es ni el disparador ni el panel. */
+  const onMegaBlur = (event: FocusEvent<HTMLElement>) => {
+    const next = event.relatedTarget as Node | null;
+    if (
+      next &&
+      (megaTriggerRef.current?.contains(next) ||
+        megaPanelRef.current?.contains(next))
+    ) {
+      return;
+    }
+    closeMega();
+  };
+
+  const panelLinks = () =>
+    Array.from(
+      megaPanelRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]") ??
+        [],
+    );
+
+  /** El enlace del nav que sigue a "Servicios", para salir del panel con Tab. */
+  const focusAfterTrigger = () => {
+    const navLinks = Array.from(
+      desktopNavRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]") ??
+        [],
+    );
+    const i = navLinks.indexOf(megaTriggerRef.current as HTMLAnchorElement);
+    navLinks[i + 1]?.focus();
+  };
+
+  /* EL PANEL VIVE DESPUÉS DE LA BARRA EN EL DOM (ver su comentario), así que
+     el orden de tabulación natural no pasa por él. Estos dos manejadores lo
+     cosen: Tab desde "Servicios" entra al panel, Tab desde su último enlace
+     sale al siguiente del nav y Shift+Tab desde el primero vuelve al
+     disparador. Escape cierra y devuelve el foco al disparador. */
+  const onMegaTriggerKeyDown = (event: ReactKeyboardEvent<HTMLAnchorElement>) => {
+    if (event.key === "Escape" && isMegaOpen) {
+      event.preventDefault();
+      closeMega();
+      return;
+    }
+    if (
+      (event.key === "Tab" && !event.shiftKey && isMegaOpen) ||
+      event.key === "ArrowDown"
+    ) {
+      event.preventDefault();
+      openMega();
+      // El panel puede estar recién montado como visible: se enfoca tras el
+      // commit.
+      requestAnimationFrame(() => panelLinks()[0]?.focus());
+    }
+  };
+
+  const onMegaPanelKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMega();
+      skipFocusOpen.current = true;
+      megaTriggerRef.current?.focus();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const links = panelLinks();
+    const first = links[0];
+    const last = links[links.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      megaTriggerRef.current?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      closeMega();
+      focusAfterTrigger();
+    }
+  };
 
   // El disparador es la POSICIÓN DE SCROLL, no "estar sobre el hero". Así el
   // comportamiento es idéntico en todas las páginas: arriba del todo, suelto;
@@ -275,6 +411,7 @@ export default function Header({
               `md`. */}
           {hayNav && (
             <nav
+              ref={desktopNavRef}
               aria-label="Principal"
               className={`hidden items-center border border-transparent text-sm font-medium text-brand-900 transition-[max-width,padding,gap,background-color,border-radius,box-shadow] duration-300 motion-reduce:transition-none lg:flex ${
                 isCondensed
@@ -282,15 +419,50 @@ export default function Header({
                   : "glass gap-8 rounded-full px-8 py-3"
               }`}
             >
-              {enlaces.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="transition-opacity hover:opacity-70"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {enlaces.map((link) =>
+                link.megaMenu && gruposServicios.length > 0 ? (
+                  /* Disparador del mega menú: un <Link> real a /servicios,
+                     así que el clic navega aunque el panel no se abra. Abre
+                     con hover y con foco; el cierre por puntero espera 150 ms
+                     para poder cruzar al panel. */
+                  <Link
+                    key={link.href}
+                    ref={megaTriggerRef}
+                    href={link.href}
+                    aria-expanded={isMegaOpen}
+                    aria-controls={MEGA_PANEL_ID}
+                    onMouseEnter={openMega}
+                    onMouseLeave={scheduleMegaClose}
+                    onFocus={() => {
+                      if (skipFocusOpen.current) {
+                        skipFocusOpen.current = false;
+                        return;
+                      }
+                      openMega();
+                    }}
+                    onBlur={onMegaBlur}
+                    onKeyDown={onMegaTriggerKeyDown}
+                    onClick={closeMega}
+                    className="inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+                  >
+                    {link.label}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`h-4 w-4 transition-transform duration-200 motion-reduce:transition-none ${
+                        isMegaOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </Link>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="transition-opacity hover:opacity-70"
+                  >
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </nav>
           )}
 
@@ -343,6 +515,115 @@ export default function Header({
             )}
           </div>
         </div>
+
+        {/* ---- Mega menú de escritorio ----
+            Hijo del <header> y NO del <nav>: la cápsula del nav (estado A) y
+            la barra condensada (estado B) llevan `backdrop-filter`, que crea
+            un containing block, así que dentro de ellas el panel se mediría
+            contra la cápsula y no podría ir a ancho completo. Aquí se
+            posiciona contra el <header>, que es `fixed` y ocupa todo el ancho.
+
+            El `pt-3` es un puente transparente entre la barra y la tarjeta:
+            el puntero lo recorre sin salir del panel. Y como el panel no sigue
+            al disparador en el DOM, la tabulación la cosen
+            `onMegaTriggerKeyDown` y `onMegaPanelKeyDown`.
+
+            Siempre montado (con `hidden` cuando está cerrado) para que el
+            `aria-controls` del disparador apunte a un elemento que existe. */}
+        {gruposServicios.length > 0 && (
+          <div
+            ref={megaPanelRef}
+            id={MEGA_PANEL_ID}
+            hidden={!isMegaOpen}
+            onMouseEnter={openMega}
+            onMouseLeave={scheduleMegaClose}
+            onBlur={onMegaBlur}
+            onKeyDown={onMegaPanelKeyDown}
+            className="absolute inset-x-4 top-full hidden pt-3 lg:block"
+          >
+            <div className="mx-auto max-w-7xl rounded-3xl border border-brand-100 bg-white p-10 shadow-xl shadow-brand-900/10">
+              {/* Cuatro columnas iguales con `divide-x`: la línea va SÓLO
+                  entre columnas (en Tailwind v4, borde derecho de todas menos
+                  la última), y
+                  `items-stretch` hace que corra a la altura completa de la
+                  fila y no sólo a la del contenido de cada columna. Cada
+                  columna lleva `px-7` para separar los enlaces de la línea;
+                  la primera y la última lo pierden por fuera para alinear con
+                  el padding del panel y con la fila de abajo. */}
+              <div className="grid grid-cols-4 items-stretch divide-x divide-brand-100">
+                {gruposServicios.map((grupo, i) => (
+                  <div
+                    key={grupo.slug}
+                    className="min-w-0 px-7 first:pl-0 last:pr-0"
+                  >
+                    {/* <p> y no un heading: el panel está en todas las páginas
+                        y un encabezado aquí metería un nivel suelto antes del
+                        <h1> de cada una. Más chico, con tracking abierto y un
+                        tono más tenue que los enlaces para que no compita con
+                        ellos (slate-500 sobre blanco: 4.76:1, pasa AA). */}
+                    <p className="text-xs font-semibold tracking-wide text-slate-500">
+                      {grupo.nombre}
+                    </p>
+                    {/* `py-1.5` por enlace + `space-y-0.5` = 14px entre
+                        líneas de texto, y `mt-3.5` + el `py-1.5` del primero
+                        = 20px del encabezado al primer enlace. Enlaces en
+                        bloque, con área clicable a lo ancho de la columna; el
+                        `-mx-3` deja que el fondo del hover sobresalga sin
+                        mover el texto. */}
+                    <ul className="mt-3.5 space-y-0.5">
+                      {grupo.servicios.map((servicio) => (
+                        <li key={servicio.slug}>
+                          <Link
+                            href={`/servicios/${servicio.slug}`}
+                            onClick={closeMega}
+                            className="-mx-3 block rounded-lg px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-brand-50 hover:text-brand-900 focus-visible:text-brand-900"
+                          >
+                            {servicio.nombre}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Cierre en la última columna, que con cuatro enlaces
+                        dejaba media columna vacía frente a las de seis.
+                        Copy del bloque "Soluciones logísticas integrales" de
+                        la home (<IntegratedSolutions>): su título, la última
+                        oración de su párrafo y el texto de su botón. Abre el
+                        mismo <QuoteModal>; cierra el panel antes. Sólo existe
+                        aquí: el acordeón móvil no lo lleva. */}
+                    {i === gruposServicios.length - 1 ? (
+                      <div className="mt-8 rounded-2xl bg-brand-100 p-5">
+                        <p className="font-heading text-sm font-bold text-brand-900">
+                          Soluciones logísticas integrales
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                          Un solo punto de contacto para toda su operación
+                          internacional.
+                        </p>
+                        <QuoteButton
+                          onClick={closeMega}
+                          className="mt-4 rounded-full bg-brand-900 px-5 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                        >
+                          Solicite una cotización
+                        </QuoteButton>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 border-t border-brand-100 pt-6">
+                <Link
+                  href="/servicios"
+                  onClick={closeMega}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-900 transition-opacity hover:opacity-70"
+                >
+                  Ver todos los servicios
+                  <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ---- Menú móvil: panel a pantalla completa ----
@@ -364,7 +645,7 @@ export default function Header({
           role="dialog"
           aria-modal="true"
           aria-label="Menú"
-          className="fixed inset-0 z-50 flex flex-col bg-white motion-safe:animate-slide-in-right lg:hidden"
+          className="fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-white motion-safe:animate-slide-in-right lg:hidden"
         >
           <div className="flex h-20 shrink-0 items-center justify-between px-6">
             {/* Mismo destino y mismo tamaño que el logo del header, y sin el
@@ -409,34 +690,126 @@ export default function Header({
               automático se resuelve a cero en cuanto falta sitio y el contenedor
               se desplaza con normalidad desde arriba.
 
-              `overflow-y-auto` es la red de seguridad de eso mismo, no algo que
-              hoy haga falta: medido, el caso más apretado (320x568) ocupa 470px
-              de los 568 disponibles. Si mañana se añaden enlaces, se desplaza en
-              vez de recortarse. No necesita `data-lenis-prevent` porque el menú
-              pausa Lenis mientras está abierto. */}
-          <div className="flex flex-1 flex-col overflow-y-auto px-6 pb-10">
+              ALTURA Y SCROLL. El panel mide `h-dvh` (no `inset-0` ni 100vh)
+              para que la barra de direcciones de Safari no corte el final; la
+              cabecera de arriba es `shrink-0` y queda fija, y este contenedor
+              (`flex-1 min-h-0 overflow-y-auto`) es lo único que se desplaza.
+              Con el acordeón de "Servicios" el contenido supera el viewport
+              en cualquier teléfono, así que el scroll propio ya es necesario.
+
+              `data-lenis-prevent` ES OBLIGATORIO, mismo patrón que <QuoteModal>
+              y <WhatsAppModal>. Lenis queda pausado mientras el menú está
+              abierto, pero pausado sigue escuchando la rueda y el táctil y
+              llama a `preventDefault()`: sin la marca, este contenedor no se
+              podía desplazar ni con el dedo ni con la rueda (medido), sólo
+              moviendo el foco con teclado.
+
+              El `pb` suma `env(safe-area-inset-bottom)` para que el último
+              elemento no quede bajo la barra inferior del navegador, y
+              `-webkit-overflow-scrolling: touch` da la inercia en iOS viejos. */}
+          <div
+            data-lenis-prevent
+            className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-[calc(2.5rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]"
+          >
             <nav
               aria-label="Principal (móvil)"
               className="mt-auto flex flex-col gap-1"
             >
-              {enlaces.map((link) => (
-                /* TIPOGRAFÍA DE MENÚ, no de lista: `font-heading` (Archivo) a
-                   text-3xl en teléfono y text-4xl de 640px en adelante — el
-                   panel llega hasta 1023px, así que esa segunda talla es para
-                   tableta. Eran 16px en peso medium con la fuente de cuerpo.
+              {enlaces.map((link) =>
+                link.megaMenu && gruposServicios.length > 0 ? (
+                  /* "Servicios" en móvil: acordeón con los cuatro grupos. El
+                     botón tiene la misma tipografía que los enlaces de al
+                     lado; cada enlace de servicio mide al menos 44px de alto
+                     (`min-h-11`), el mínimo táctil. */
+                  <div key={link.href}>
+                    <button
+                      type="button"
+                      aria-expanded={isMobileServiciosOpen}
+                      aria-controls={MOBILE_SERVICIOS_ID}
+                      onClick={() => setIsMobileServiciosOpen((v) => !v)}
+                      className="flex w-full items-center justify-between py-2 text-left font-heading text-3xl font-bold leading-tight text-brand-900 transition-colors hover:text-brand-700 sm:text-4xl"
+                    >
+                      {link.label}
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={`h-7 w-7 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
+                          isMobileServiciosOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    <div
+                      id={MOBILE_SERVICIOS_ID}
+                      hidden={!isMobileServiciosOpen}
+                      className="pb-4"
+                    >
+                      {/* Cada grupo es su propio acordeón: el botón muestra
+                          u oculta sólo sus enlaces. Botón y enlaces miden al
+                          menos 44px de alto (`min-h-11`). */}
+                      {gruposServicios.map((grupo) => {
+                        const abierto = gruposMovilAbiertos.has(grupo.slug);
+                        const idLista = `menu-movil-grupo-${grupo.slug}`;
+                        return (
+                          <div key={grupo.slug} className="mt-2">
+                            <button
+                              type="button"
+                              aria-expanded={abierto}
+                              aria-controls={idLista}
+                              onClick={() => toggleGrupoMovil(grupo.slug)}
+                              className="flex min-h-11 w-full items-center justify-between text-left font-heading text-base font-bold text-brand-900"
+                            >
+                              {grupo.nombre}
+                              <ChevronDown
+                                aria-hidden="true"
+                                className={`h-5 w-5 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
+                                  abierto ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+                            <ul id={idLista} hidden={!abierto} className="pl-3">
+                              {grupo.servicios.map((servicio) => (
+                                <li key={servicio.slug}>
+                                  <Link
+                                    href={`/servicios/${servicio.slug}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="flex min-h-11 items-center text-base text-slate-600 transition-colors hover:text-brand-900"
+                                  >
+                                    {servicio.nombre}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                      <Link
+                        href="/servicios"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="mt-4 flex min-h-11 items-center gap-1.5 font-heading text-base font-semibold text-brand-900"
+                      >
+                        Ver todos los servicios
+                        <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  /* TIPOGRAFÍA DE MENÚ, no de lista: `font-heading` (Archivo) a
+                     text-3xl en teléfono y text-4xl de 640px en adelante — el
+                     panel llega hasta 1023px, así que esa segunda talla es para
+                     tableta. Eran 16px en peso medium con la fuente de cuerpo.
 
-                   El `py-2` no es decorativo: la línea a 30px mide 37.5px de
-                   alto y el mínimo táctil cómodo son 44px. Con él cada enlace
-                   ocupa 53.5px de alto real. */
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="py-2 font-heading text-3xl font-bold leading-tight text-brand-900 transition-colors hover:text-brand-700 sm:text-4xl"
-                >
-                  {link.label}
-                </Link>
-              ))}
+                     El `py-2` no es decorativo: la línea a 30px mide 37.5px de
+                     alto y el mínimo táctil cómodo son 44px. Con él cada enlace
+                     ocupa 53.5px de alto real. */
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="py-2 font-heading text-3xl font-bold leading-tight text-brand-900 transition-colors hover:text-brand-700 sm:text-4xl"
+                  >
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </nav>
 
             {/* MISMO BOTÓN QUE EL DEL HEADER, y no por parecido: el panel tapa

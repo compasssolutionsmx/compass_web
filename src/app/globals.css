@@ -489,7 +489,7 @@ button:not(:disabled),
   cursor: pointer;
 }
 
-/* El header es fixed: los anchors (#soluciones, #oferta) tienen que frenar
+/* El header es fixed: los anchors (p. ej. /servicios#maritimo) tienen que frenar
    antes para no quedar debajo de él.
 
    `overflow-x: clip` es el seguro de `bleed-right` (ver abajo). Ese sangrado se

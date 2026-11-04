@@ -20,6 +20,12 @@ export type ServiceFeatureBlockProps = {
   imagen?: string;
   /** Texto alternativo de `imagen`. */
   imagenAlt?: string;
+  /**
+   * Carga la foto con prioridad (`fetchPriority="high"` y sin `lazy`). Sólo
+   * para el primer bloque de la página: en escritorio su foto entra en el
+   * primer pliegue y es candidata a LCP. El resto se queda en diferido.
+   */
+  prioridad?: boolean;
 };
 
 /**
@@ -86,6 +92,7 @@ export default function ServiceFeatureBlock({
   imageSide = "left",
   imagen,
   imagenAlt = "",
+  prioridad = false,
 }: ServiceFeatureBlockProps) {
   if (flujo && flujo.length > 0) {
     return (
@@ -102,8 +109,13 @@ export default function ServiceFeatureBlock({
   /* Misma caja `aspect-[4/3] overflow-hidden rounded-2xl` con o sin foto,
      para que la rejilla no cambie. `object-cover`: los originales vienen en
      4:3 o en 1.339:1 (1200x896, 2400x1792); en estos últimos se pierden unos
-     pocos píxeles de los lados al encajar en 4:3. `sizes`: media rejilla
-     desde `lg`, ancho completo debajo. */
+     pocos píxeles de los lados al encajar en 4:3.
+
+     `sizes` sale del ancho real de la columna. El contenedor es `max-w-7xl`
+     (1280px) con `px-6` y la rejilla es de dos columnas con `gap-12` desde
+     `lg`, así que cada columna mide (ancho − 48 de padding − 48 de gap) / 2:
+     592px fijos desde 1280px de viewport y `(100vw − 96px) / 2` entre 1024 y
+     1280. Por debajo de `lg` apila a una columna de casi todo el ancho. */
   const caja = (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl">
       {imagen ? (
@@ -111,8 +123,11 @@ export default function ServiceFeatureBlock({
           src={imagen}
           alt={imagenAlt}
           fill
-          sizes="(min-width: 1024px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 592px, (min-width: 1024px) calc((100vw - 96px) / 2), 100vw"
           className="object-cover"
+          {...(prioridad
+            ? { fetchPriority: "high" as const, loading: "eager" as const }
+            : {})}
         />
       ) : (
         <div className="brand-gradient absolute inset-0" />

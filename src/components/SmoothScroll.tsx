@@ -88,7 +88,8 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
       // scroll. 0.09 se nota claramente sin llegar a sentirse lento.
       lerp: 0.09,
       smoothWheel: true,
-      // Los anclas del nav (#soluciones, #oferta) pasan por Lenis. El offset
+      // Los anclas de la misma página (p. ej. /servicios#maritimo desde el
+      // propio índice) pasan por Lenis. El offset
       // replica el `scroll-padding-top: 6rem` del CSS, que Lenis no respeta
       // porque no usa el scroll nativo para llegar al destino.
       anchors: { offset: -96 },
@@ -144,9 +145,10 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
   /**
    * Aterriza en el ancla cuando se llega a una página CON hash en la URL.
    *
-   * EL PROBLEMA: los enlaces del nav son `/#soluciones` y `/#oferta`. Desde el
-   * propio home, Lenis los intercepta él mismo (compara pathname, ver su
-   * `onClick`) y todo funciona. Desde /blog o cualquier otra página el pathname
+   * EL PROBLEMA: hay enlaces con ancla a OTRA página, como los de la home a
+   * `/servicios#maritimo` o `/servicios#terrestre`. Dentro de la misma página,
+   * Lenis los intercepta él mismo (compara pathname, ver su `onClick`) y todo
+   * funciona. Desde la home o cualquier otra página el pathname
    * difiere, Lenis NO interviene y el posicionamiento queda en manos del router
    * — que lo intentaba antes de que la página nueva estuviera medida, así que
    * se aterrizaba en el hero en vez de en la sección.

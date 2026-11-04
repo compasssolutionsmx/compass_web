@@ -8,8 +8,8 @@
  * propio.
  *
  * SEPARADO DEL ÁRBOL DE `lib/services.ts` A PROPÓSITO. Ese archivo modela la
- * arquitectura de información (ramas de alcance, modos, opciones anidadas) y
- * sus rutas salen de `servicePath()`, que anida por rama y por modo. Estas 18
+ * arquitectura de información (ramas de alcance, modos, opciones anidadas),
+ * que anidaría por rama y por modo, y ya no genera rutas. Estas 18
  * páginas son PLANAS bajo `/servicios/` y su lista de slugs vino dada por la
  * tarea, no derivada del árbol. Los dos modelos conviven sin tocarse hasta que
  * se decida el esquema de URL definitivo, que es una tarea aparte que
@@ -47,11 +47,9 @@
  * `allServicioSlugs()`. Cada una conserva su `canonical`, que ahora ya no
  * contradice a nada.
  *
- * QUEDAN DOS COSAS DE ESA MISMA LISTA, y ahora pesan más porque las páginas
- * ya se pueden indexar:
- *  - LOS ENLACES INTERNOS. Ninguna navegación del sitio apunta a estas rutas:
- *    ni el nav, ni el pie (que sigue listando `/tipo-solucion/*` como texto
- *    inerte), ni el blog. Un buscador sólo llega a ellas por el sitemap.
+ * QUEDA UNA COSA DE ESA MISMA LISTA (los enlaces internos ya se resolvieron:
+ * mega menú, footer, home e índice /servicios enlazan a estas rutas desde
+ * `GRUPOS_SERVICIOS`):
  *  - EL ARTE DEL HERO. <ServiceHero> sigue con el degradado de marca en
  *    lugar de la foto; los bloques ya tienen la suya. Ni este archivo ni la página
  *    renderizada tienen ya ningún marcador de posición visible: nada entre
@@ -161,6 +159,12 @@ type ServicioPreguntas =
 export type ServicioContenido = {
   /** Segmento de URL. Único en la lista. La ruta es `/servicios/<slug>`. */
   slug: string;
+  /**
+   * Nombre corto del servicio, para la navegación: mega menú, migas de pan,
+   * tarjetas del índice, chips de la home y footer. Sale del texto que ya
+   * existía (el prefijo de `heroTitulo` o el nombre en `lib/services.ts`).
+   */
+  nombre: string;
   /** Categoría real del servicio. Va como Eyebrow, encima del <h1>. */
   heroEyebrow: string;
   /** Título del hero, el <h1> de la página. Real en las 18 entradas. */
@@ -184,13 +188,14 @@ export type ServicioContenido = {
 export const SERVICIOS: ServicioContenido[] = [
   {
     slug: "fcl",
+    nombre: "FCL",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "FCL: contenedor marítimo completo",
     heroParrafo:
       "Cuando su carga ocupa un contenedor completo, el FCL permite trasladarla de origen a destino en un espacio exclusivo, sin compartirlo con otras mercancías. La carga viaja sellada desde origen, reduciendo manipulaciones durante el trayecto. Coordinamos la naviera, el despacho aduanal y el transporte terrestre hasta su almacén.",
     seoTitulo: "FCL: contenedor marítimo completo",
     seoDescripcion:
-      "Servicio FCL con contenedor exclusivo para su carga. Coordinamos naviera, despacho aduanal y transporte terrestre hasta su almacén.",
+      "Importe en contenedor completo por vía marítima. Coordinamos naviera, despacho aduanal y entrega terrestre hasta su almacén en México.",
     bloques: [
       {
         eyebrow: "Contenedor exclusivo",
@@ -238,13 +243,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "lcl",
+    nombre: "LCL",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "LCL: transporte marítimo consolidado",
     heroParrafo:
       "Envíe su mercancía sin esperar a llenar un contenedor. El servicio LCL permite transportar mercancía que no requiere un contenedor completo, compartiendo el espacio con otros embarques compatibles. Coordinamos su operación de origen a destino, desde la recolección y consolidación en origen hasta el transporte marítimo, desconsolidación, liberación y entrega en destino.",
     seoTitulo: "LCL: transporte marítimo consolidado",
     seoDescripcion:
-      "Servicio LCL para embarques que no requieren un contenedor completo. Consolidación en origen, despacho aduanal y entrega coordinada.",
+      "Carga consolidada por vía marítima cuando el volumen no justifica un contenedor completo. Consolidación en origen, despacho aduanal y entrega.",
     bloques: [
       {
         eyebrow: "Costo por espacio ocupado",
@@ -347,13 +353,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "flat-rack",
+    nombre: "Flat rack",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "Flat rack: solución para carga sobredimensionada",
     heroParrafo:
       "Cuando su mercancía no cabe en un contenedor convencional, buscamos una solución. El flat rack es un equipo especializado para transportar mercancías que, por sus dimensiones, peso o características, no pueden cargarse de manera convencional dentro de un contenedor estándar. Cuenta con una plataforma abierta sin paredes laterales ni techo, lo que permite realizar la carga por la parte superior o por los costados.",
-    seoTitulo: "Flat rack: solución para carga sobredimensionada",
+    seoTitulo: "Flat rack para carga fuera de medidas",
     seoDescripcion:
-      "Transporte marítimo en flat rack para mercancía que no puede cargarse dentro de un contenedor convencional.",
+      "Transporte marítimo en flat rack para mercancía que excede las medidas de un contenedor convencional, con amarre y trincado especializado.",
     bloques: [
       {
         eyebrow: "Cargas fuera de dimensiones",
@@ -477,13 +484,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "open-top",
+    nombre: "Open top",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "Open top: contenedor de techo abierto",
     heroParrafo:
       "El open top cuenta con una cubierta removible que permite cargar la mercancía desde arriba mediante grúa. Es adecuado para cargas que exceden la altura de la puerta o requieren carga vertical. Conviene utilizarlo cuando la mercancía necesita mayor altura de carga, pero puede mantenerse contenida dentro de las paredes del contenedor.",
     seoTitulo: "Open top: contenedor con techo abierto",
     seoDescripcion:
-      "Transporte marítimo en contenedor open top para carga que excede la altura del contenedor estándar.",
+      "Transporte marítimo en contenedor open top para carga que excede la altura estándar y debe cargarse por la parte superior con grúa.",
     bloques: [
       {
         eyebrow: "Carga vertical",
@@ -531,13 +539,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "isotanques",
+    nombre: "Isotanques",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "Isotanques: transporte de carga líquida",
     heroParrafo:
       "El isotanque es un tanque cilíndrico montado en una estructura con las dimensiones de un contenedor estándar. Permite transportar líquidos a granel por vía marítima y terrestre sin trasvase, manteniendo el producto en el mismo recipiente desde origen hasta destino. Su selección depende de las características del producto, capacidad requerida, requisitos de seguridad y condiciones de transporte.",
-    seoTitulo: "Isotanques: transporte marítimo de carga líquida",
+    seoTitulo: "Isotanques para carga líquida a granel",
     seoDescripcion:
-      "Transporte de líquidos a granel en isotanque, con la documentación y los protocolos que exige cada tipo de producto.",
+      "Transporte de líquidos a granel en isotanque, con la documentación, los protocolos y el manejo que exige cada tipo de producto.",
     bloques: [
       {
         eyebrow: "Sin trasvase",
@@ -586,13 +595,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "ro-ro",
+    nombre: "Ro-Ro",
     heroEyebrow: "Transporte marítimo",
     heroTitulo: "Ro-Ro: transporte marítimo de carga rodante",
     heroParrafo:
       "Su vehículo o maquinaria puede embarcar sin necesidad de un contenedor. El Ro-Ro es una modalidad de transporte marítimo diseñada para vehículos, maquinaria y equipos que pueden entrar y salir del buque mediante rampas de acceso, rodando o siendo remolcados. Coordinamos la operación considerando las características de cada unidad, incluyendo dimensiones, peso, movilidad, puntos de embarque, ruta y condiciones de entrega.",
-    seoTitulo: "Ro-Ro: transporte marítimo de carga rodante",
+    seoTitulo: "Ro-Ro: transporte de carga rodante",
     seoDescripcion:
-      "Transporte en buque Ro-Ro para vehículos y maquinaria que embarcan mediante rampas, sin necesidad de contenedor.",
+      "Transporte en buque Ro-Ro para vehículos y maquinaria que embarcan por sus propios medios mediante rampas, sin necesidad de contenedor.",
     bloques: [
       {
         eyebrow: "Sistema de carga",
@@ -722,11 +732,12 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "portacontenedor",
+    nombre: "Portacontenedor",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Transporte terrestre de contenedores",
     heroParrafo:
       "Del puerto a su almacén, con una operación coordinada y segura. Coordinamos el transporte terrestre de contenedores desde las principales aduanas marítimas de México hacia el destino que necesite. Contamos con unidades portacontenedores propias y una red de proveedores especializados, lo que nos permite atender el movimiento de contenedores generales y, de acuerdo con las condiciones y requisitos aplicables, mercancías peligrosas.",
-    seoTitulo: "Transporte terrestre de contenedores desde puerto",
+    seoTitulo: "Transporte terrestre de contenedores",
     seoDescripcion:
       "Transporte terrestre de contenedores desde las principales aduanas marítimas de México hasta su almacén, planta o centro de distribución.",
     bloques: [
@@ -795,13 +806,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "ltl",
+    nombre: "LTL",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "LTL: transporte terrestre consolidado",
     heroParrafo:
       "Mueva su mercancía sin contratar una unidad completa. Con un servicio LTL, su carga comparte capacidad con otros embarques que siguen rutas compatibles, permitiéndole aprovechar mejor el espacio disponible y evitar contratar una unidad completa cuando su volumen no lo requiere. Es una alternativa para embarques pequeños y medianos con cierta flexibilidad en sus tiempos de entrega.",
     seoTitulo: "LTL: transporte terrestre consolidado",
     seoDescripcion:
-      "Servicio LTL para embarques que no requieren una unidad completa. Su carga comparte capacidad con otros embarques en rutas compatibles.",
+      "Carga consolidada por carretera cuando no se requiere una unidad completa. Su embarque comparte capacidad en rutas compatibles.",
     bloques: [
       {
         eyebrow: "Costo por capacidad",
@@ -923,13 +935,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "ftl",
+    nombre: "FTL",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "FTL: transporte terrestre dedicado",
     heroParrafo:
       "Una unidad exclusiva para su carga, de origen a destino. El servicio FTL utiliza una unidad de transporte dedicada exclusivamente a un embarque, permitiendo que la mercancía viaje directamente desde el punto de origen hasta el destino. Al no compartir la unidad con otros embarques, se reducen las maniobras de consolidación y desconsolidación, proporcionando mayor control sobre la operación, la ruta y la programación de entrega.",
     seoTitulo: "FTL: transporte terrestre dedicado",
     seoDescripcion:
-      "Servicio FTL con unidad dedicada exclusivamente a su embarque, de origen a destino, para operaciones nacionales e internacionales.",
+      "Unidad dedicada en exclusiva a su embarque, de origen a destino, en operaciones nacionales y de comercio exterior, con monitoreo en ruta.",
     bloques: [
       {
         eyebrow: "Unidad dedicada",
@@ -1094,11 +1107,12 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "lowboy",
+    nombre: "Lowboy",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Lowboy: transporte de carga sobredimensionada",
     heroParrafo:
       "Más capacidad para transportar maquinaria de gran altura y peso. El lowboy, también conocido como cama baja, es una configuración de transporte diseñada para movilizar maquinaria, equipos y cargas especiales que requieren una altura de plataforma reducida. Su menor altura de carga ayuda a disminuir la altura total de la unidad, lo que puede facilitar el tránsito de equipos de gran altura y ofrecer mayor margen frente a los gálibos de la ruta.",
-    seoTitulo: "Lowboy: transporte de carga sobredimensionada",
+    seoTitulo: "Lowboy para maquinaria pesada",
     seoDescripcion:
       "Transporte en lowboy o cama baja para maquinaria y equipos de gran altura y peso, con estudio de ruta y permisos coordinados.",
     bloques: [
@@ -1247,6 +1261,7 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "plataformas",
+    nombre: "Plataformas",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Plataformas: transporte de carga abierta",
     heroParrafo:
@@ -1399,13 +1414,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "unidades-con-rampa",
+    nombre: "Unidades con rampa",
     heroEyebrow: "Transporte terrestre",
     heroTitulo: "Unidades con rampa hidráulica",
     heroParrafo:
       "Carga y descarga a nivel de piso, sin necesidad de un andén. Una unidad con rampa hidráulica facilita la carga y descarga de maquinaria, equipos y mercancías directamente desde el nivel del piso, siempre que las características de la carga permitan realizar la maniobra por rodamiento. Es una solución práctica para maquinaria autopropulsada, equipos sobre ruedas u orugas y cargas que pueden acceder a la unidad mediante una rampa.",
     seoTitulo: "Unidades con rampa hidráulica",
     seoDescripcion:
-      "Transporte con rampa hidráulica para maquinaria y equipos que se cargan por rodamiento, sin necesidad de andén ni grúa.",
+      "Transporte con rampa hidráulica para maquinaria y equipos que se cargan por rodamiento, sin necesidad de andén, grúa ni maniobra de izaje.",
     bloques: [
       {
         eyebrow: "Sin infraestructura especializada",
@@ -1533,14 +1549,15 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "carga-aerea",
+    nombre: "Carga aérea",
     heroEyebrow: "Transporte aéreo",
     heroTitulo:
       "Carga aérea: cuando el tiempo de entrega es parte de su negocio",
     heroParrafo:
       "Cuando necesita mover mercancía entre países con mayor rapidez y coordinación, el transporte aéreo puede ser la alternativa adecuada. Coordinamos embarques de carga aérea desde la recolección en origen hasta la entrega en destino, integrando transporte terrestre, documentación, despacho aduanal, espacio aéreo y entrega final. Analizamos las características de cada embarque para seleccionar la alternativa que mejor se adapte a su urgencia, tipo de mercancía, peso, volumen, ruta y presupuesto.",
-    seoTitulo: "Carga aérea internacional y nacional",
+    seoTitulo: "Carga aérea: fletes aéreos a México",
     seoDescripcion:
-      "Flete aéreo de importación y exportación, con recolección en origen, documentación, despacho aduanal y entrega en destino.",
+      "Fletes aéreos del extranjero a México y rutas nacionales, con recolección en origen, despacho aduanal y entrega en destino.",
     bloques: [
       {
         eyebrow: "Cuándo conviene",
@@ -1715,13 +1732,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "almacenaje-y-distribucion",
+    nombre: "Almacenaje y distribución",
     heroEyebrow: "Almacenaje",
     heroTitulo: "Almacenaje y distribución",
     heroParrafo:
       "La mercancía no siempre va directo del puerto a su planta. Cuando necesita consolidar, fraccionar o esperar el momento correcto para distribuir, el almacenaje es parte de la cadena y no un servicio aparte. Compass coordina el espacio, el manejo y la salida hacia cada destino.",
     seoTitulo: "Almacenaje y distribución de mercancía",
     seoDescripcion:
-      "Servicio de almacenaje y distribución coordinado con su operación de comercio exterior.",
+      "Almacenaje y distribución coordinados con su operación de comercio exterior, desde la salida de la aduana hasta el punto de entrega final.",
     bloques: [
       {
         eyebrow: "Entre la aduana y el destino",
@@ -1769,13 +1787,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "empaque-y-embalaje",
+    nombre: "Empaque y embalaje",
     heroEyebrow: "Almacenaje",
     heroTitulo: "Empaque y embalaje para transporte internacional",
     heroParrafo:
       "Una carga bien protegida reduce riesgos durante la manipulación, el tránsito y la entrega. El tipo de empaque y embalaje debe considerar las características de la mercancía, el medio de transporte, las maniobras y el destino. En operaciones internacionales, una mala protección puede generar daños, retrasos o costos adicionales, por lo que cada embarque requiere una solución de embalaje acorde con su recorrido y condiciones de manejo.",
     seoTitulo: "Empaque y embalaje para exportación",
     seoDescripcion:
-      "Servicio de empaque y embalaje conforme a los requisitos de cada modo de transporte y destino.",
+      "Empaque y embalaje conforme a los requisitos de cada modo de transporte y destino, para que su mercancía llegue en las mismas condiciones.",
     bloques: [
       {
         eyebrow: "Según el recorrido",
@@ -1823,13 +1842,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "expeditado",
+    nombre: "Expeditado",
     heroEyebrow: "Valor agregado",
     heroTitulo: "Servicio expeditado: cuando no hay margen",
     heroParrafo:
       "Cuando una carga no puede esperar, el tiempo se convierte en un factor operativo y económico. Un paro de línea, una refacción crítica o una entrega comprometida pueden requerir una solución fuera de los tiempos habituales. El servicio expeditado permite evaluar alternativas de transporte con prioridad en tiempo de tránsito, disponibilidad y ruta. La cotización se trabaja con la información disponible de la operación para identificar una opción viable en el menor tiempo posible.",
-    seoTitulo: "Servicio expeditado para urgencias logísticas",
+    seoTitulo: "Servicio expeditado para urgencias",
     seoDescripcion:
-      "Servicio expeditado con cotización en menos de tres horas para paros de línea y entregas críticas.",
+      "Servicio expeditado con cotización en menos de tres horas para paros de línea, entregas críticas y embarques que no admiten demora.",
     bloques: [
       {
         eyebrow: "Respuesta inmediata",
@@ -1877,13 +1897,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "seguro-de-carga",
+    nombre: "Seguro de carga",
     heroEyebrow: "Valor agregado",
     heroTitulo: "Seguro de carga: proteja el valor de su mercancía",
     heroParrafo:
       "Transportar mercancía implica asumir determinados riesgos durante la carga, manipulación, tránsito, almacenamiento y entrega. La responsabilidad del transportista no necesariamente equivale al valor comercial de su mercancía. Coordinamos opciones de seguro de carga de acuerdo con las características de su embarque, su valor y el recorrido que realizará, así como lo necesario para que el seguro surta efecto en caso de un siniestro.",
-    seoTitulo: "Seguro de carga para transporte internacional",
+    seoTitulo: "Seguro de carga para su mercancía",
     seoDescripcion:
-      "Cobertura de mercancía en tránsito internacional y nacional, dimensionada al valor real del embarque.",
+      "Cobertura de mercancía en tránsito internacional y nacional, dimensionada al valor real del embarque y al riesgo de cada ruta.",
     bloques: [
       {
         eyebrow: "El límite del transportista",
@@ -1931,13 +1952,14 @@ export const SERVICIOS: ServicioContenido[] = [
   },
   {
     slug: "previo-en-origen",
+    nombre: "Previo en origen",
     heroEyebrow: "Valor agregado",
     heroTitulo: "Previo en origen: verificar antes de que zarpe",
     heroParrafo:
       "Detectar un error en destino puede generar demoras, almacenajes y costos adicionales. El previo en origen permite verificar la mercancía antes de su salida y detectar inconsistencias a tiempo. Se revisan aspectos como cantidad, características de la mercancía, embalaje y correspondencia con la documentación disponible, de acuerdo con el alcance solicitado para la inspección. Compass coordina el previo en origen con el proveedor correspondiente, da seguimiento a la revisión y comparte los resultados.",
-    seoTitulo: "Previo en origen: verificación antes de embarcar",
+    seoTitulo: "Previo en origen antes de embarcar",
     seoDescripcion:
-      "Verificación de mercancía en origen antes del embarque, para evitar sorpresas al llegar a destino.",
+      "Verificación de la mercancía en origen antes del embarque, para detectar faltantes, daños o discrepancias antes de que salga el barco.",
     bloques: [
       {
         eyebrow: "Antes del embarque",
@@ -1984,6 +2006,84 @@ export const SERVICIOS: ServicioContenido[] = [
     },
   },
 ];
+
+/**
+ * AGRUPACIÓN OFICIAL DE LOS SERVICIOS, fuente única para el índice
+ * `/servicios`, el mega menú del header, el footer y la sección de soluciones
+ * de la home. Ninguno de esos sitios repite la lista: todos leen de aquí.
+ *
+ * `slug` es el id de la sección en `/servicios` (`/servicios#maritimo`), sin
+ * acentos. `nombre` es el texto visible. `servicios` va en el orden en que se
+ * pintan, y cada slug tiene que existir en `SERVICIOS` (lo comprueba
+ * `gruposServicios()` al compilar).
+ */
+export const GRUPOS_SERVICIOS = [
+  {
+    slug: "maritimo",
+    nombre: "Marítimo",
+    servicios: ["fcl", "lcl", "flat-rack", "open-top", "isotanques", "ro-ro"],
+  },
+  {
+    slug: "terrestre",
+    nombre: "Terrestre",
+    servicios: [
+      "ftl",
+      "ltl",
+      "portacontenedor",
+      "lowboy",
+      "plataformas",
+      "unidades-con-rampa",
+    ],
+  },
+  {
+    slug: "aereo-y-urgentes",
+    nombre: "Aéreo y urgentes",
+    servicios: ["carga-aerea", "expeditado"],
+  },
+  {
+    slug: "almacenaje-y-valor-agregado",
+    nombre: "Almacenaje y valor agregado",
+    servicios: [
+      "almacenaje-y-distribucion",
+      "empaque-y-embalaje",
+      "seguro-de-carga",
+      "previo-en-origen",
+    ],
+  },
+] as const satisfies readonly {
+  slug: string;
+  nombre: string;
+  servicios: readonly string[];
+}[];
+
+/** Un grupo con sus servicios ya resueltos a `{ slug, nombre }`. */
+export type GrupoServiciosResuelto = {
+  slug: string;
+  nombre: string;
+  servicios: { slug: string; nombre: string }[];
+};
+
+/**
+ * `GRUPOS_SERVICIOS` con el nombre de cada servicio resuelto. Es la forma
+ * ligera que se le pasa al header (componente de cliente) desde el layout:
+ * sólo slugs y nombres, para no meter todo el copy de `SERVICIOS` en el
+ * bundle del navegador. Lanza si un slug no existe, así que una errata en la
+ * agrupación rompe el build en vez de dejar un enlace a un 404.
+ */
+export function gruposServicios(): GrupoServiciosResuelto[] {
+  return GRUPOS_SERVICIOS.map((grupo) => ({
+    slug: grupo.slug,
+    nombre: grupo.nombre,
+    servicios: grupo.servicios.map((slug) => {
+      const servicio = getServicioBySlug(slug);
+      if (!servicio) {
+        throw new Error(`GRUPOS_SERVICIOS: slug desconocido "${slug}"`);
+      }
+      return { slug, nombre: servicio.nombre };
+    }),
+  }));
+}
+
 
 /** Los 18 slugs, en el orden de la lista. Para `generateStaticParams`. */
 export function allServicioSlugs(): string[] {

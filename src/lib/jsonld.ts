@@ -178,6 +178,27 @@ export function buildFaqJsonLd(
 }
 
 /**
+ * `Service` de una página de servicio. Sólo lo que se ve en la página: el
+ * nombre (el de las migas de pan), la descripción (el párrafo del hero, tal
+ * cual) y el proveedor por `@id`, que resuelve contra la organización que el
+ * layout declara en todas las páginas.
+ *
+ * SIN `areaServed` NI `serviceType` a propósito: ningún texto visible de la
+ * página los respalda, y declararlos sería marcado sin contenido detrás.
+ */
+export function buildServiceJsonLd(
+  { name, description }: { name: string; description: string },
+  siteUrl: string,
+) {
+  return {
+    "@type": "Service",
+    name,
+    description,
+    provider: organizationRef(siteUrl),
+  };
+}
+
+/**
  * El grafo global, para el layout raíz. Un solo `<script>` con `@graph` en vez
  * de dos etiquetas sueltas: así los dos nodos comparten `@context` y quedan
  * declarados como parte del mismo documento semántico.

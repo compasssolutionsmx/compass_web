@@ -13,14 +13,14 @@ import { allServicioSlugs } from "@/lib/servicios-contenido";
  *
  * SÓLO ESTÁN LAS RUTAS QUE EXISTEN HOY — home, índice, artículos,
  * /importaciones-a-mexico, /proveedores, /vacantes, /nosotros,
- * /apartado-legal y las 18 páginas de servicio.
+ * /apartado-legal, el índice /servicios y las 18 páginas de servicio.
  *
  * LAS DE SERVICIO SALEN DE `allServicioSlugs()`, no escritas a mano: es la
  * misma lista que alimenta `generateStaticParams` de la ruta dinámica, así
  * que una entrada nueva en `lib/servicios-contenido.ts` aparece aquí sola.
- * OJO: son las rutas PLANAS de `lib/servicios-contenido.ts`, no las que
- * generaría `servicePath()` de `lib/services.ts`, que anida por rama y modo.
- * Ese otro árbol sigue sin tener páginas y por eso sigue fuera.
+ * OJO: son las rutas PLANAS de `lib/servicios-contenido.ts`, no el árbol de
+ * `lib/services.ts`, que anida por rama y modo. Ese otro árbol no tiene
+ * páginas y por eso sigue fuera.
  *
  * /apartado-legal ESTUVO FUERA a propósito mientras el aviso de privacidad era
  * un borrador: la página llevaba `robots: { index: false }`, y listar en el
@@ -97,6 +97,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: new URL("/apartado-legal", SITE_URL).toString(),
       changeFrequency: "yearly",
       priority: 0.1,
+    },
+    /**
+     * ÍNDICE DE SERVICIOS. `0.9`, sólo por debajo de la home: es la entrada
+     * al catálogo y la página que enlaza a las 18 de servicio.
+     */
+    {
+      url: new URL("/servicios", SITE_URL).toString(),
+      changeFrequency: "monthly",
+      priority: 0.9,
     },
     /**
      * LAS 18 PÁGINAS DE SERVICIO. `0.8` y `monthly`, el mismo escalón que

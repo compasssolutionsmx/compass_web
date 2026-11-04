@@ -2,16 +2,21 @@ import Image from "next/image";
 import Link from "next/link";
 import CookiePreferencesButton from "./CookiePreferencesButton";
 import { SALES_PHONE_DISPLAY } from "@/lib/site";
+import { getServicioBySlug } from "@/lib/servicios-contenido";
 
 /**
- * VARIOS ENLACES DE ABAJO NO SON CLICABLES (auditoría de enlaces internos): las
- * seis rutas de SERVICE_LINKS no existen todavía y devuelven 404. Los `href` se
- * quedan en los datos porque son el destino real una vez que Alex confirme la
- * arquitectura de URLs de servicios.
+ * LA COLUMNA "SERVICIOS" YA ENLAZA A PÁGINAS REALES: seis servicios de
+ * `/servicios/<slug>` (ver `FOOTER_SERVICIOS`) y "Ver todos los servicios" a
+ * /servicios. Antes listaba seis rutas `/tipo-solucion/*` que no existen, en
+ * texto plano.
  *
- * `live: true` marca las rutas que YA existen y por tanto se renderizan como
- * `<Link>`: hoy /proveedores y /vacantes. Activar otra es poner el flag cuando
- * su página exista, no tocar el marcado.
+ * `live: true` marca las rutas de INFO_LINKS que YA existen y por tanto se
+ * renderizan como `<Link>`: hoy /proveedores y /vacantes. Activar otra es
+ * poner el flag cuando su página exista, no tocar el marcado.
+ *
+ * LOS ENCABEZADOS DE COLUMNA SON <p>, NO <h4>: el footer sale en todas las
+ * páginas y sus <h4> seguían al último <h2> de cada una, un salto de nivel en
+ * todo el sitio. Mismas clases, así que visualmente no cambia nada.
  *
  * "Términos y condiciones" YA NO ESTÁ en esta lista: apuntaba a
  * /apartado-legal#terminos y esa sección se retiró de la página (no existe el
@@ -96,23 +101,22 @@ const SOCIAL_LINKS = [
   },
 ];
 
-const SERVICE_LINKS = [
-  {
-    href: "/tipo-solucion/especializados-maritimo",
-    label: "Especializados marítimo",
-  },
-  {
-    href: "/tipo-solucion/especializados-terrestre",
-    label: "Especializados terrestre",
-  },
-  { href: "/tipo-solucion/soluciones-360", label: "Soluciones 360" },
-  { href: "/tipo-solucion/transporte-aereo", label: "Transporte aéreo" },
-  { href: "/tipo-solucion/transporte-maritimo", label: "Transporte marítimo" },
-  {
-    href: "/tipo-solucion/transporte-terrestre",
-    label: "Transporte terrestre",
-  },
-];
+/**
+ * Selección de servicios para el pie, en este orden. El nombre visible sale de
+ * `lib/servicios-contenido.ts`; un slug que no exista rompe el build.
+ */
+const FOOTER_SERVICIOS = [
+  "fcl",
+  "ftl",
+  "carga-aerea",
+  "ltl",
+  "almacenaje-y-distribucion",
+  "seguro-de-carga",
+].map((slug) => {
+  const servicio = getServicioBySlug(slug);
+  if (!servicio) throw new Error(`Footer: servicio desconocido "${slug}"`);
+  return { href: `/servicios/${slug}`, label: servicio.nombre };
+});
 
 export default function Footer() {
   return (
@@ -160,9 +164,9 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 font-heading text-sm font-semibold text-white">
+          <p className="mb-4 font-heading text-sm font-semibold text-white">
             Información
-          </h4>
+          </p>
           <ul className="space-y-2 text-sm">
             {/* Los que no están marcados `live` van en texto plano, sin
                 subrayado ni hover: su ruta es 404 hoy (ver la nota de
@@ -197,24 +201,35 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-4 font-heading text-sm font-semibold text-white">
+          <p className="mb-4 font-heading text-sm font-semibold text-white">
             Servicios
-          </h4>
+          </p>
           <ul className="space-y-2 text-sm">
-            {/* Texto plano, no `<Link>`: las seis rutas de /tipo-solucion/*
-                son 404 hoy (ver la nota de SERVICE_LINKS). */}
-            {SERVICE_LINKS.map((link) => (
-              <li key={link.href} className="text-slate-400">
-                {link.label}
+            {FOOTER_SERVICIOS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="transition-colors hover:text-white"
+                >
+                  {link.label}
+                </Link>
               </li>
             ))}
+            <li>
+              <Link
+                href="/servicios"
+                className="font-semibold text-white transition-opacity hover:opacity-80"
+              >
+                Ver todos los servicios
+              </Link>
+            </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="mb-4 font-heading text-sm font-semibold text-white">
+          <p className="mb-4 font-heading text-sm font-semibold text-white">
             Ubicación
-          </h4>
+          </p>
           {/* La dirección abre la ficha del sitio en Google Maps. Es un <a> y no
               un <Link>: sale del sitio, así que el router de Next no tiene nada
               que prefetchear ni que interceptar.
@@ -247,9 +262,9 @@ export default function Footer() {
               Benito Juárez, 03330 Ciudad de México, CDMX
             </a>
           </p>
-          <h4 className="mb-2 font-heading text-sm font-semibold text-white">
+          <p className="mb-2 font-heading text-sm font-semibold text-white">
             Ventas y soporte
-          </h4>
+          </p>
           <p className="text-sm">
             <a
               href={`tel:+${SALES_PHONE_DISPLAY.replace(/\D/g, "")}`}

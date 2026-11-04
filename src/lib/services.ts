@@ -5,9 +5,10 @@
  * links internos y, cuando existan, las páginas de servicio. Ninguna de esas
  * páginas está construida todavía: esto es sólo el árbol.
  *
- * Los slugs se guardan por SEGMENTO, no como rutas completas, y la ruta la arma
- * `servicePath()`. Así, si mañana cambia el patrón de URL, se cambia en un solo
- * sitio en vez de en cada nodo.
+ * Los slugs se guardan por SEGMENTO, no como rutas completas. Las páginas de
+ * servicio que sí existen son las planas de `lib/servicios-contenido.ts`
+ * (`/servicios/<slug>`); este árbol ya no genera rutas (se retiraron
+ * `servicePath()` y `allServicePaths()`, que nadie usaba).
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * PENDIENTE DE CONFIRMAR CON EL CLIENTE — tres puntos abiertos:
@@ -186,45 +187,3 @@ export const VALOR_AGREGADO: ServiceGroup = {
     { slug: "previo-en-origen", name: "Previo en origen" },
   ],
 };
-
-/**
- * Arma la ruta de cualquier nodo a partir de sus segmentos.
- *
- * TODO: el prefijo `/servicios` es una propuesta, no está confirmado. El sitio
- * actual en WordPress publica bajo `/tipo-solucion/...`; decidir si se conserva
- * ese patrón por SEO o se migra con redirects. Al pasar todo por esta función,
- * el cambio es de una línea.
- */
-export function servicePath(...segments: string[]): string {
-  return `/servicios/${segments.join("/")}`;
-}
-
-/**
- * Todas las rutas del árbol, aplanadas. Sirve para el `generateStaticParams` y
- * el sitemap cuando existan las páginas.
- *
- * OJO: hoy incluye los duplicados del punto (c) — LTL, FTL, Lowboy, Plataformas
- * y Unidades con Rampa salen dos veces, una por rama, con rutas distintas.
- */
-export function allServicePaths(): string[] {
-  const paths: string[] = [];
-
-  for (const branch of SCOPE_BRANCHES) {
-    paths.push(servicePath(branch.slug));
-    for (const mode of branch.modes) {
-      paths.push(servicePath(branch.slug, mode.slug));
-      for (const option of mode.options) {
-        paths.push(servicePath(branch.slug, mode.slug, option.slug));
-      }
-    }
-  }
-
-  for (const group of [TRANSVERSAL, VALOR_AGREGADO]) {
-    paths.push(servicePath(group.slug));
-    for (const option of group.options) {
-      paths.push(servicePath(group.slug, option.slug));
-    }
-  }
-
-  return paths;
-}

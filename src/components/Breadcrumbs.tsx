@@ -9,8 +9,11 @@ import { buildBreadcrumbJsonLd, type Crumb } from "@/lib/jsonld";
  * depender de que alguien se acuerde: si un escalón no se renderiza, tampoco se
  * declara, porque salen los dos del mismo `items`.
  *
- * DÓNDE SE USAN: sólo en las páginas de artículo. Ver la nota de decisión en
- * `app/blog/[slug]/page.tsx`.
+ * DÓNDE SE USAN: en las páginas de artículo (ver la nota de decisión en
+ * `app/blog/[slug]/page.tsx`) y en las 18 páginas de servicio, dentro de
+ * <ServiceHero>. Las de servicio van sobre fondo oscuro (`tone="dark"`) y con
+ * otra etiqueta de `nav`; los dos props tienen por defecto lo que ya usaba el
+ * blog, así que los artículos no cambian.
  *
  * ACCESIBILIDAD
  *  · `<nav aria-label>` porque hay más de un nav en la página (el del header) y
@@ -25,17 +28,28 @@ export default function Breadcrumbs({
   items,
   siteUrl,
   className = "",
+  tone = "light",
+  label = "Migas de pan",
 }: {
   items: Crumb[];
   siteUrl: string;
   className?: string;
+  /** `light` sobre blanco (artículos); `dark` sobre el hero de servicio. */
+  tone?: "light" | "dark";
+  /** `aria-label` del <nav>. */
+  label?: string;
 }) {
+  const oscuro = tone === "dark";
   return (
-    <nav aria-label="Migas de pan" className={className}>
+    <nav aria-label={label} className={className}>
       {/* `flex-wrap` y no truncado: el título de un artículo puede ser largo y
           cortarlo con puntos suspensivos dejaría el texto visible distinto del
           declarado en el JSON-LD. Que reparta en dos líneas es preferible. */}
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
+      <ol
+        className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-sm ${
+          oscuro ? "text-brand-100" : "text-slate-500"
+        }`}
+      >
         {items.map((crumb, i) => {
           const esUltimo = i === items.length - 1;
 
@@ -45,20 +59,30 @@ export default function Breadcrumbs({
                 // `text-slate-700` sobre blanco: 8.6:1, muy por encima de AA.
                 // Un punto más oscuro que los enlaces para señalar dónde está
                 // el usuario sin recurrir a negrita, que competiría con el h1.
-                <span aria-current="page" className="text-slate-700">
+                <span
+                  aria-current="page"
+                  className={oscuro ? "text-white" : "text-slate-700"}
+                >
                   {crumb.name}
                 </span>
               ) : (
                 <Link
                   href={crumb.href}
-                  className="transition-colors hover:text-brand-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-900"
+                  className={
+                    oscuro
+                      ? "transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                      : "transition-colors hover:text-brand-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-900"
+                  }
                 >
                   {crumb.name}
                 </Link>
               )}
 
               {!esUltimo && (
-                <span aria-hidden="true" className="ml-2 text-slate-300">
+                <span
+                  aria-hidden="true"
+                  className={`ml-2 ${oscuro ? "text-brand-100/60" : "text-slate-300"}`}
+                >
                   /
                 </span>
               )}

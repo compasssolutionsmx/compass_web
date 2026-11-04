@@ -60,8 +60,17 @@ const CANACAR: Certification = {
   alt: "CANACAR",
   color: true,
 };
+/*
+ * PENDIENTE: el archivo se llama `WCA-LOGO.svg`, en mayúsculas, contra la
+ * regla de assets. La referencia sigue apuntando al nombre ACTUAL a propósito:
+ * `next start` sirve /public distinguiendo mayúsculas (aunque macOS no), así
+ * que apuntar a `wca-logo.svg` antes de renombrar el archivo da 404 incluso
+ * en local. El renombre y este cambio van juntos, en el mismo commit:
+ *   git mv public/logo-certs/wca-logo.svg public/logo-certs/wca-logo.svg
+ * y aquí `src: "/logo-certs/wca-logo.svg"`.
+ */
 const WCA: Certification = {
-  src: "/logo-certs/WCA-LOGO.svg",
+  src: "/logo-certs/wca-logo.svg",
   alt: "WCA World Cargo Alliance",
   color: true,
 };

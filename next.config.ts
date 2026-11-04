@@ -10,9 +10,9 @@ import type { NextConfig } from "next";
  * apuntan las dos a `/servicios/expeditado`. En el WordPress eran dos páginas
  * distintas y aquí es una sola, así que el destino se repite a propósito.
  *
- * NO ENTRAN TODAVÍA `/solucion/nacional`, `/solucion/internacional` ni las
- * rutas de `/tipo-solucion/`: esas apuntarán al índice de servicios, que no
- * existe. Declararlas hoy sería redirigir a un 404.
+ * `/solucion/nacional` y `/solucion/internacional` NO ESTÁN EN ESTA TABLA:
+ * eran páginas de rama y van al índice `/servicios` (ver `redirects()`). Las
+ * rutas de `/tipo-solucion/` siguen sin regla.
  *
  * LOS SLUGS VIEJOS ESTÁN SIN VERIFICAR CONTRA EL ORIGEN. El sitemap del
  * legacy no se pudo consultar (el host entero responde 401 con Basic auth),
@@ -87,11 +87,21 @@ const nextConfig: NextConfig = {
    * levantar el flag es una decisión de alcance del sitio, no de esta tabla.
    */
   async redirects() {
-    return Object.entries(SERVICIOS_LEGACY).map(([viejo, nuevo]) => ({
-      source: `/solucion/${viejo}{/}?`,
-      destination: `/servicios/${nuevo}`,
-      permanent: true,
-    }));
+    return [
+      /* Las dos ramas del legacy, al índice. VAN PRIMERO: hoy ninguna regla
+         de abajo las captura (la tabla sólo tiene slugs concretos, sin
+         comodín), pero así siguen ganando si algún día se añade uno. */
+      ...["nacional", "internacional"].map((rama) => ({
+        source: `/solucion/${rama}{/}?`,
+        destination: "/servicios",
+        permanent: true,
+      })),
+      ...Object.entries(SERVICIOS_LEGACY).map(([viejo, nuevo]) => ({
+        source: `/solucion/${viejo}{/}?`,
+        destination: `/servicios/${nuevo}`,
+        permanent: true,
+      })),
+    ];
   },
 };
 

@@ -5,6 +5,7 @@ import ConsentProvider from "@/components/ConsentProvider";
 import GoogleTagManagerGate from "@/components/GoogleTagManagerGate";
 import AttributionCapture from "@/components/AttributionCapture";
 import CookieBanner from "@/components/CookieBanner";
+import ServiciosMenuProvider from "@/components/ServiciosMenuProvider";
 import SmoothScroll from "@/components/SmoothScroll";
 import { consentBootstrapScript } from "@/lib/consent";
 import { buildSiteJsonLd } from "@/lib/jsonld";
@@ -164,7 +165,12 @@ export default function RootLayout({
               entrar, en vez de después de recorrer la página entera. Su posición
               visual la fija `position: fixed`, no el orden del marcado. */}
           <CookieBanner />
-          <SmoothScroll>{children}</SmoothScroll>
+          {/* Agrupación de servicios para el mega menú del header. Se resuelve
+              aquí, en servidor, y al cliente sólo baja slug + nombre: ver
+              <ServiciosMenuProvider>. */}
+          <ServiciosMenuProvider>
+            <SmoothScroll>{children}</SmoothScroll>
+          </ServiciosMenuProvider>
         </ConsentProvider>
       </body>
     </html>

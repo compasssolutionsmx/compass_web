@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { SITE_URL } from "@/app/layout";
+import { buildFaqJsonLd, buildServiceJsonLd } from "@/lib/jsonld";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Certifications from "@/components/Certifications";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -24,11 +27,10 @@ import {
  * `lib/servicios-contenido.ts`, una entrada por página.
  *
  * RUTAS PLANAS a propósito: /servicios/<slug>, sin anidar por rama ni por
- * modo. Siguen siendo DISTINTAS de lo que generaría `servicePath()` en
- * `src/lib/services.ts` (que anidaría por rama y modo). Ese árbol no se tocó,
- * ni el footer, ni el nav: estas páginas siguen sin engancharse a ninguna
- * navegación real. `lib/servicios-contenido.ts` lista dónde no coinciden los
- * dos modelos.
+ * modo, distintas del árbol de `src/lib/services.ts` (que anida por rama y
+ * modo y ya no genera rutas). La navegación del sitio (mega menú, footer,
+ * home e índice /servicios) enlaza a estas rutas desde `GRUPOS_SERVICIOS`.
+ * `lib/servicios-contenido.ts` lista dónde no coinciden los dos modelos.
  *
  * SIN `robots` DECLARADO: las 18 heredan el comportamiento indexable por
  * defecto y entran en `sitemap.ts`, derivadas de `allServicioSlugs()`. Antes
@@ -45,6 +47,17 @@ import {
  * sin `flujo` ya llevan su foto real (`imagen` en la entrada) y los bloques
  * con `flujo` no llevan imagen.
  */
+
+/**
+ * Mínimo de palabras de una respuesta para entrar al `FAQPage`. Mismo umbral
+ * que aplica `extractFaq()` en el blog: las respuestas más cortas se quedan en
+ * la página pero fuera del JSON-LD.
+ */
+const MIN_PALABRAS_RESPUESTA = 25;
+
+function contarPalabras(texto: string): number {
+  return texto.trim().split(/\s+/).length;
+}
 
 /** Rutas estáticas: una por entrada de `lib/servicios-contenido.ts`. */
 export function generateStaticParams() {
@@ -128,6 +141,38 @@ export default async function ServicioPage({
   );
   const [bloqueUno, ...restoBloques] = servicio.bloques;
 
+  /* DATOS ESTRUCTURADOS de la página, desde `servicio` y no parseando el
+     HTML: son exactamente las cadenas que pintan <ServiceHero>, las migas y
+     <ServiceFaq>, así que el texto declarado es idéntico al renderizado.
+     Las respuestas viven en un <details>, pero el <p> está en el HTML
+     inicial aunque el acordeón esté cerrado.
+
+     `Service` y `FAQPage` van como nodos separados de un `@graph`, sin
+     anidar. El `BreadcrumbList` lo emite <Breadcrumbs> en su propio bloque. */
+  const preguntasFaq = servicio.preguntas.filter(
+    (item) => contarPalabras(item.respuesta) >= MIN_PALABRAS_RESPUESTA,
+  );
+  // Dentro del `@graph` el nodo no repite `@context`: se toma sólo su cuerpo.
+  const faqPage = {
+    "@type": "FAQPage",
+    mainEntity: buildFaqJsonLd(
+      preguntasFaq.map((item) => ({
+        question: item.pregunta,
+        answer: item.respuesta,
+      })),
+    ).mainEntity,
+  };
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildServiceJsonLd(
+        { name: servicio.nombre, description: servicio.heroParrafo },
+        SITE_URL,
+      ),
+      ...(preguntasFaq.length > 0 ? [faqPage] : []),
+    ],
+  };
+
   return (
     <WhatsAppModalProvider>
       <QuoteModalProvider>
@@ -135,11 +180,31 @@ export default async function ServicioPage({
             artículo de blog. */}
         <Header topTone="dark" />
 
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
         <main className="flex-1">
           <ServiceHero
             eyebrow={servicio.heroEyebrow}
             titulo={servicio.heroTitulo}
             parrafo={servicio.heroParrafo}
+            migas={
+              /* Inicio / Servicios / {nombre}. <Breadcrumbs> emite el
+                 `BreadcrumbList` del MISMO arreglo que pinta, así que el
+                 JSON-LD declara exactamente estos tres escalones. */
+              <Breadcrumbs
+                items={[
+                  { name: "Inicio", href: "/" },
+                  { name: "Servicios", href: "/servicios" },
+                  { name: servicio.nombre },
+                ]}
+                siteUrl={SITE_URL}
+                tone="dark"
+                label="Ruta de navegación"
+              />
+            }
           />
 
           {/* Cada bloque alternado es su PROPIA sección, con <Certifications>
@@ -161,6 +226,7 @@ export default async function ServicioPage({
               imageSide={lados[0]}
               imagen={bloqueUno.imagen}
               imagenAlt={bloqueUno.imagenAlt}
+              prioridad
             />
           </div>
 
