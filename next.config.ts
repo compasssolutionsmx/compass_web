@@ -1,4 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { NextConfig } from "next";
+import { postFileNames, slugFromFileName } from "./src/lib/blog-archivos";
 
 /**
  * MAPEO DE LAS RUTAS DE SERVICIO DEL WORDPRESS LEGACY.
@@ -40,6 +43,66 @@ const SERVICIOS_LEGACY: Record<string, string> = {
   seguro: "seguro-de-carga",
   "previo-en-origen": "previo-en-origen",
 };
+
+/**
+ * URLS DEL BLOG DEL WORDPRESS EN LA RAÍZ. El WordPress publicaba las notas en
+ * `/<slug>` y Search Console sigue mostrando decenas de esas URLs indexadas
+ * (en dos casos Google servía la vieja en lugar de la nota nueva). Cada nota
+ * de hoy vive en `/blog/<slug>` con el MISMO slug, así que la regla se genera
+ * desde `postFileNames()` de `lib/blog-archivos.ts`, la misma base de la que
+ * `lib/blog.ts` saca el sitemap y el `generateStaticParams` del artículo: una
+ * nota nueva queda cubierta sola. (No se importa `lib/blog.ts` directamente
+ * porque la configuración no resuelve el alias `@/` que ese módulo usa.)
+ *
+ * GUARDA CONTRA COLISIONES: si un slug de nota coincidiera con una ruta real
+ * de la raíz, su regla capturaría esa página. Las rutas reales salen de la
+ * lista de abajo MÁS lo que haya en `src/app` y en `public` al compilar, para
+ * que una página o un archivo nuevo en la raíz también quede protegido. Las
+ * notas que colisionan no generan regla y se avisa en la consola del build.
+ */
+const RUTAS_RAIZ_RESERVADAS = new Set([
+  "nosotros",
+  "vacantes",
+  "proveedores",
+  "apartado-legal",
+  "servicios",
+  "blog",
+  "importaciones-a-mexico",
+  "api",
+  "llms.txt",
+  "llms-full.txt",
+  "sitemap.xml",
+  "robots.txt",
+  ...fs
+    .readdirSync(path.join(process.cwd(), "src/app"), { withFileTypes: true })
+    .filter((entrada) => entrada.isDirectory())
+    .map((entrada) => entrada.name),
+  ...fs.readdirSync(path.join(process.cwd(), "public")),
+]);
+
+function redirectsBlogLegacy() {
+  const slugs = postFileNames().map(slugFromFileName);
+  const colisiones = slugs.filter((slug) => RUTAS_RAIZ_RESERVADAS.has(slug));
+  if (colisiones.length > 0) {
+    console.warn(
+      `[redirects] Notas sin regla en la raíz por chocar con una ruta real: ${colisiones.join(", ")}`,
+    );
+  }
+  return slugs
+    .filter((slug) => !RUTAS_RAIZ_RESERVADAS.has(slug))
+    .map((slug) => ({
+      source: `/${slug}{/}?`,
+      destination: `/blog/${slug}`,
+      permanent: true,
+    }));
+}
+
+/**
+ * Otras tres URLs del WordPress sin página equivalente: el formulario de
+ * contacto, su página de agradecimiento y `/s`, el endpoint de búsqueda. Las
+ * tres a la home.
+ */
+const LEGACY_A_HOME = ["contacto", "gracias", "s"];
 
 const nextConfig: NextConfig = {
   images: {
@@ -99,6 +162,13 @@ const nextConfig: NextConfig = {
       ...Object.entries(SERVICIOS_LEGACY).map(([viejo, nuevo]) => ({
         source: `/solucion/${viejo}{/}?`,
         destination: `/servicios/${nuevo}`,
+        permanent: true,
+      })),
+      // Después de las de /solucion/*, para no alterar su orden.
+      ...redirectsBlogLegacy(),
+      ...LEGACY_A_HOME.map((ruta) => ({
+        source: `/${ruta}{/}?`,
+        destination: "/",
         permanent: true,
       })),
     ];

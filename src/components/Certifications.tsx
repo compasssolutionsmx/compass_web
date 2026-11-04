@@ -166,10 +166,14 @@ function CertLogo({ src, alt, color }: Certification) {
 
 export default function Certifications({
   items = CERTIFICATIONS_HOME,
-  title = "Certificados y asociados con",
+  title = "Asociados con",
 }: {
   items?: Certification[];
-  /** El mockup de la landing lo titula "Certificados para el éxito". */
+  /**
+   * Rótulo de la banda. "Asociados con" y no "Certificados…": los logos
+   * (AMACARGA, CANACAR, ALACAT, WCA) son asociaciones y redes, no
+   * certificaciones. Ninguna página le pasa un título propio hoy.
+   */
   title?: string;
 } = {}) {
   return (
@@ -177,13 +181,14 @@ export default function Certifications({
     // <QuoteSection>, que se recortó a `pb-10 md:pb-12` (40/48px) para acercar
     // esta fila al cotizador. Añadir aquí otro `pt` sería el doble padding que
     // hay que evitar entre dos secciones seguidas.
-    // `id` para que el nav interno de /importaciones-a-mexico pueda anclar aquí.
+    // `id` para que el nav interno de /importaciones-a-mexico pueda anclar aquí
+    // (`#asociaciones`).
     // `scroll-mt-28` deja aire bajo el header fijo al llegar por ancla; sin él
     // el título quedaría tapado. En el home no estorba: nadie ancla a esta
     // sección desde el nav global.
     <section
-      id="certificaciones"
-      aria-labelledby="certificaciones-titulo"
+      id="asociaciones"
+      aria-labelledby="asociaciones-titulo"
       className="mx-auto max-w-7xl scroll-mt-28 px-6 pb-16 md:pb-20"
     >
       {/* Un <h2> de verdad y no un <Eyebrow>: hace falta un elemento con `id`
@@ -192,7 +197,7 @@ export default function Certifications({
           sin contexto. Caja mixta, sin versales ni tracking, que es el criterio
           que ya fijó <Eyebrow> para las etiquetas del sitio. */}
       <h2
-        id="certificaciones-titulo"
+        id="asociaciones-titulo"
         className="text-center font-heading text-sm font-semibold text-brand-900"
       >
         {title}

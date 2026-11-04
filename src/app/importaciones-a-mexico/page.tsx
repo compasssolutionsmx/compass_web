@@ -105,7 +105,7 @@ function buildJsonLd() {
  * Sin "Gestión aduanal / freight forwarder" por ahora, decisión de contenido.
  */
 const NAV_LANDING = [
-  { href: `${PATH}#certificaciones`, label: "Certificaciones" },
+  { href: `${PATH}#asociaciones`, label: "Asociaciones" },
   { href: `${PATH}#soluciones`, label: "Soluciones" },
   { href: `${PATH}#resultados`, label: "Resultados" },
 ];

@@ -11,8 +11,10 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { organizationRef } from "@/lib/jsonld";
+import { BLOG_DIR, postFileNames, slugFromFileName } from "@/lib/blog-archivos";
 
-const BLOG_DIR = path.join(process.cwd(), "src/content/blog");
+// El directorio y qué archivos cuentan como nota viven en `blog-archivos.ts`,
+// que también usa `next.config.ts` para los redirects del WordPress.
 
 /**
  * CATEGORÍAS VÁLIDAS, declaradas en un solo sitio. Antes `category` era un
@@ -135,15 +137,13 @@ function parsePost(fileName: string): Post {
 
   return {
     ...frontmatter,
-    slug: fileName.replace(/\.mdx$/, ""),
+    slug: slugFromFileName(fileName),
     content,
   };
 }
 
 function readAll(): Post[] {
-  return fs
-    .readdirSync(BLOG_DIR)
-    .filter((f) => f.endsWith(".mdx"))
+  return postFileNames()
     .map(parsePost)
     .sort((a, b) => b.date.localeCompare(a.date)); // más reciente primero
 }

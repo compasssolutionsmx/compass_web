@@ -40,7 +40,7 @@ const SECCIONES: Record<BlogCategory, string> = {
   "Transporte terrestre": "Transporte terrestre y modalidades de carga",
   "Transporte aéreo": "Transporte aéreo",
   "Operación y almacén": "Operación, costos y almacén",
-  Seguridad: "Seguridad de la cadena de suministro y certificaciones",
+  Seguridad: "Seguridad de la cadena de suministro",
   Tecnología: "Tecnología logística",
   Actualidad: "Temporadas y actualidad del sector",
 };
@@ -84,7 +84,7 @@ El blog documenta normatividad aduanera mexicana, transporte de carga y operaci�
 
 ${enlace("Inicio", "/", "Qué servicios coordina Compass, trayectoria desde 2014 y cotizador de embarques.")}
 ${enlace("Nuestra compañía", "/nosotros", "Historia, misión y visión, y los diez compromisos de su política de seguridad y calidad.")}
-${enlace("Importaciones a México", "/importaciones-a-mexico", "Soluciones aéreas, marítimas y terrestres para importar a México, con certificaciones y casos de resultados.")}
+${enlace("Importaciones a México", "/importaciones-a-mexico", "Soluciones aéreas, marítimas y terrestres para importar a México, con casos de resultados.")}
 ${enlace("Blog de logística", "/blog", "Índice completo de artículos sobre comercio exterior, transporte y operación aduanal.")}
 
 ${secciones}

@@ -33,21 +33,42 @@
  * contenido por su cuenta. El criterio de "relacionado" está documentado en
  * esa función, y es mecánico (misma categoría primero), no editorial.
  *
- * SIN FOTO: la tarjeta usa el degradado de marca, el mismo tratamiento que
- * las cajas de imagen del resto de la página mientras no llegue el arte.
+ * FOTO DE FONDO: la del primer bloque del servicio enlazado, que llega por
+ * props como `imagen` (sale de `bloques[0].imagen` en la entrada, no de una
+ * ruta armada aquí). Lleva encima el mismo velo que las tarjetas de modo de
+ * la home (<ServicesGrid>), así que la categoría y el título conservan su
+ * contraste. Si una entrada no tuviera foto, la tarjeta se queda con el
+ * degradado de marca, que sigue siendo su fondo base.
  */
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import Eyebrow from "../Eyebrow";
 
 export type ServicioRelacionado = {
   slug: string;
+  /** Nombre corto: es el texto alternativo de la foto. */
+  nombre: string;
   heroEyebrow: string;
   heroTitulo: string;
+  /** Ruta de la foto del primer bloque. Sin ella, sólo degradado. */
+  imagen?: string;
 };
+
+/*
+ * Ancho real de la tarjeta, para `sizes`. La tarjeta es un % del viewport de
+ * Embla, que es la columna del carrusel más el `bleed-right` (sangra hasta el
+ * borde derecho de la ventana):
+ *   ≥1280  columna 864px + sangrado (100vw − 1280)/2 + 24 → 28% = 14vw + 70px
+ *   ≥1024  columna 100vw − 416 + 24 de sangrado          → 28% = 28vw − 110px
+ *   ≥640   ancho completo 100vw − 48 + 24                 → 45% = 45vw − 11px
+ *   <640                                                  → 78% = 78vw − 19px
+ */
+const SIZES_TARJETA =
+  "(min-width: 1280px) calc(14vw + 70px), (min-width: 1024px) calc(28vw - 110px), (min-width: 640px) calc(45vw - 11px), calc(78vw - 19px)";
 
 export type RelatedServicesCarouselProps = {
   servicios: readonly ServicioRelacionado[];
@@ -131,12 +152,27 @@ export default function RelatedServicesCarousel({
                 >
                   <Link
                     href={`/servicios/${servicio.slug}`}
-                    className="brand-gradient flex aspect-[3/4] flex-col justify-end overflow-hidden rounded-2xl p-5 transition-opacity hover:opacity-90"
+                    className="brand-gradient relative flex aspect-[3/4] flex-col justify-end overflow-hidden rounded-2xl p-5 transition-opacity hover:opacity-90"
                   >
-                    <p className="font-heading text-xs font-semibold uppercase tracking-wide text-brand-100">
+                    {servicio.imagen ? (
+                      <>
+                        {/* Diferida (por defecto en next/image): el carrusel
+                            cierra la página. */}
+                        <Image
+                          src={servicio.imagen}
+                          alt={servicio.nombre}
+                          fill
+                          sizes={SIZES_TARJETA}
+                          className="object-cover"
+                        />
+                        {/* Mismo velo que las tarjetas de modo de la home. */}
+                        <div className="absolute inset-0 bg-linear-to-t from-brand-950/95 via-brand-950/55 to-transparent" />
+                      </>
+                    ) : null}
+                    <p className="relative font-heading text-xs font-semibold uppercase tracking-wide text-brand-100">
                       {servicio.heroEyebrow}
                     </p>
-                    <p className="mt-2 font-heading text-lg font-bold leading-snug text-white">
+                    <p className="relative mt-2 font-heading text-lg font-bold leading-snug text-white">
                       {servicio.heroTitulo}
                     </p>
                   </Link>

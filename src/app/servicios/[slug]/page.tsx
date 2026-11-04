@@ -272,8 +272,17 @@ export default async function ServicioPage({
             preguntas={servicio.preguntas}
           />
           <ServiceCierre {...servicio.cierre} />
+          {/* Sólo los campos que pinta la tarjeta: el carrusel es cliente y
+              todo lo que se le pase viaja al navegador. La foto es la del
+              primer bloque de cada servicio, tomada de su entrada. */}
           <RelatedServicesCarousel
-            servicios={serviciosRelacionados(servicio.slug)}
+            servicios={serviciosRelacionados(servicio.slug).map((rel) => ({
+              slug: rel.slug,
+              nombre: rel.nombre,
+              heroEyebrow: rel.heroEyebrow,
+              heroTitulo: rel.heroTitulo,
+              imagen: rel.bloques[0].imagen,
+            }))}
           />
         </main>
 
