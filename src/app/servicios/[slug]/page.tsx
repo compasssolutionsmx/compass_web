@@ -39,10 +39,11 @@ import {
  *
  * SIN NINGÚN MARCADOR DE POSICIÓN VISIBLE. El copy de las 18 es real y ya no
  * queda nada entre corchetes ni ningún "Pendiente" en pantalla. Lo que sigue
- * faltando es el ARTE: las cajas de imagen (la del hero y una por cada bloque
- * sin `flujo`; los bloques con `flujo` no llevan imagen) llevan el degradado de marca en la medida exacta que tendrá la
- * foto, sin borde punteado ni etiqueta, para que el hueco no se anuncie como
- * hueco en una página que ya se indexa.
+ * faltando es la foto del HERO: lleva el degradado de marca en la medida
+ * exacta que tendrá la foto, sin borde punteado ni etiqueta, para que el
+ * hueco no se anuncie como hueco en una página que ya se indexa. Los bloques
+ * sin `flujo` ya llevan su foto real (`imagen` en la entrada) y los bloques
+ * con `flujo` no llevan imagen.
  */
 
 /** Rutas estáticas: una por entrada de `lib/servicios-contenido.ts`. */
@@ -59,10 +60,47 @@ export async function generateMetadata({
   const servicio = getServicioBySlug(slug);
   if (!servicio) return {};
 
+  const title = `${servicio.seoTitulo} | Compass Solutions`;
+  const url = `/servicios/${servicio.slug}`;
+  const [primerBloque] = servicio.bloques;
+
   return {
-    title: `${servicio.seoTitulo} | Compass Solutions`,
+    title,
     description: servicio.seoDescripcion,
-    alternates: { canonical: `/servicios/${servicio.slug}` },
+    alternates: { canonical: url },
+    /* `openGraph` entero, no sólo `images`: uno propio REEMPLAZA al del
+       layout raíz en vez de fusionarse (mismo criterio que /proveedores y el
+       artículo de blog).
+
+       La miniatura es `public/servicios/<slug>/<slug>-og.jpg`: la foto del
+       primer bloque recortada a 1200x630 (1.91:1, la medida estándar de Open
+       Graph) en JPG, que aceptan todas las redes. Sale de la misma foto que
+       `primerBloque.imagen`, por eso se ata a ella: si una entrada no tuviera
+       foto en el primer bloque, cae en la miniatura del sitio. */
+    openGraph: {
+      type: "website",
+      locale: "es_MX",
+      siteName: "Compass Solutions",
+      url,
+      title,
+      description: servicio.seoDescripcion,
+      images: [
+        primerBloque.imagen
+          ? {
+              url: `/servicios/${servicio.slug}/${servicio.slug}-og.jpg`,
+              width: 1200,
+              height: 630,
+              alt: primerBloque.imagenAlt,
+            }
+          : {
+              url: "/brand/thumbnail.jpg",
+              width: 1200,
+              height: 630,
+              alt: "Contenedor Compass Solutions en el Puerto de Lázaro Cárdenas",
+            },
+      ],
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -121,6 +159,8 @@ export default async function ServicioPage({
               vinetas={bloqueUno.vinetas}
               flujo={bloqueUno.flujo}
               imageSide={lados[0]}
+              imagen={bloqueUno.imagen}
+              imagenAlt={bloqueUno.imagenAlt}
             />
           </div>
 
@@ -155,6 +195,8 @@ export default async function ServicioPage({
                 vinetas={bloque.vinetas}
                 flujo={bloque.flujo}
                 imageSide={lados[i + 1]}
+                imagen={bloque.imagen}
+                imagenAlt={bloque.imagenAlt}
               />
             ))}
           </div>

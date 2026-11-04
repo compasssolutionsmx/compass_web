@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ServicioPaso } from "@/lib/servicios-contenido";
 import Eyebrow from "../Eyebrow";
 import { QuoteButton } from "../QuoteModal";
@@ -15,6 +16,10 @@ export type ServiceFeatureBlockProps = {
   /** Qué lado de la rejilla lleva la imagen en escritorio. Se ignora en los
    *  bloques con `flujo`, que no llevan imagen. */
   imageSide?: "left" | "right";
+  /** Ruta pública de la foto. Sin ella se pinta el degradado de marca. */
+  imagen?: string;
+  /** Texto alternativo de `imagen`. */
+  imagenAlt?: string;
 };
 
 /**
@@ -66,12 +71,11 @@ function filasParejas(n: number): number[] {
  * arriba: cada uno sigue su propio orden de DOM, no uno forzado igual para
  * los dos.
  *
- * SIN FOTO REAL: la caja conserva la misma medida `aspect-[4/3]
- * overflow-hidden rounded-2xl` que llevará la <Image> (mismo tratamiento que
- * <StatsSection>), rellena con el degradado de marca de globals.css. Dejó de
- * ser un marcador con borde punteado y etiqueta: estas páginas ya se indexan
- * y el hueco no puede anunciarse como hueco. Al llegar el arte, se sustituye
- * este <div> por la <Image> sin tocar la rejilla.
+ * FOTO: si el bloque trae `imagen`, se pinta con next/image dentro de la
+ * caja `aspect-[4/3] overflow-hidden rounded-2xl` (mismo tratamiento que
+ * <StatsSection>). Si no la trae, la misma caja se rellena con el degradado
+ * de marca de globals.css, sin borde punteado ni etiqueta: estas páginas ya
+ * se indexan y el hueco no puede anunciarse como hueco.
  */
 export default function ServiceFeatureBlock({
   eyebrow,
@@ -80,6 +84,8 @@ export default function ServiceFeatureBlock({
   vinetas,
   flujo,
   imageSide = "left",
+  imagen,
+  imagenAlt = "",
 }: ServiceFeatureBlockProps) {
   if (flujo && flujo.length > 0) {
     return (
@@ -93,9 +99,24 @@ export default function ServiceFeatureBlock({
     );
   }
 
-  const imagen = (
-    <div className="overflow-hidden rounded-2xl">
-      <div className="brand-gradient aspect-[4/3] w-full" />
+  /* Misma caja `aspect-[4/3] overflow-hidden rounded-2xl` con o sin foto,
+     para que la rejilla no cambie. `object-cover`: los originales vienen en
+     4:3 o en 1.339:1 (1200x896, 2400x1792); en estos últimos se pierden unos
+     pocos píxeles de los lados al encajar en 4:3. `sizes`: media rejilla
+     desde `lg`, ancho completo debajo. */
+  const caja = (
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl">
+      {imagen ? (
+        <Image
+          src={imagen}
+          alt={imagenAlt}
+          fill
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
+        />
+      ) : (
+        <div className="brand-gradient absolute inset-0" />
+      )}
     </div>
   );
 
@@ -123,13 +144,13 @@ export default function ServiceFeatureBlock({
     <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-12">
       {imageSide === "left" ? (
         <>
-          {imagen}
+          {caja}
           {texto}
         </>
       ) : (
         <>
           {texto}
-          {imagen}
+          {caja}
         </>
       )}
     </div>

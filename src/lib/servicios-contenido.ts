@@ -33,10 +33,12 @@
  * vistazo sigue sirviendo al revés: si algún texto de aquí vuelve a traer
  * corchetes, es que quedó a medias.
  *
- * LO QUE SIGUE PENDIENTE SON LAS IMÁGENES. El hero y cada bloque sin `flujo`
- * (los que traen `flujo` van a ancho completo, sin imagen) llevan todavía el degradado de marca en la medida exacta que tendrá la
- * foto, sin archivo real detrás. Ya no son marcadores con borde punteado ni
- * etiqueta: el hueco no se anuncia como hueco en una página que ya se indexa.
+ * LO QUE SIGUE PENDIENTE ES LA FOTO DEL HERO. Lleva todavía el degradado de
+ * marca en la medida exacta que tendrá la foto, sin archivo real detrás ni
+ * borde punteado ni etiqueta: el hueco no se anuncia como hueco en una
+ * página que ya se indexa. Cada bloque sin `flujo` ya trae su foto en
+ * `imagen` (en `public/servicios/<slug>/`) con su `imagenAlt`; los bloques
+ * con `flujo` van a ancho completo, sin imagen.
  *
  * LAS 18 PÁGINAS YA SON INDEXABLES. El `noindex, nofollow` que llevaban se
  * puso cuando el texto era de relleno y se retiró al quedar el copy real:
@@ -50,8 +52,8 @@
  *  - LOS ENLACES INTERNOS. Ninguna navegación del sitio apunta a estas rutas:
  *    ni el nav, ni el pie (que sigue listando `/tipo-solucion/*` como texto
  *    inerte), ni el blog. Un buscador sólo llega a ellas por el sitemap.
- *  - EL ARTE. Las cajas de imagen de `components/servicios/` siguen con el
- *    degradado de marca en lugar de la foto. Ni este archivo ni la página
+ *  - EL ARTE DEL HERO. <ServiceHero> sigue con el degradado de marca en
+ *    lugar de la foto; los bloques ya tienen la suya. Ni este archivo ni la página
  *    renderizada tienen ya ningún marcador de posición visible: nada entre
  *    corchetes ni ningún "Pendiente".
  */
@@ -71,6 +73,14 @@ export type ServicioBloque = {
    * imagen, con los pasos como rejilla de tarjetas numeradas.
    */
   flujo?: ServicioPaso[];
+  /**
+   * Ruta pública de la foto del bloque (`/servicios/<slug>/<slug>-bloque-<n>.webp`).
+   * Sólo en bloques sin `flujo`: los de flujo van a ancho completo, sin imagen.
+   * Sin ella, el bloque conserva el degradado de marca en la misma medida.
+   */
+  imagen?: string;
+  /** Texto alternativo de `imagen`: describe el contenido de la foto. */
+  imagenAlt?: string;
 };
 
 /** Un paso de `flujo`: tarjeta con número de orden, título y descripción. */
@@ -187,12 +197,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Su carga viaja sola, de origen a destino",
         parrafo:
           "En un embarque FCL, el contenedor se cierra en origen y se abre en destino, sin compartir espacio con mercancía de otros embarcadores. Al reducir las manipulaciones durante el trayecto, disminuye el riesgo de daños o faltantes y se mantiene un mayor control sobre la carga.",
+        imagen: "/servicios/fcl/fcl-bloque-1.webp",
+        imagenAlt:
+          "Puertas de un contenedor marítimo cerradas con barras de seguridad y candado",
       },
       {
         eyebrow: "Operación completa",
         titulo: "De la naviera a su almacén, con un solo interlocutor",
         parrafo:
           "Un embarque marítimo requiere coordinar naviera, documentación, despacho aduanal y transporte terrestre. Integramos estas etapas en una sola operación y damos seguimiento de origen a destino. Así tiene un solo punto de contacto para coordinar su embarque y mantener el control de cada etapa.",
+        imagen: "/servicios/fcl/fcl-bloque-2.webp",
+        imagenAlt:
+          "Vista aérea de una terminal portuaria con contenedores apilados, grúas pórtico y un tractocamión en circulación",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre FCL",
@@ -242,12 +258,18 @@ export const SERVICIOS: ServicioContenido[] = [
           "Mercancía que no justifica un contenedor completo",
           "Operaciones que requieren embarques marítimos de manera recurrente",
         ],
+        imagen: "/servicios/lcl/lcl-bloque-1.webp",
+        imagenAlt:
+          "Interior de un contenedor con tarimas emplayadas de cajas de distintos tamaños, como en un embarque consolidado",
       },
       {
         eyebrow: "Red de consolidadores",
         titulo: "Conectamos su carga con diferentes destinos del mundo",
         parrafo:
           "Contamos con una red de aliados y consolidadores internacionales que nos permite acceder a diferentes alternativas de servicio y rutas para sus embarques LCL. Esta red nos permite buscar opciones de consolidación de acuerdo con el origen, destino, volumen y fecha requerida para su mercancía, combinando frecuencia, tiempos de tránsito y costo logístico según las necesidades de su operación.",
+        imagen: "/servicios/lcl/lcl-bloque-2.webp",
+        imagenAlt:
+          "Centro de consolidación con un montacargas moviendo tarimas y cajas de distintos embarques",
       },
       {
         eyebrow: "Coordinación por etapas",
@@ -348,12 +370,18 @@ export const SERVICIOS: ServicioContenido[] = [
           "Cargas sobredimensionadas",
           "Piezas industriales de grandes dimensiones",
         ],
+        imagen: "/servicios/flat-rack/flat-rack-bloque-1.webp",
+        imagenAlt:
+          "Pieza de maquinaria industrial sujeta con cadenas sobre un contenedor flat rack en una terminal portuaria",
       },
       {
         eyebrow: "Métodos de carga",
         titulo: "Carga por arriba o por los costados",
         parrafo:
           "Una de las principales ventajas del flat rack es la posibilidad de cargar mercancía que no puede ingresar por las puertas de un contenedor convencional. Dependiendo del equipo seleccionado, la carga puede realizarse por la parte superior mediante maniobras de izaje, por los costados cuando el ancho o la geometría dificultan el ingreso convencional, o por los extremos en equipos con extremos abatibles. Esto permite transportar determinadas mercancías sin necesidad de desarmarlas.",
+        imagen: "/servicios/flat-rack/flat-rack-bloque-2.webp",
+        imagenAlt:
+          "Grúa de pórtico colocando una pieza pesada sobre un contenedor flat rack en el puerto",
       },
       {
         eyebrow: "Coordinación de la operación",
@@ -462,12 +490,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Cuando la pieza no entra por la puerta",
         parrafo:
           "Hay carga que cabe dentro del contenedor pero no puede ingresar por la puerta trasera, sea por su altura o porque requiere maniobra vertical. El open top resuelve ese caso: se retira la lona, se carga con grúa desde arriba y se vuelve a cubrir para el tránsito.",
+        imagen: "/servicios/open-top/open-top-bloque-1.webp",
+        imagenAlt:
+          "Vista superior de un contenedor open top sin lona con maquinaria en su interior, entre contenedores apilados",
       },
       {
         eyebrow: "Protección y altura",
         titulo: "Paredes de contenedor con acceso superior",
         parrafo:
           "A diferencia del flat rack, el open top mantiene las cuatro paredes, lo que ofrece más protección durante el tránsito y facilita la sujeción de la carga. Cuando la mercancía sobresale por encima del marco superior, aplica un cargo por sobrealtura que Compass calcula antes de cotizar.",
+        imagen: "/servicios/open-top/open-top-bloque-2.webp",
+        imagenAlt:
+          "Contenedor open top cubierto con lona sobre arcos metálicos en un patio de contenedores",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre open top",
@@ -510,12 +544,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "El producto viaja en un solo recipiente",
         parrafo:
           "Al conservar las dimensiones de un contenedor, el isotanque se maneja con el mismo equipo portuario y se transporta en el mismo chasis. Eso elimina el trasvase entre modos, que es donde se concentra el riesgo de contaminación, derrame y pérdida de producto.",
+        imagen: "/servicios/isotanques/isotanques-bloque-1.webp",
+        imagenAlt:
+          "Isotanque de acero inoxidable dentro de su marco estructural en un patio industrial",
       },
       {
         eyebrow: "Documentación y protocolos",
         titulo: "Cada producto tiene sus requisitos",
         parrafo:
           "El transporte de líquidos a granel está regulado según la naturaleza del producto, y las mercancías peligrosas tienen requisitos específicos de clasificación, documentación y manejo. Compass verifica que el embarque cumpla con lo aplicable antes de la reserva, no cuando la carga ya está en puerto.",
+        imagen: "/servicios/isotanques/isotanques-bloque-2.webp",
+        imagenAlt:
+          "Vista superior de un isotanque con escotilla, válvulas y pasarela de acceso",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre isotanques",
@@ -568,12 +608,18 @@ export const SERVICIOS: ServicioContenido[] = [
           "Maquinaria autopropulsada",
           "Equipos sobre ruedas",
         ],
+        imagen: "/servicios/ro-ro/ro-ro-bloque-1.webp",
+        imagenAlt:
+          "Buque Ro-Ro atracado en el muelle con la rampa de popa abierta",
       },
       {
         eyebrow: "Unidades con movilidad",
         titulo: "Para vehículos y maquinaria que necesitan movilidad",
         parrafo:
           "El Ro-Ro es una alternativa diseñada para mercancías que cuentan con ruedas, sistemas de rodamiento o características que permiten su movimiento mediante arrastre. Esto puede simplificar determinadas operaciones de embarque y desembarque y evitar que la mercancía tenga que ser cargada dentro de un contenedor. La selección de esta modalidad depende de la movilidad, las dimensiones, el peso, la ruta, el tipo de unidad y las condiciones del buque, por lo que cada operación debe evaluarse antes de confirmar el embarque.",
+        imagen: "/servicios/ro-ro/ro-ro-bloque-2.webp",
+        imagenAlt:
+          "Fila de tractores agrícolas en el muelle junto a un buque Ro-Ro",
       },
       {
         eyebrow: "Coordinación de la operación",
@@ -689,18 +735,27 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Transporte sencillo y full",
         parrafo:
           "Adaptamos el servicio a las características de su operación. El servicio sencillo transporta un contenedor por unidad, adecuado para operaciones individuales o cargas que por sus características requieren una unidad dedicada. El servicio full transporta dos contenedores en una misma operación, sujeto a las condiciones de peso, ruta, equipo y normatividad aplicable. En ambos casos, la operación se planifica considerando las restricciones de peso y las condiciones de tránsito.",
+        imagen: "/servicios/portacontenedor/portacontenedor-bloque-1.webp",
+        imagenAlt:
+          "Tractocamión con dos contenedores marítimos en configuración full circulando por carretera",
       },
       {
         eyebrow: "Tipos de carga",
         titulo: "Contenedores generales y mercancías peligrosas",
         parrafo:
           "Atendemos el transporte de contenedores generales y podemos coordinar operaciones que involucren mercancías peligrosas, siempre sujetas a la disponibilidad de equipo, ruta, documentación, clasificación de la mercancía y requisitos normativos aplicables. Para mercancías peligrosas es importante proporcionar la información correspondiente desde la cotización para validar las condiciones necesarias para su transporte.",
+        imagen: "/servicios/portacontenedor/portacontenedor-bloque-2.webp",
+        imagenAlt:
+          "Detalle del seguro de esquina que fija un contenedor al chasis portacontenedor",
       },
       {
         eyebrow: "Restricciones de peso",
         titulo: "El peso máximo depende de la configuración y la ruta",
         parrafo:
           "El peso máximo depende del tipo de contenedor, la configuración del equipo, la ruta y las restricciones de peso aplicables. Antes de programar el traslado validamos el peso bruto de la carga y las condiciones de la operación para determinar el equipo adecuado y evitar exceder los límites permitidos.",
+        imagen: "/servicios/portacontenedor/portacontenedor-bloque-3.webp",
+        imagenAlt:
+          "Tractocamión con contenedor saliendo por la garita de acceso de una terminal portuaria",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre transporte de contenedores",
@@ -761,6 +816,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "La ruta cuenta con servicio consolidado disponible",
           "La mercancía puede ser manipulada durante los procesos de consolidación",
         ],
+        imagen: "/servicios/ltl/ltl-bloque-1.webp",
+        imagenAlt:
+          "Interior de una caja seca con tarimas de distintos embarques cubiertas y emplayadas",
       },
       {
         eyebrow: "Seguimiento de la operación",
@@ -823,6 +881,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Embalaje adecuado al peso y dimensiones",
           "Identificación visible del embarque",
         ],
+        imagen: "/servicios/ltl/ltl-bloque-3.webp",
+        imagenAlt:
+          "Tarima emplayada con esquineros de cartón lista para su envío en un almacén",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre LTL",
@@ -884,6 +945,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Mercancía que requiere condiciones específicas de transporte",
           "Operaciones de importación y exportación con transporte terrestre dedicado",
         ],
+        imagen: "/servicios/ftl/ftl-bloque-1.webp",
+        imagenAlt:
+          "Tractocamión con caja seca estacionado junto a los andenes de un almacén en una mañana con niebla",
       },
       {
         eyebrow: "Planeación anticipada",
@@ -939,6 +1003,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Plataformas, para cargas que requieren acceso lateral o superior",
           "Equipos especializados, para mercancías que por sus dimensiones, peso o características requieren condiciones particulares",
         ],
+        imagen: "/servicios/ftl/ftl-bloque-3.webp",
+        imagenAlt:
+          "Caja seca, caja refrigerada y plataforma estacionadas en un patio de maniobras",
       },
       {
         eyebrow: "Coordinación de la operación",
@@ -1049,6 +1116,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Componentes para proyectos industriales",
           "Equipos de gran altura o peso",
         ],
+        imagen: "/servicios/lowboy/lowboy-bloque-1.webp",
+        imagenAlt:
+          "Excavadora de orugas cargada sobre un remolque cama baja en un patio",
       },
       {
         eyebrow: "Planeación previa",
@@ -1124,6 +1194,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Restricciones de circulación",
           "Requerimientos de carga y descarga",
         ],
+        imagen: "/servicios/lowboy/lowboy-bloque-3.webp",
+        imagenAlt:
+          "Remolque cama baja vacío con cuello desmontable en un patio de terracería",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre lowboy",
@@ -1196,6 +1269,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Características de la ruta",
           "Condiciones de carga y descarga",
         ],
+        imagen: "/servicios/plataformas/plataformas-bloque-1.webp",
+        imagenAlt:
+          "Montacargas cargando tubería de acero sobre una plataforma en un patio industrial",
       },
       {
         eyebrow: "Tipos de mercancía",
@@ -1213,12 +1289,18 @@ export const SERVICIOS: ServicioContenido[] = [
           "Componentes para proyectos",
           "Cargas que requieren maniobras superiores o laterales",
         ],
+        imagen: "/servicios/plataformas/plataformas-bloque-2.webp",
+        imagenAlt:
+          "Plataforma cargada con tubos y perfiles de acero asegurados con cinchas",
       },
       {
         eyebrow: "Sujeción y protección",
         titulo: "Protegemos y aseguramos su carga durante el traslado",
         parrafo:
           "Transportar mercancía en una plataforma requiere una correcta planeación de la distribución, apoyo y sujeción de la carga. Dependiendo de las características del embarque, pueden utilizarse cadenas, tensores, estrobos, amarres u otros elementos de sujeción adecuados para la operación. Cuando la mercancía necesita protección contra lluvia, polvo u otros factores ambientales, pueden evaluarse soluciones como lonas o coberturas especiales. La protección y sujeción deben definirse antes de iniciar el traslado.",
+        imagen: "/servicios/plataformas/plataformas-bloque-3.webp",
+        imagenAlt:
+          "Cadenas y tensores asegurando una viga de acero sobre la cubierta de una plataforma",
       },
       {
         eyebrow: "Coordinación de la operación",
@@ -1336,6 +1418,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Montacargas adecuado",
           "Equipo especializado para maniobras de izaje",
         ],
+        imagen: "/servicios/unidades-con-rampa/unidades-con-rampa-bloque-1.webp",
+        imagenAlt:
+          "Camión con rampa trasera desplegada en un patio de maniobras",
       },
       {
         eyebrow: "Equipos elegibles",
@@ -1352,6 +1437,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Equipos industriales móviles",
           "Maquinaria especializada",
         ],
+        imagen: "/servicios/unidades-con-rampa/unidades-con-rampa-bloque-2.webp",
+        imagenAlt:
+          "Minicargador de orugas subiendo por la rampa de un camión plataforma",
       },
       {
         eyebrow: "Evaluación previa",
@@ -1470,6 +1558,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Productos con ciclos de entrega cortos",
           "Embarques de importación y exportación",
         ],
+        imagen: "/servicios/carga-aerea/carga-aerea-bloque-1.webp",
+        imagenAlt:
+          "Avión de carga con la nariz abierta y una plataforma elevadora lista para cargar en la pista",
       },
       {
         eyebrow: "Operación completa",
@@ -1534,6 +1625,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Requisitos especiales de manejo",
           "Presupuesto",
         ],
+        imagen: "/servicios/carga-aerea/carga-aerea-bloque-3.webp",
+        imagenAlt:
+          "Contenedores aéreos y una tarima asegurada con red en la plataforma junto a un avión de carga",
       },
       {
         eyebrow: "Tipos de carga",
@@ -1550,6 +1644,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Mercancía con requerimientos especiales de manejo",
           "Carga que requiere condiciones específicas de transporte",
         ],
+        imagen: "/servicios/carga-aerea/carga-aerea-bloque-4.webp",
+        imagenAlt:
+          "Terminal de carga aérea con tarimas aseguradas con red sobre transportadores de rodillos",
       },
       {
         eyebrow: "Preparación de la carga",
@@ -1566,6 +1663,9 @@ export const SERVICIOS: ServicioContenido[] = [
           "Aprovechamiento del espacio",
           "Requisitos especiales del producto",
         ],
+        imagen: "/servicios/carga-aerea/carga-aerea-bloque-5.webp",
+        imagenAlt:
+          "Tarima de carga aérea cubierta con plástico y asegurada con red en la plataforma de una terminal",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre carga aérea",
@@ -1628,12 +1728,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "El punto donde se decide cómo sale la mercancía",
         parrafo:
           "Un embarque que llega completo muchas veces se distribuye fraccionado hacia varios destinos. El almacén es donde ocurre esa transformación: recepción, verificación, acomodo y preparación de cada salida. Coordinar ese punto con el resto de la cadena evita que la mercancía se detenga justo antes de llegar.",
+        imagen: "/servicios/almacenaje-y-distribucion/almacenaje-y-distribucion-bloque-1.webp",
+        imagenAlt:
+          "Pasillo de almacén con racks altos llenos de cajas y un trabajador con chaleco de seguridad revisando la mercancía",
       },
       {
         eyebrow: "Distribución",
         titulo: "De un solo arribo a múltiples entregas",
         parrafo:
           "Desde el almacén, la mercancía sale hacia sucursales, clientes o plantas según su programación. Compass coordina el transporte de cada salida con la misma trazabilidad que el tramo internacional, para que usted tenga visibilidad continua desde el origen hasta la entrega final.",
+        imagen: "/servicios/almacenaje-y-distribucion/almacenaje-y-distribucion-bloque-2.webp",
+        imagenAlt:
+          "Andenes de un centro de distribución con camiones estacionados y tarimas emplayadas en el patio",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre almacenaje y distribución",
@@ -1676,12 +1782,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Cada trayecto exige un embalaje distinto",
         parrafo:
           "Una carga consolidada que pasa por dos transbordos no requiere lo mismo que un contenedor sellado en origen. La estiba, la humedad, la vibración y el número de manipulaciones definen qué protección necesita el producto. Diseñar el embalaje conociendo el recorrido evita daños que después nadie puede reparar.",
+        imagen: "/servicios/empaque-y-embalaje/empaque-y-embalaje-bloque-1.webp",
+        imagenAlt:
+          "Operario envolviendo con película plástica una tarima de cajas en un área de embalaje",
       },
       {
         eyebrow: "Requisitos normativos",
         titulo: "La madera y el marcado tienen reglas",
         parrafo:
           "Cuando una operación internacional utiliza embalaje de madera, no basta con que la mercancía esté bien protegida. La madera debe cumplir con los requisitos fitosanitarios y de marcado aplicables al país de destino. Un incumplimiento puede generar inspecciones, retenciones, costos adicionales o demoras en la liberación de la carga. Por eso, estos requisitos deben revisarse antes de embarcar y no cuando la mercancía ya llegó a destino.",
+        imagen: "/servicios/empaque-y-embalaje/empaque-y-embalaje-bloque-2.webp",
+        imagenAlt:
+          "Caja de madera reforzada con flejes y esquineros metálicos en una nave industrial",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre empaque y embalaje",
@@ -1724,12 +1836,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "Cotización en menos de tres horas",
         parrafo:
           "En una urgencia, el tiempo que tarda la cotización es tiempo perdido. El servicio expeditado tiene un canal propio: se recibe el requerimiento, se evalúan las opciones disponibles y se entrega la propuesta con tiempos y costo en menos de tres horas, para que la decisión se tome el mismo día.",
+        imagen: "/servicios/expeditado/expeditado-bloque-1.webp",
+        imagenAlt:
+          "Operador frente a pantallas de monitoreo con mapas y rutas en un centro de seguimiento",
       },
       {
         eyebrow: "Todas las rutas sobre la mesa",
         titulo: "La mejor opción, no la habitual",
         parrafo:
           "En una operación urgente se evalúan alternativas que normalmente no se considerarían: cambio de modo, aeropuerto alterno, ruta terrestre directa o combinación de tramos. Compass compara las opciones reales disponibles en ese momento y presenta la que resuelve, con su costo y su tiempo.",
+        imagen: "/servicios/expeditado/expeditado-bloque-2.webp",
+        imagenAlt:
+          "Camioneta de carga junto al andén de una terminal aérea al anochecer",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre el servicio expeditado",
@@ -1772,12 +1890,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "La responsabilidad legal no equivale al valor de su carga",
         parrafo:
           "Los convenios internacionales establecen límites de responsabilidad calculados por peso, no por valor. En la práctica eso significa que un embarque de alto valor y poco peso queda cubierto por una fracción mínima de lo que realmente cuesta. El seguro de carga es lo que cubre la diferencia.",
+        imagen: "/servicios/seguro-de-carga/seguro-de-carga-bloque-1.webp",
+        imagenAlt:
+          "Estuche de transporte reforzado con ruedas en el piso de una nave industrial vacía",
       },
       {
         eyebrow: "Alcance de la cobertura",
         titulo: "Dimensionada al trayecto, no genérica",
         parrafo:
           "El riesgo de un contenedor sellado en tránsito directo no es el mismo que el de una carga consolidada con dos transbordos. La cobertura se define según el modo, el recorrido, el tipo de mercancía y el embalaje. Compass coordina la contratación con el alcance que corresponde a cada embarque.",
+        imagen: "/servicios/seguro-de-carga/seguro-de-carga-bloque-2.webp",
+        imagenAlt:
+          "Persona revisando documentos frente a una laptop en una oficina con vista al almacén",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre el seguro de carga",
@@ -1820,12 +1944,18 @@ export const SERVICIOS: ServicioContenido[] = [
         titulo: "El momento en que corregir todavía es sencillo",
         parrafo:
           "Una discrepancia entre la factura y la mercancía puede corregirse en origen antes de que el embarque salga. Detectarla hasta llegar a la aduana de destino puede generar multas, demoras y costos de almacenaje. Verificar la carga antes de embarcar permite detectar inconsistencias a tiempo y corregirlas antes de que afecten el despacho y la operación.",
+        imagen: "/servicios/previo-en-origen/previo-en-origen-bloque-1.webp",
+        imagenAlt:
+          "Inspector con chaleco de seguridad revisando tarimas de mercancía con una tabla de registro",
       },
       {
         eyebrow: "Qué se revisa",
         titulo: "Cantidad, condición y documentación",
         parrafo:
           "La verificación en origen permite revisar que la cantidad y características de la mercancía correspondan con lo declarado, que se encuentre en la condición esperada y que el embalaje sea adecuado para el trayecto. También se valida que el marcado y la documentación disponible sean consistentes con la carga. El resultado de la revisión se documenta y se comparte antes de la salida del embarque, para identificar cualquier inconsistencia y atenderla oportunamente.",
+        imagen: "/servicios/previo-en-origen/previo-en-origen-bloque-2.webp",
+        imagenAlt:
+          "Caja abierta sobre una tarima con una cámara y una cinta métrica al lado para documentar la revisión",
       },
     ],
     preguntasRotulo: "Preguntas frecuentes sobre el previo en origen",
