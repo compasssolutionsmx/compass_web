@@ -5,7 +5,6 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { QuoteModalProvider } from "@/components/QuoteModal";
 import ServiceCierre from "@/components/servicios/ServiceCierre";
-import ServiceCotizar from "@/components/servicios/ServiceCotizar";
 import ServiceFaq from "@/components/servicios/ServiceFaq";
 import ServiceFeatureBlock from "@/components/servicios/ServiceFeatureBlock";
 import ServiceHero from "@/components/servicios/ServiceHero";
@@ -151,8 +150,7 @@ export default async function ServicioPage({
             rotulo={servicio.preguntasRotulo}
             preguntas={servicio.preguntas}
           />
-          {servicio.cotizar ? <ServiceCotizar {...servicio.cotizar} /> : null}
-          {servicio.cierre ? <ServiceCierre {...servicio.cierre} /> : null}
+          <ServiceCierre {...servicio.cierre} />
           <RelatedServicesCarousel
             servicios={serviciosRelacionados(servicio.slug)}
           />

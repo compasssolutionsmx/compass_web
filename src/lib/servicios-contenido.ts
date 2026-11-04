@@ -73,18 +73,8 @@ export type ServicioPregunta = {
 };
 
 /**
- * Sección "cómo cotizar": va entre las preguntas frecuentes y el carrusel de
- * servicios relacionados. `titulo` se pinta como <h2>.
- */
-export type ServicioCotizar = {
-  titulo: string;
-  parrafo?: string;
-  requisitos: string[];
-};
-
-/**
- * Bloque de cierre con botón de cotización: va después de la sección de
- * cotizar y antes del carrusel. `textoBoton` es la etiqueta del botón.
+ * Bloque de cierre con botón de cotización: va después de las preguntas
+ * frecuentes y antes del carrusel. `textoBoton` es la etiqueta del botón.
  */
 export type ServicioCierre = {
   titulo: string;
@@ -165,8 +155,7 @@ export type ServicioContenido = {
    */
   preguntasRotulo: string;
   preguntas: ServicioPreguntas;
-  cotizar?: ServicioCotizar;
-  cierre?: ServicioCierre;
+  cierre: ServicioCierre;
 };
 
 export const SERVICIOS: ServicioContenido[] = [
@@ -211,6 +200,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "El despacho aduanal lo realiza un agente aduanal. Nosotros coordinamos su participación, la documentación y el seguimiento del proceso para mantener un solo punto de contacto durante la operación.",
       },
     ],
+    cierre: {
+      titulo: "Cotice su próximo embarque en contenedor completo",
+      parrafo:
+        "Para cotizar un FCL necesitamos el origen, el destino, el tipo y tamaño de contenedor, el peso bruto y la fecha estimada de embarque. Con esa información evaluamos la naviera, el itinerario y la coordinación terrestre hasta su almacén.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "lcl",
@@ -284,18 +279,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí. Podemos coordinar operaciones LCL tanto de importación como de exportación, dependiendo del origen, destino y características de la carga, manteniendo comunicación con el agente aduanal y los demás participantes de la cadena logística.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar su embarque LCL?",
+    cierre: {
+      titulo: "Cotice su próximo embarque consolidado",
       parrafo:
-        "Las dimensiones y el peso son especialmente importantes en LCL, ya que el costo del transporte puede estar determinado por el volumen, el peso o el factor aplicable a la tarifa. Una mercancía ligera pero con un volumen considerable puede generar un costo mayor al esperado. Entre más precisa sea la información de su carga, más precisa será nuestra cotización.",
-      requisitos: [
-        "Tipo de mercancía",
-        "Largo, ancho y alto",
-        "Peso bruto",
-        "Origen",
-        "Destino",
-        "Fecha estimada de embarque",
-      ],
+        "Para cotizar un LCL necesitamos el tipo de mercancía, sus dimensiones y peso bruto, el origen, el destino y la fecha estimada de embarque. Las medidas son especialmente importantes, porque el costo puede determinarse por volumen o por peso según cuál resulte mayor.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -383,21 +371,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí. Podemos coordinar las diferentes etapas de la operación, incluyendo transporte terrestre, maniobras y entrega, de acuerdo con las características y requerimientos de la carga.",
       },
     ],
-    cotizar: {
-      titulo: "La información de su carga es clave",
+    cierre: {
+      titulo: "Evaluemos su carga sobredimensionada",
       parrafo:
-        "Si cuenta con fotografías, planos o fichas técnicas, compartir esta información puede ayudarnos a evaluar con mayor precisión las características de la operación.",
-      requisitos: [
-        "Largo",
-        "Ancho",
-        "Alto",
-        "Peso",
-        "Tipo de mercancía",
-        "Origen",
-        "Destino",
-        "Forma y puntos de carga",
-        "Fecha estimada de embarque",
-      ],
+        "Para cotizar un flat rack necesitamos las dimensiones completas, el peso, el tipo de mercancía, el origen, el destino y los puntos de carga. Si cuenta con fotografías, planos o fichas técnicas, nos ayudan a evaluar la operación con mayor precisión.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -441,6 +419,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "La lona ofrece protección básica contra la intemperie, pero no equivale al techo rígido de un contenedor cerrado. Para mercancía sensible a la humedad se recomienda embalaje impermeable adicional, definido desde el origen del embarque.",
       },
     ],
+    cierre: {
+      titulo: "Cotice su embarque en contenedor de techo abierto",
+      parrafo:
+        "Para cotizar un open top necesitamos las dimensiones y el peso de la carga, el origen, el destino y la fecha estimada de embarque. Si la mercancía sobresale del marco superior, conviene declararlo desde el inicio para validar las condiciones de estiba.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "isotanques",
@@ -484,6 +468,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "Depende de la clasificación del producto conforme a la normativa aplicable. En general se requiere la hoja de datos de seguridad, la clasificación correspondiente y el marcado de la unidad. Compass revisa estos elementos antes de la reserva para evitar rechazos en puerto.",
       },
     ],
+    cierre: {
+      titulo: "Cotice el transporte de su carga líquida",
+      parrafo:
+        "Para cotizar un isotanque necesitamos la ficha técnica del producto, el volumen requerido, el origen, el destino y la fecha estimada de embarque. La naturaleza del producto determina el tipo de tanque y los requisitos documentales aplicables.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "ro-ro",
@@ -572,21 +562,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí. Podemos coordinar el transporte terrestre de la unidad desde el origen hasta el puerto y posteriormente desde el puerto de destino hasta el punto de entrega, sujeto a las características de la operación.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar un Ro-Ro?",
+    cierre: {
+      titulo: "Embarque su vehículo o maquinaria",
       parrafo:
-        "También puede ser útil contar con fotografías, ficha técnica o información del fabricante para evaluar las características de la unidad.",
-      requisitos: [
-        "Tipo de vehículo o maquinaria",
-        "Largo",
-        "Ancho",
-        "Alto",
-        "Peso",
-        "Si es autopropulsada o requiere arrastre",
-        "Origen",
-        "Destino",
-        "Fecha estimada de embarque",
-      ],
+        "Para cotizar un Ro-Ro necesitamos el tipo de unidad, sus dimensiones y peso, si es autopropulsada o requiere arrastre, el origen, el destino y la fecha estimada de embarque. Las fotografías y la ficha técnica ayudan a validar la elegibilidad de la unidad.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -646,21 +626,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí. Podemos coordinar el transporte desde el puerto hasta el almacén, planta, centro de distribución o punto de entrega indicado, de acuerdo con las condiciones de la operación.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar su transporte de contenedor?",
+    cierre: {
+      titulo: "Coordine el traslado de su contenedor desde puerto",
       parrafo:
-        "Con esta información podemos evaluar la ruta, el tipo de equipo y las condiciones necesarias para realizar el servicio.",
-      requisitos: [
-        "Origen",
-        "Destino",
-        "Tipo y tamaño de contenedor",
-        "Número de contenedores",
-        "Peso bruto de la mercancía",
-        "Tipo de mercancía",
-        "Clasificación aplicable, si se trata de mercancía peligrosa",
-        "Fecha requerida de recolección",
-        "Condiciones y requisitos de entrega",
-      ],
+        "Para cotizar necesitamos el origen, el destino, el tipo y tamaño de contenedor, el número de unidades, el peso bruto y la fecha requerida de recolección. Si se trata de mercancía peligrosa, es importante indicar su clasificación desde el inicio.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -746,21 +716,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "No necesariamente. El LTL puede ser más eficiente cuando su carga ocupa una parte de la capacidad disponible, pero cuando el volumen aumenta puede resultar más conveniente contratar una unidad completa. Por eso es importante comparar ambas opciones antes de tomar una decisión.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar su LTL?",
+    cierre: {
+      titulo: "Cotice su embarque consolidado terrestre",
       parrafo:
-        "Con esta información podemos evaluar la disponibilidad del servicio y determinar si el LTL o el FTL es la alternativa más conveniente.",
-      requisitos: [
-        "Origen y destino",
-        "Tipo de mercancía",
-        "Número de piezas",
-        "Peso total",
-        "Dimensiones de cada pieza",
-        "Volumen, cuando esté disponible",
-        "Tipo de embalaje",
-        "Fecha estimada de recolección",
-        "Requerimientos especiales de manejo o entrega",
-      ],
+        "Para cotizar un LTL necesitamos el origen y destino, el tipo de mercancía, el número de piezas, el peso total, las dimensiones de cada pieza y el tipo de embalaje. Si la carga no puede estibarse, es importante informarlo para considerarlo en la cotización.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -865,22 +825,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí. Si su mercancía requiere condiciones específicas de transporte, es importante indicarlo desde la cotización para analizar la disponibilidad del equipo adecuado y programar la operación con el tiempo necesario.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar un FTL?",
-      parrafo:
-        "Si se trata de mercancía peligrosa, refrigerada, sobredimensionada o con condiciones especiales de manejo, es importante indicarlo desde la cotización.",
-      requisitos: [
-        "Origen",
-        "Destino",
-        "Tipo de mercancía",
-        "Peso",
-        "Dimensiones y volumen",
-        "Tipo de unidad requerida, si ya lo conoce",
-        "Fecha y horario de carga",
-        "Fecha y ventana de entrega",
-        "Requerimientos especiales de la mercancía",
-      ],
-    },
     cierre: {
       titulo: "¿Necesita una unidad exclusiva para su carga?",
       parrafo:
@@ -996,21 +940,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí, dependiendo de sus características. Si la maquinaria no puede desplazarse por sus propios medios, deben analizarse previamente las maniobras de carga, descarga, sujeción y equipo auxiliar requerido.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar un lowboy?",
+    cierre: {
+      titulo: "Planeemos el traslado de su maquinaria",
       parrafo:
-        "Con estos datos podemos analizar el equipo requerido, las condiciones de la ruta y los posibles requerimientos de la operación.",
-      requisitos: [
-        "Origen y destino",
-        "Tipo de carga o maquinaria",
-        "Largo, ancho y altura",
-        "Peso total",
-        "Fotografías de la carga",
-        "Ficha técnica o planos, cuando estén disponibles",
-        "Puntos de carga y descarga",
-        "Fecha requerida de traslado",
-        "Información sobre condiciones especiales de maniobra",
-      ],
+        "Para cotizar un lowboy necesitamos el origen y destino, el tipo de carga, sus dimensiones completas, el peso total y fotografías del equipo. Los permisos y el estudio de ruta requieren tiempo, por lo que conviene iniciar la planeación con anticipación.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -1117,24 +1051,6 @@ export const SERVICIOS: ServicioContenido[] = [
           "Como mínimo necesitamos origen, destino, dimensiones, peso y características de la mercancía. También es importante conocer cómo se realizará la carga y descarga, así como los puntos disponibles para su apoyo y sujeción.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar una plataforma?",
-      parrafo:
-        "Con esta información podemos determinar la configuración de transporte más adecuada.",
-      requisitos: [
-        "Origen y destino",
-        "Tipo de mercancía",
-        "Número de piezas",
-        "Largo, ancho y alto",
-        "Peso total y peso por pieza",
-        "Fotografías de la carga",
-        "Centro de gravedad, cuando sea relevante",
-        "Puntos de apoyo o sujeción",
-        "Método de carga y descarga",
-        "Fecha requerida de recolección",
-        "Requerimientos especiales de protección o manejo",
-      ],
-    },
     cierre: {
       titulo: "Su carga no necesita una caja cerrada",
       parrafo:
@@ -1235,21 +1151,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Debe existir un acceso adecuado y condiciones suficientes para realizar la maniobra de manera segura. La pendiente, superficie, espacio disponible, altura de acceso y capacidad de la rampa son factores que deben revisarse antes de programar el servicio.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar?",
+    cierre: {
+      titulo: "Evaluemos la maniobra de su equipo",
       parrafo:
-        "Cuando sea posible, fotografías o videos del punto de carga y descarga pueden ayudarnos a evaluar mejor la operación.",
-      requisitos: [
-        "Origen y destino",
-        "Tipo de equipo o mercancía",
-        "Peso",
-        "Largo, ancho y alto",
-        "Fotografías del equipo",
-        "Si es autopropulsado o requiere asistencia para desplazarse",
-        "Condiciones de acceso en origen y destino",
-        "Fecha requerida de recolección",
-        "Cualquier requerimiento especial de carga o descarga",
-      ],
+        "Para cotizar necesitamos el tipo de equipo, su peso y dimensiones, si se desplaza por sus propios medios y las condiciones de acceso en origen y destino. Fotografías o videos del punto de carga nos ayudan a validar si la rampa es la alternativa adecuada.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -1383,23 +1289,11 @@ export const SERVICIOS: ServicioContenido[] = [
           "Sí. Podemos cotizar únicamente el tramo aéreo o coordinar una solución integral puerta a puerta, dependiendo de lo que necesite su operación y del alcance que prefiera contratar.",
       },
     ],
-    cotizar: {
-      titulo: "¿Qué necesitamos para cotizar su carga aérea?",
+    cierre: {
+      titulo: "Cotice su embarque aéreo",
       parrafo:
-        "Para una cotización más precisa es recomendable proporcionar fotografías, ficha técnica o información adicional de la mercancía cuando se trate de carga especial.",
-      requisitos: [
-        "Aeropuerto o ciudad de origen",
-        "Aeropuerto o ciudad de destino",
-        "Tipo de mercancía",
-        "Número de piezas",
-        "Peso bruto",
-        "Dimensiones de cada pieza",
-        "Volumen, cuando esté disponible",
-        "Fecha requerida de embarque",
-        "Fecha requerida de entrega, si existe",
-        "Valor de la mercancía, cuando sea relevante",
-        "Requerimientos especiales de manejo",
-      ],
+        "Para cotizar carga aérea necesitamos el origen y destino, el tipo de mercancía, el número de piezas, el peso bruto y las dimensiones de cada una. El costo se calcula sobre el peso real o el volumétrico, según cuál resulte mayor, por eso las medidas son determinantes.",
+      textoBoton: "Solicitar cotización",
     },
   },
   {
@@ -1443,6 +1337,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "Las salidas se programan según el calendario de entregas que usted defina. Cada movimiento genera su documentación de traslado y su seguimiento correspondiente, de modo que la trazabilidad no se interrumpe al pasar del tramo internacional a la distribución nacional.",
       },
     ],
+    cierre: {
+      titulo: "Coordine su almacenaje y distribución",
+      parrafo:
+        "Para evaluar el servicio necesitamos conocer el tipo de producto, el volumen estimado, la frecuencia de movimiento y los destinos de distribución. Con esa información definimos el esquema de recepción, resguardo y salidas que su operación requiere.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "empaque-y-embalaje",
@@ -1485,6 +1385,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "Depende de dónde ocurrió el daño y de qué cobertura tenga el embarque. Un embalaje inadecuado suele excluir la responsabilidad del transportista y limitar la cobertura del seguro. Por eso el embalaje correcto es la primera protección, antes que cualquier reclamación.",
       },
     ],
+    cierre: {
+      titulo: "Proteja su carga desde el origen",
+      parrafo:
+        "Para evaluar la solución de embalaje necesitamos el tipo de mercancía, sus dimensiones y peso, el modo de transporte y el país de destino. El recorrido completo determina qué protección necesita la carga y qué requisitos normativos aplican.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "expeditado",
@@ -1527,6 +1433,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "A través del canal de contacto directo, indicando origen, destino, características de la carga y la fecha límite real. Con esa información se evalúan las alternativas disponibles y se entrega la propuesta en menos de tres horas, para decidir el mismo día.",
       },
     ],
+    cierre: {
+      titulo: "Su carga no puede esperar",
+      parrafo:
+        "Compártanos origen, destino, características de la carga y la fecha límite real. Con esa información evaluamos las alternativas disponibles en ese momento y le presentamos la opción viable en el menor tiempo posible.",
+      textoBoton: "Solicitar servicio expeditado",
+    },
   },
   {
     slug: "seguro-de-carga",
@@ -1569,6 +1481,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "Se documenta la incidencia al momento de la recepción, con evidencia fotográfica y las observaciones correspondientes en los documentos de entrega. Ese registro es la base de la reclamación. Compass acompaña la integración del expediente y el seguimiento ante la aseguradora.",
       },
     ],
+    cierre: {
+      titulo: "Proteja el valor de su mercancía",
+      parrafo:
+        "Para evaluar una cobertura necesitamos la descripción y el valor de la mercancía, el origen, el destino, el medio de transporte y el tipo de embalaje. El seguro debe contratarse antes de iniciar el embarque para que surta efecto.",
+      textoBoton: "Solicitar cotización",
+    },
   },
   {
     slug: "previo-en-origen",
@@ -1611,6 +1529,12 @@ export const SERVICIOS: ServicioContenido[] = [
           "No. El previo se enfoca en la verificación física y documental de la carga desde una perspectiva logística y aduanal. Una inspección de calidad evalúa el producto contra especificaciones técnicas, estándares o requisitos previamente definidos. Son servicios distintos y, cuando la operación lo requiere, ambos pueden coordinarse.",
       },
     ],
+    cierre: {
+      titulo: "Verifique su carga antes de que salga",
+      parrafo:
+        "Para coordinar un previo en origen necesitamos la ubicación del proveedor, el tipo de mercancía, la documentación disponible y el alcance de revisión que requiere. El resultado se documenta con evidencia fotográfica antes de autorizar el embarque.",
+      textoBoton: "Solicitar servicio",
+    },
   },
 ];
 
