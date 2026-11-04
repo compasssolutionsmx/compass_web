@@ -39,8 +39,8 @@ import {
  *
  * SIN NINGÚN MARCADOR DE POSICIÓN VISIBLE. El copy de las 18 es real y ya no
  * queda nada entre corchetes ni ningún "Pendiente" en pantalla. Lo que sigue
- * faltando es el ARTE: las tres cajas de imagen (hero y una por bloque
- * alternado) llevan el degradado de marca en la medida exacta que tendrá la
+ * faltando es el ARTE: las cajas de imagen (la del hero y una por cada bloque
+ * sin `flujo`; los bloques con `flujo` no llevan imagen) llevan el degradado de marca en la medida exacta que tendrá la
  * foto, sin borde punteado ni etiqueta, para que el hueco no se anuncie como
  * hueco en una página que ya se indexa.
  */
@@ -75,6 +75,19 @@ export default async function ServicioPage({
   const servicio = getServicioBySlug(slug);
   if (!servicio) notFound();
 
+  /* Lado de la imagen por bloque. La alternancia cuenta SÓLO los bloques
+     con imagen: los que traen `flujo` van a ancho completo, sin imagen, y no
+     consumen turno. Así el primer bloque con imagen va a la izquierda, el
+     siguiente con imagen a la derecha y así, haya o no bloques de flujo
+     entre ellos. */
+  let conImagen = 0;
+  const lados = servicio.bloques.map((bloque) =>
+    bloque.flujo && bloque.flujo.length > 0
+      ? undefined
+      : conImagen++ % 2 === 0
+        ? ("left" as const)
+        : ("right" as const),
+  );
   const [bloqueUno, ...restoBloques] = servicio.bloques;
 
   return (
@@ -107,7 +120,7 @@ export default async function ServicioPage({
               description={bloqueUno.parrafo}
               vinetas={bloqueUno.vinetas}
               flujo={bloqueUno.flujo}
-              imageSide="left"
+              imageSide={lados[0]}
             />
           </div>
 
@@ -127,11 +140,11 @@ export default async function ServicioPage({
               propio componente. */}
           <Certifications />
 
-          {/* Del segundo bloque en adelante, todos después de la banda. La
-              alternancia sigue la posición en `servicio.bloques`: el segundo
-              a la derecha, el tercero a la izquierda y así. `gap-20` es el
-              mismo `py-20` de ritmo entre secciones; con dos bloques sólo hay
-              un hijo y el resultado es idéntico al de antes. */}
+          {/* Del segundo bloque en adelante, todos después de la banda. El
+              lado de la imagen sale de `lados` (ver arriba), que salta los
+              bloques de flujo. `gap-20` es el mismo `py-20` de ritmo entre
+              secciones, también para los bloques de ancho completo, que no
+              traen padding propio. */}
           <div className="mx-auto flex max-w-7xl flex-col gap-20 px-6 pb-20">
             {restoBloques.map((bloque, i) => (
               <ServiceFeatureBlock
@@ -141,7 +154,7 @@ export default async function ServicioPage({
                 description={bloque.parrafo}
                 vinetas={bloque.vinetas}
                 flujo={bloque.flujo}
-                imageSide={i % 2 === 0 ? "right" : "left"}
+                imageSide={lados[i + 1]}
               />
             ))}
           </div>

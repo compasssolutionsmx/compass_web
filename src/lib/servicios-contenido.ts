@@ -26,14 +26,15 @@
  *    `valor-agregado`) no tienen página propia en esta lista.
  *  - `servicio-nacional/maritimo` (cabotaje, en draft) no tiene página aquí.
  *
- * EL COPY DE LAS 18 ENTRADAS YA ES REAL. Entró en tres tandas (las cinco
- * terrestres, las siete marítimas y las seis restantes) y no queda ni un
+ * EL COPY DE LAS 18 ENTRADAS YA ES REAL. Entró por tandas (las cinco
+ * terrestres, las siete marítimas, las seis restantes y, después, los
+ * cierres y las descripciones de los pasos de `flujo`) y no queda ni un
  * marcador de posición en este archivo. La regla para comprobarlo de un
  * vistazo sigue sirviendo al revés: si algún texto de aquí vuelve a traer
  * corchetes, es que quedó a medias.
  *
- * LO QUE SIGUE PENDIENTE SON LAS IMÁGENES. El hero y cada bloque alternado
- * llevan todavía el degradado de marca en la medida exacta que tendrá la
+ * LO QUE SIGUE PENDIENTE SON LAS IMÁGENES. El hero y cada bloque sin `flujo`
+ * (los que traen `flujo` van a ancho completo, sin imagen) llevan todavía el degradado de marca en la medida exacta que tendrá la
  * foto, sin archivo real detrás. Ya no son marcadores con borde punteado ni
  * etiqueta: el hueco no se anuncia como hueco en una página que ya se indexa.
  *
@@ -55,15 +56,27 @@
  *    corchetes ni ningún "Pendiente".
  */
 
-/** Uno de los bloques alternados de imagen y texto (de dos a cinco). */
+/**
+ * Uno de los bloques de la página (de dos a cinco). Sin `flujo` alterna
+ * imagen y texto; con `flujo` va a ancho completo, sin imagen.
+ */
 export type ServicioBloque = {
   eyebrow: string;
   titulo: string;
   parrafo: string;
   /** Lista con viñetas debajo del párrafo, con el estilo de lista del blog. */
   vinetas?: string[];
-  /** Secuencia de pasos separados por flechas, debajo del párrafo. */
-  flujo?: string[];
+  /**
+   * Secuencia de pasos. Si el bloque la trae, se pinta a ancho completo, sin
+   * imagen, con los pasos como rejilla de tarjetas numeradas.
+   */
+  flujo?: ServicioPaso[];
+};
+
+/** Un paso de `flujo`: tarjeta con número de orden, título y descripción. */
+export type ServicioPaso = {
+  titulo: string;
+  descripcion: string;
 };
 
 /** Una de las preguntas frecuentes de la página (de tres a siete). */
@@ -242,12 +255,36 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "Un embarque LCL requiere una coordinación adicional debido a los procesos de consolidación y desconsolidación de la mercancía. Damos seguimiento a las principales etapas de su operación, de manera que cuente con un solo equipo coordinando el embarque.",
         flujo: [
-          "Recolección",
-          "Consolidación en origen",
-          "Transporte marítimo",
-          "Desconsolidación en destino",
-          "Liberación",
-          "Entrega",
+          {
+            titulo: "Recolección",
+            descripcion:
+              "Retiramos la mercancía en las instalaciones del proveedor y la trasladamos al centro de consolidación.",
+          },
+          {
+            titulo: "Consolidación en origen",
+            descripcion:
+              "La carga se agrupa con otros embarques compatibles dentro del mismo contenedor.",
+          },
+          {
+            titulo: "Transporte marítimo",
+            descripcion:
+              "El contenedor viaja hacia el puerto de destino según el itinerario del servicio contratado.",
+          },
+          {
+            titulo: "Desconsolidación en destino",
+            descripcion:
+              "El contenedor se abre y cada embarque se separa para continuar su proceso individual.",
+          },
+          {
+            titulo: "Liberación",
+            descripcion:
+              "Se completa el despacho aduanal y la mercancía queda disponible para su retiro.",
+          },
+          {
+            titulo: "Entrega",
+            descripcion:
+              "Coordinamos el transporte terrestre hasta el punto final indicado por usted.",
+          },
         ],
       },
     ],
@@ -324,14 +361,46 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "Una operación en flat rack requiere una planeación más detallada que un embarque convencional. Antes de programar el embarque analizamos las características de la carga para identificar los requerimientos específicos de la operación.",
         flujo: [
-          "Evaluación de carga",
-          "Selección de equipo",
-          "Recolección",
-          "Carga y estiba",
-          "Transporte marítimo",
-          "Liberación",
-          "Transporte terrestre",
-          "Entrega",
+          {
+            titulo: "Evaluación de carga",
+            descripcion:
+              "Revisamos dimensiones, peso, centro de gravedad y puntos de apoyo de la pieza.",
+          },
+          {
+            titulo: "Selección de equipo",
+            descripcion:
+              "Definimos el tipo de flat rack adecuado según las características de la mercancía.",
+          },
+          {
+            titulo: "Recolección",
+            descripcion:
+              "Trasladamos la carga desde su origen hasta el punto de embarque acordado.",
+          },
+          {
+            titulo: "Carga y estiba",
+            descripcion:
+              "La pieza se coloca sobre la plataforma y se asegura con el método que corresponda.",
+          },
+          {
+            titulo: "Transporte marítimo",
+            descripcion:
+              "El equipo viaja en la posición asignada del buque hacia el puerto de destino.",
+          },
+          {
+            titulo: "Liberación",
+            descripcion:
+              "Se completa el despacho aduanal y la carga queda disponible para continuar.",
+          },
+          {
+            titulo: "Transporte terrestre",
+            descripcion:
+              "Coordinamos la unidad adecuada para el tramo desde el puerto hasta el destino.",
+          },
+          {
+            titulo: "Entrega",
+            descripcion:
+              "La carga llega al punto final con la maniobra de descarga coordinada previamente.",
+          },
         ],
       },
     ],
@@ -512,15 +581,51 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "El transporte Ro-Ro requiere conocer las características exactas de cada unidad antes de programar el embarque. Nuestro equipo da seguimiento a la operación para coordinar las diferentes partes involucradas y facilitar el movimiento de su unidad hasta el destino final.",
         flujo: [
-          "Evaluación de la unidad",
-          "Reserva",
-          "Recolección",
-          "Traslado a puerto",
-          "Embarque Ro-Ro",
-          "Transporte marítimo",
-          "Desembarque",
-          "Transporte terrestre",
-          "Entrega",
+          {
+            titulo: "Evaluación de la unidad",
+            descripcion:
+              "Validamos dimensiones, peso y movilidad para confirmar que la unidad es elegible.",
+          },
+          {
+            titulo: "Reserva",
+            descripcion:
+              "Aseguramos el espacio en el buque conforme al itinerario y la ruta disponible.",
+          },
+          {
+            titulo: "Recolección",
+            descripcion:
+              "Trasladamos la unidad desde su ubicación de origen hacia el punto de embarque.",
+          },
+          {
+            titulo: "Traslado a puerto",
+            descripcion:
+              "La unidad llega a la terminal portuaria dentro de la ventana asignada.",
+          },
+          {
+            titulo: "Embarque Ro-Ro",
+            descripcion:
+              "La unidad ingresa al buque por la rampa de acceso y se asegura en cubierta.",
+          },
+          {
+            titulo: "Transporte marítimo",
+            descripcion:
+              "La travesía se realiza según el itinerario del servicio hacia el puerto de destino.",
+          },
+          {
+            titulo: "Desembarque",
+            descripcion:
+              "La unidad sale del buque rodando y se concentra en la terminal de destino.",
+          },
+          {
+            titulo: "Transporte terrestre",
+            descripcion:
+              "Coordinamos el traslado desde el puerto hasta el punto de entrega indicado.",
+          },
+          {
+            titulo: "Entrega",
+            descripcion:
+              "La unidad llega a su destino final con la documentación correspondiente.",
+          },
         ],
       },
     ],
@@ -663,14 +768,46 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "Aunque su mercancía comparta espacio con otros embarques, la operación puede mantenerse bajo seguimiento y coordinación durante todo el recorrido. Nuestro objetivo es que tenga un solo equipo coordinando su embarque, aun cuando la mercancía viaje dentro de una operación consolidada.",
         flujo: [
-          "Solicitud",
-          "Análisis de carga",
-          "Selección del servicio",
-          "Recolección",
-          "Consolidación",
-          "Transporte",
-          "Desconsolidación",
-          "Entrega",
+          {
+            titulo: "Solicitud",
+            descripcion:
+              "Recibimos los datos de su embarque y confirmamos la disponibilidad del servicio consolidado.",
+          },
+          {
+            titulo: "Análisis de carga",
+            descripcion:
+              "Revisamos piezas, peso, dimensiones y embalaje para validar las condiciones de manejo.",
+          },
+          {
+            titulo: "Selección del servicio",
+            descripcion:
+              "Identificamos la ruta consolidada que mejor se ajusta a su origen y destino.",
+          },
+          {
+            titulo: "Recolección",
+            descripcion:
+              "Retiramos la mercancía en el punto de origen dentro de la fecha acordada.",
+          },
+          {
+            titulo: "Consolidación",
+            descripcion:
+              "La carga se agrupa con otros embarques que siguen una ruta compatible.",
+          },
+          {
+            titulo: "Transporte",
+            descripcion:
+              "El embarque avanza hacia la zona de destino dentro de la unidad consolidada.",
+          },
+          {
+            titulo: "Desconsolidación",
+            descripcion:
+              "La mercancía se separa del resto de la carga para su distribución final.",
+          },
+          {
+            titulo: "Entrega",
+            descripcion:
+              "El embarque llega al punto de destino con la evidencia de entrega correspondiente.",
+          },
         ],
       },
       {
@@ -754,13 +891,41 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "Una operación FTL requiere coordinar previamente unidad, operador, ruta, horarios y condiciones de entrega. Trabajamos con una red de proveedores especializados para identificar la alternativa de transporte adecuada para cada operación. La programación anticipada ayuda a reducir el riesgo de falta de disponibilidad, especialmente durante temporadas de alta demanda o en rutas con capacidad limitada.",
         flujo: [
-          "Tipo de unidad",
-          "Peso",
-          "Volumen",
-          "Ruta",
-          "Ventana de carga",
-          "Ventana de entrega",
-          "Requerimientos especiales",
+          {
+            titulo: "Tipo de unidad",
+            descripcion:
+              "Definimos el equipo según la naturaleza de la mercancía y sus condiciones de manejo.",
+          },
+          {
+            titulo: "Peso",
+            descripcion:
+              "El peso bruto determina la configuración vehicular y las restricciones aplicables en ruta.",
+          },
+          {
+            titulo: "Volumen",
+            descripcion:
+              "El espacio que ocupa la carga define si una unidad completa resulta adecuada.",
+          },
+          {
+            titulo: "Ruta",
+            descripcion:
+              "Analizamos el trayecto, sus condiciones y los tiempos reales de recorrido.",
+          },
+          {
+            titulo: "Ventana de carga",
+            descripcion:
+              "Confirmamos el día y horario en que la unidad debe presentarse en origen.",
+          },
+          {
+            titulo: "Ventana de entrega",
+            descripcion:
+              "Establecemos el plazo comprometido para la llegada al punto de destino.",
+          },
+          {
+            titulo: "Requerimientos especiales",
+            descripcion:
+              "Identificamos condiciones de temperatura, manejo o documentación específica de la mercancía.",
+          },
         ],
       },
       {
@@ -781,13 +946,41 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "No solamente buscamos una unidad. Coordinamos el transporte de acuerdo con las necesidades de su operación y durante el trayecto damos seguimiento manteniendo comunicación con los participantes involucrados.",
         flujo: [
-          "Solicitud",
-          "Análisis de carga",
-          "Selección de unidad",
-          "Programación",
-          "Recolección",
-          "Seguimiento en tránsito",
-          "Entrega",
+          {
+            titulo: "Solicitud",
+            descripcion:
+              "Recibimos los datos de su embarque y las condiciones que debe cumplir la operación.",
+          },
+          {
+            titulo: "Análisis de carga",
+            descripcion:
+              "Revisamos peso, dimensiones y requerimientos para determinar el equipo adecuado.",
+          },
+          {
+            titulo: "Selección de unidad",
+            descripcion:
+              "Asignamos la unidad y el proveedor que corresponden a las características del embarque.",
+          },
+          {
+            titulo: "Programación",
+            descripcion:
+              "Definimos fechas, horarios y puntos de carga y descarga con todas las partes.",
+          },
+          {
+            titulo: "Recolección",
+            descripcion:
+              "La unidad se presenta en origen y la mercancía se carga conforme a lo programado.",
+          },
+          {
+            titulo: "Seguimiento en tránsito",
+            descripcion:
+              "Damos seguimiento al avance del embarque y le informamos cualquier variación.",
+          },
+          {
+            titulo: "Entrega",
+            descripcion:
+              "La mercancía llega a destino y se documenta la recepción correspondiente.",
+          },
         ],
       },
     ],
@@ -873,14 +1066,46 @@ export const SERVICIOS: ServicioContenido[] = [
           "Planeación de maniobras de carga y descarga",
         ],
         flujo: [
-          "Carga",
-          "Dimensiones",
-          "Peso",
-          "Equipo",
-          "Ruta",
-          "Permisos",
-          "Apoyos",
-          "Traslado",
+          {
+            titulo: "Carga",
+            descripcion:
+              "Identificamos el tipo de maquinaria o equipo y sus condiciones de manejo.",
+          },
+          {
+            titulo: "Dimensiones",
+            descripcion:
+              "Medimos largo, ancho y altura para determinar si exceden los límites de circulación ordinaria.",
+          },
+          {
+            titulo: "Peso",
+            descripcion:
+              "El peso total define la configuración vehicular y los permisos que pueden aplicar.",
+          },
+          {
+            titulo: "Equipo",
+            descripcion:
+              "Seleccionamos la configuración de transporte adecuada a las características de la carga.",
+          },
+          {
+            titulo: "Ruta",
+            descripcion:
+              "Analizamos gálibos, restricciones y condiciones del trayecto antes de confirmar el movimiento.",
+          },
+          {
+            titulo: "Permisos",
+            descripcion:
+              "Gestionamos las autorizaciones que correspondan según dimensiones, peso y jurisdicciones involucradas.",
+          },
+          {
+            titulo: "Apoyos",
+            descripcion:
+              "Definimos si la operación requiere señalización, vehículos piloto o escoltas.",
+          },
+          {
+            titulo: "Traslado",
+            descripcion:
+              "El movimiento se ejecuta dentro de las ventanas de circulación autorizadas.",
+          },
         ],
       },
       {
@@ -1001,14 +1226,46 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "No se trata únicamente de asignar una plataforma. Coordinamos los diferentes elementos necesarios para que su carga pueda ser transportada de acuerdo con sus características, trabajando con proveedores especializados y dando seguimiento a las condiciones necesarias para el traslado.",
         flujo: [
-          "Solicitud",
-          "Análisis de carga",
-          "Selección de plataforma",
-          "Planeación",
-          "Carga y sujeción",
-          "Transporte",
-          "Seguimiento",
-          "Entrega",
+          {
+            titulo: "Solicitud",
+            descripcion:
+              "Recibimos los datos de su carga y las condiciones de la operación requerida.",
+          },
+          {
+            titulo: "Análisis de carga",
+            descripcion:
+              "Revisamos dimensiones, peso, forma y puntos de apoyo de cada pieza.",
+          },
+          {
+            titulo: "Selección de plataforma",
+            descripcion:
+              "Definimos la configuración de unidad que corresponde a las características del embarque.",
+          },
+          {
+            titulo: "Planeación",
+            descripcion:
+              "Coordinamos ruta, ventanas de maniobra y condiciones de carga y descarga.",
+          },
+          {
+            titulo: "Carga y sujeción",
+            descripcion:
+              "La mercancía se coloca y se asegura con los elementos adecuados para el trayecto.",
+          },
+          {
+            titulo: "Transporte",
+            descripcion:
+              "La unidad avanza hacia el destino bajo las condiciones definidas para la operación.",
+          },
+          {
+            titulo: "Seguimiento",
+            descripcion:
+              "Damos seguimiento al avance del traslado y mantenemos comunicación durante el recorrido.",
+          },
+          {
+            titulo: "Entrega",
+            descripcion:
+              "La carga llega a destino y se coordina la maniobra de descarga correspondiente.",
+          },
         ],
       },
     ],
@@ -1102,13 +1359,41 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "No todos los equipos requieren la misma maniobra. Si el equipo puede desplazarse mediante rodamiento y la rampa tiene capacidad suficiente, una unidad con rampa puede ser una alternativa eficiente. Si la carga no puede desplazarse, es demasiado pesada para la rampa o requiere una maniobra de izaje, puede ser necesario utilizar grúa, montacargas u otro equipo especializado.",
         flujo: [
-          "Equipo",
-          "Peso",
-          "Dimensiones",
-          "Movilidad",
-          "Acceso",
-          "Maniobra",
-          "Unidad",
+          {
+            titulo: "Equipo",
+            descripcion:
+              "Identificamos el tipo de maquinaria y su sistema de rodamiento.",
+          },
+          {
+            titulo: "Peso",
+            descripcion:
+              "Validamos que el peso del equipo no exceda la capacidad de la rampa.",
+          },
+          {
+            titulo: "Dimensiones",
+            descripcion:
+              "Confirmamos que las medidas sean compatibles con la superficie de carga de la unidad.",
+          },
+          {
+            titulo: "Movilidad",
+            descripcion:
+              "Determinamos si el equipo se desplaza por sus propios medios o requiere asistencia.",
+          },
+          {
+            titulo: "Acceso",
+            descripcion:
+              "Revisamos el espacio, la superficie y la pendiente disponibles en origen y destino.",
+          },
+          {
+            titulo: "Maniobra",
+            descripcion:
+              "Definimos cómo se realizará la carga y si se requiere equipo auxiliar.",
+          },
+          {
+            titulo: "Unidad",
+            descripcion:
+              "Asignamos la unidad con la rampa y la capacidad adecuadas para la operación.",
+          },
         ],
       },
     ],
@@ -1192,14 +1477,46 @@ export const SERVICIOS: ServicioContenido[] = [
         parrafo:
           "Un embarque aéreo no comienza cuando la mercancía llega al aeropuerto. Para que la carga llegue correctamente a destino es necesario coordinar diferentes etapas, incluyendo los requerimientos de comercio exterior para la importación o exportación y el transporte terrestre hasta las instalaciones del destinatario.",
         flujo: [
-          "Recolección",
-          "Preparación",
-          "Documentación",
-          "Aduana",
-          "Aeropuerto",
-          "Transporte aéreo",
-          "Aduana en destino",
-          "Entrega final",
+          {
+            titulo: "Recolección",
+            descripcion:
+              "Retiramos la mercancía en el punto de origen y la trasladamos hacia el aeropuerto.",
+          },
+          {
+            titulo: "Preparación",
+            descripcion:
+              "Validamos el embalaje, el marcado y las condiciones de aceptación de la carga.",
+          },
+          {
+            titulo: "Documentación",
+            descripcion:
+              "Integramos la guía aérea y los documentos que exige la operación.",
+          },
+          {
+            titulo: "Aduana",
+            descripcion:
+              "Se realiza el despacho de exportación conforme a la normativa aplicable.",
+          },
+          {
+            titulo: "Aeropuerto",
+            descripcion:
+              "La carga ingresa a la terminal y se entrega a la aerolínea para su embarque.",
+          },
+          {
+            titulo: "Transporte aéreo",
+            descripcion:
+              "El embarque viaja en el vuelo asignado hacia el aeropuerto de destino.",
+          },
+          {
+            titulo: "Aduana en destino",
+            descripcion:
+              "Se completa el despacho de importación y la mercancía queda liberada.",
+          },
+          {
+            titulo: "Entrega final",
+            descripcion:
+              "Coordinamos el transporte terrestre hasta las instalaciones del destinatario.",
+          },
         ],
       },
       {
