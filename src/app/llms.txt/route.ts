@@ -1,98 +1,121 @@
 import { SITE_URL } from "@/app/layout";
+import { BLOG_CATEGORIES, getAllPosts, postHref } from "@/lib/blog";
 import {
-  BLOG_CATEGORIES,
-  type BlogCategory,
-  getAllPostSlugs,
-  getPostBySlug,
-  postHref,
-} from "@/lib/blog";
+  GRUPOS_SERVICIOS,
+  getServicioBySlug,
+} from "@/lib/servicios-contenido";
 
 /**
- * /llms.txt — el índice del sitio para modelos, según llmstxt.org: título,
- * resumen en blockquote y secciones de enlaces con una descripción cada uno.
+ * /llms.txt: el índice del sitio para modelos, según llmstxt.org (H1, resumen
+ * en blockquote y secciones H2 con listas de enlaces).
  *
- * ERA UN ARCHIVO ESTÁTICO EN public/ y se pasó a generado por la razón de
- * siempre: cada artículo nuevo obligaba a acordarse de venir a añadir su línea
- * a mano, y el día que se olvidara nadie se enteraría —no hay build que falle
- * por eso—. Ahora sale de `src/content/blog` con las mismas funciones que
- * alimentan el índice, el sitemap y /llms-full.txt. Publicar un .mdx lo mete
- * aquí solo, en la sección que le toque por su `category`.
+ * SE GENERA DE LAS MISMAS FUENTES QUE EL SITIO, sin listas a mano:
+ *  - Servicios: `GRUPOS_SERVICIOS` (agrupación y orden) y
+ *    `lib/servicios-contenido.ts` (título y descripción). Un servicio nuevo en
+ *    la agrupación aparece aquí solo.
+ *  - Blog: `getAllPosts()`, agrupado por `category` en el orden de
+ *    `BLOG_CATEGORIES`. Una categoría nueva sale con su propio nombre como
+ *    encabezado, sin tocar este archivo.
  *
- * La URL no cambia: un route handler en `app/llms.txt/` se sirve en
- * /llms.txt, igual que `app/robots.ts` y `app/sitemap.ts`. Se borró
- * `public/llms.txt` al hacer el cambio: si los dos existieran, el estático
- * ganaría y este archivo no se serviría nunca.
+ * TODO TEXTO DE AQUÍ ES TEXTO VISIBLE EN EL SITIO. Las descripciones de las
+ * páginas sin fuente de datos (Empresa, Optional) y el resumen están copiados
+ * literalmente de la página que se indica junto a cada uno. Si cambia el copy
+ * de esa página, hay que cambiarlo aquí.
+ *
+ * LA DESCRIPCIÓN DE CADA SERVICIO es la primera oración de su
+ * `seoDescripcion`, la misma línea que pinta su tarjeta en /servicios. La
+ * `seoDescripcion` completa sólo vive en la meta description, y en tres
+ * servicios su segunda oración no aparece como texto visible en ninguna
+ * página.
  */
 export const dynamic = "force-static";
 
-/**
- * Título de sección por categoría.
- *
- * Las claves son `BLOG_CATEGORIES` tal cual, así que el tipo obliga a cubrirlas
- * todas: añadir una categoría en `lib/blog.ts` sin darle título aquí no
- * compila. El texto es más descriptivo que el nombre de la categoría a
- * propósito —quien lee esto es un modelo decidiendo si la sección le sirve, no
- * un visitante filtrando el índice—.
- */
-const SECCIONES: Record<BlogCategory, string> = {
-  "Comercio exterior": "Comercio exterior y normatividad aduanera mexicana",
-  "Logística internacional": "Freight forwarding y logística internacional",
-  "Transporte terrestre": "Transporte terrestre y modalidades de carga",
-  "Transporte aéreo": "Transporte aéreo",
-  "Operación y almacén": "Operación, costos y almacén",
-  Seguridad: "Seguridad de la cadena de suministro",
-  Tecnología: "Tecnología logística",
-  Actualidad: "Temporadas y actualidad del sector",
-};
+const url = (ruta: string) => new URL(ruta, SITE_URL).toString();
 
-export function GET(): Response {
-  const posts = getAllPostSlugs()
-    .map((slug) => getPostBySlug(slug))
-    .filter((post) => post !== null);
+const enlace = (titulo: string, ruta: string, descripcion: string) =>
+  `- [${titulo}](${url(ruta)}): ${descripcion}`;
 
-  const enlace = (nombre: string, ruta: string, descripcion: string) =>
-    `- [${nombre}](${new URL(ruta, SITE_URL).toString()}): ${descripcion}`;
+/** Primera oración: mismo criterio que la tarjeta de /servicios. */
+function primeraOracion(texto: string): string {
+  const fin = texto.search(/\.\s/);
+  return fin === -1 ? texto : texto.slice(0, fin + 1);
+}
 
-  // Se recorre BLOG_CATEGORIES y no las categorías presentes en los artículos:
-  // así el ORDEN de las secciones lo manda la lista declarada, que es estable,
-  // y no el orden en que se publicaron las notas. Una categoría sin artículos
-  // no imprime encabezado vacío.
-  const secciones = BLOG_CATEGORIES.map((categoria) => {
+function seccionServicios(): string {
+  const grupos = GRUPOS_SERVICIOS.map((grupo) => {
+    const lineas = grupo.servicios.map((slug) => {
+      const servicio = getServicioBySlug(slug);
+      if (!servicio) throw new Error(`/llms.txt: slug desconocido "${slug}"`);
+      return enlace(
+        servicio.heroTitulo,
+        `/servicios/${slug}`,
+        primeraOracion(servicio.seoDescripcion),
+      );
+    });
+    return [`### ${grupo.nombre}`, ``, ...lineas].join("\n");
+  });
+
+  return [
+    `## Servicios`,
+    ``,
+    // Hero e índice de /servicios (app/servicios/page.tsx).
+    enlace(
+      "Servicios de logística y transporte de carga",
+      "/servicios",
+      "Coordinamos importaciones y exportaciones por aire, mar y tierra bajo un mismo techo, conectando los puertos, aeropuertos y corredores terrestres donde se mueve su carga.",
+    ),
+    ``,
+    grupos.join("\n\n"),
+  ].join("\n");
+}
+
+function seccionBlog(): string {
+  const posts = getAllPosts();
+
+  // Se recorre BLOG_CATEGORIES y no las categorías presentes en las notas: el
+  // orden lo manda la lista declarada. Una categoría sin notas no imprime
+  // encabezado vacío.
+  const categorias = BLOG_CATEGORIES.map((categoria) => {
     const delGrupo = posts.filter((post) => post.category === categoria);
     if (!delGrupo.length) return null;
-
     return [
-      `## ${SECCIONES[categoria]}`,
+      `### ${categoria}`,
       ``,
       ...delGrupo.map((post) =>
         enlace(post.title, postHref(post.slug), post.description),
       ),
     ].join("\n");
-  })
-    .filter(Boolean)
-    .join("\n\n");
+  }).filter(Boolean);
 
+  return [`## Blog`, ``, categorias.join("\n\n")].join("\n");
+}
+
+export function GET(): Response {
+  /* Resumen: oraciones literales del hero de /servicios y del bloque
+     "Desde 2014" de la home (<YearsBanner>). La oración de certificación ISO
+     se conserva tal cual: depende de una confirmación del cliente pendiente. */
   const texto = `# Compass Solutions
 
-> Freight forwarder mexicano fundado en 2014, con oficina en Ciudad de México. Coordina logística internacional de punta a punta —transporte aéreo, marítimo y terrestre, gestión documental y visibilidad de cada embarque— bajo un solo punto de contacto. El despacho aduanal se ejecuta a través de agentes aduanales, la figura que la ley mexicana reserva para representar al importador ante la aduana: Compass no es una agencia aduanal, es quien orquesta la cadena completa y coordina a ese agente dentro de ella.
+> Compass Solutions es un freight forwarder con una oferta integral de servicios en tres ejes principales: aéreo, terrestre y marítimo. Coordinamos su logística internacional, con despacho aduanal y gestión documental, bajo un solo punto de contacto.
 
-Opera importaciones y exportaciones desde y hacia México, con foco en los corredores de Nuevo Laredo, Manzanillo, Tampico-Altamira y el área metropolitana de Monterrey. Modalidades: LTL/FTL, FCL/LCL, carga aérea, refrigerada, peligrosa y sobredimensionada. Está en proceso de certificación bajo ISO 9001 e ISO 28000.
+Desde 2014, movemos su carga sin fronteras. Nacimos como freight forwarder especializado en transporte aéreo y hoy coordinamos importaciones y exportaciones por aire, mar y tierra bajo un mismo techo, con despacho aduanal, gestión documental y un departamento de calidad que respalda cada embarque. Está en proceso de certificación bajo ISO 9001 e ISO 28000.
 
-El blog documenta normatividad aduanera mexicana, transporte de carga y operación logística. Es la parte más útil de este sitio para responder preguntas sobre comercio exterior en México. El texto completo de todas estas páginas, sin necesidad de visitarlas una por una, está en ${SITE_URL}/llms-full.txt
+El texto completo de las páginas de servicio y de las notas del blog está en ${url("/llms-full.txt")}
 
-## Páginas principales
+${seccionServicios()}
 
-${enlace("Inicio", "/", "Qué servicios coordina Compass, trayectoria desde 2014 y cotizador de embarques.")}
-${enlace("Nuestra compañía", "/nosotros", "Historia, misión y visión, y los diez compromisos de su política de seguridad y calidad.")}
-${enlace("Importaciones a México", "/importaciones-a-mexico", "Soluciones aéreas, marítimas y terrestres para importar a México, con casos de resultados.")}
-${enlace("Blog de logística", "/blog", "Índice completo de artículos sobre comercio exterior, transporte y operación aduanal.")}
+${seccionBlog()}
 
-${secciones}
+## Empresa
 
-## Opcional
+${enlace("Nuestra compañía", "/nosotros", "Compass Solutions nació en febrero de 2014 como un freight forwarder, iniciando operaciones con servicios aéreos y de importación terrestre inbound. Su política de seguridad y calidad se traduce en diez compromisos concretos.")}
+${enlace("Importe y exporte con su freight forwarder experto en México", "/importaciones-a-mexico", "Simplificamos sus importaciones logísticas a México mediante soluciones integrales 360° que garantizan la eficiencia operativa que su compañía necesita.")}
+${enlace("Trabaje en Compass Solutions", "/vacantes", "Buscamos perfiles para las áreas de operación, servicio a cliente y administración, dentro de nuestras soluciones aéreas, marítimas y terrestres, respaldados por más de 12 años de experiencia en logística internacional.")}
+${enlace("Conviértase en proveedor", "/proveedores", "Operamos con una red de aliados que sostiene el movimiento de carga de nuestros clientes: transportistas, almacenes, agentes aduanales y servicios especializados.")}
 
-${enlace("Proveedores", "/proveedores", "Registro para empresas de transporte, almacenaje y agencia aduanal que quieran ser proveedoras de Compass Solutions.")}
-${enlace("Vacantes", "/vacantes", "Posiciones abiertas en operación, servicio a cliente y administración.")}
+## Optional
+
+${enlace("Apartado legal", "/apartado-legal", "Aviso de privacidad y política de seguridad.")}
 `;
 
   return new Response(texto, {

@@ -27,7 +27,7 @@ export type Compromiso = {
  * rutas (/nosotros y /apartado-legal) y es el mismo párrafo en las dos.
  */
 export const INTRO_SEGURIDAD =
-  "Como agente de carga, Compass sabe que la confianza de sus clientes se construye con operaciones seguras y consistentes. Su política de seguridad y calidad se traduce en diez compromisos concretos.";
+  "Como freight forwarder, Compass sabe que la confianza de sus clientes se construye con operaciones seguras y consistentes. Su política de seguridad y calidad se traduce en diez compromisos concretos.";
 
 /**
  * El orden ES el contenido: son los compromisos 01 a 10 de la política, y así
