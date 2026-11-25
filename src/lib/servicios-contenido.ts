@@ -1112,9 +1112,9 @@ export const SERVICIOS: ServicioContenido[] = [
     heroTitulo: "Lowboy: transporte de carga sobredimensionada",
     heroParrafo:
       "Más capacidad para transportar maquinaria de gran altura y peso. El lowboy, también conocido como cama baja, es una configuración de transporte diseñada para movilizar maquinaria, equipos y cargas especiales que requieren una altura de plataforma reducida. Su menor altura de carga ayuda a disminuir la altura total de la unidad, lo que puede facilitar el tránsito de equipos de gran altura y ofrecer mayor margen frente a los gálibos de la ruta.",
-    seoTitulo: "Lowboy para maquinaria pesada",
+    seoTitulo: "Lowboy o cama baja para maquinaria pesada",
     seoDescripcion:
-      "Transporte en lowboy o cama baja para maquinaria y equipos de gran altura y peso, con estudio de ruta y permisos coordinados.",
+      "Transporte en lowboy (también llamado cama baja) para maquinaria y equipos de gran altura y peso, con estudio de ruta y permisos coordinados.",
     bloques: [
       {
         eyebrow: "Altura de plataforma reducida",
@@ -1847,9 +1847,9 @@ export const SERVICIOS: ServicioContenido[] = [
     heroTitulo: "Servicio expeditado: cuando no hay margen",
     heroParrafo:
       "Cuando una carga no puede esperar, el tiempo se convierte en un factor operativo y económico. Un paro de línea, una refacción crítica o una entrega comprometida pueden requerir una solución fuera de los tiempos habituales. El servicio expeditado permite evaluar alternativas de transporte con prioridad en tiempo de tránsito, disponibilidad y ruta. La cotización se trabaja con la información disponible de la operación para identificar una opción viable en el menor tiempo posible.",
-    seoTitulo: "Servicio expeditado para urgencias",
+    seoTitulo: "Servicio expeditado: qué es y cuándo usarlo",
     seoDescripcion:
-      "Servicio expeditado con cotización en menos de tres horas para paros de línea, entregas críticas y embarques que no admiten demora.",
+      "Servicio expeditado para paros de línea, refacciones críticas y entregas comprometidas, con cotización en menos de tres horas.",
     bloques: [
       {
         eyebrow: "Respuesta inmediata",

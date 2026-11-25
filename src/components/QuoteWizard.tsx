@@ -845,7 +845,7 @@ export default function QuoteWizard({
               onClick={() => exitTo("/proveedores")}
               className="relative shrink-0 rounded-full bg-accent-red px-3.5 py-1.5 font-heading text-xs font-semibold text-white transition-opacity after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:opacity-90"
             >
-              ¿Eres proveedor?
+              ¿Es proveedor?
             </button>
           )}
         </div>

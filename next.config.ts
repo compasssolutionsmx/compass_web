@@ -14,8 +14,8 @@ import { postFileNames, slugFromFileName } from "./src/lib/blog-archivos";
  * distintas y aquí es una sola, así que el destino se repite a propósito.
  *
  * `/solucion/nacional` y `/solucion/internacional` NO ESTÁN EN ESTA TABLA:
- * eran páginas de rama y van al índice `/servicios` (ver `redirects()`). Las
- * rutas de `/tipo-solucion/` siguen sin regla.
+ * eran páginas de rama y van al índice `/servicios` (ver `redirects()`), igual
+ * que la raíz `/solucion` y las de `TIPOS_SOLUCION_LEGACY`.
  *
  * LOS SLUGS VIEJOS ESTÁN SIN VERIFICAR CONTRA EL ORIGEN. El sitemap del
  * legacy no se pudo consultar (el host entero responde 401 con Basic auth),
@@ -43,6 +43,15 @@ const SERVICIOS_LEGACY: Record<string, string> = {
   seguro: "seguro-de-carga",
   "previo-en-origen": "previo-en-origen",
 };
+
+/** Páginas `/tipo-solucion/<slug>` del legacy. Todas van a `/servicios`. */
+const TIPOS_SOLUCION_LEGACY = [
+  "transporte-maritimo",
+  "especializados-maritimo",
+  "transporte-terrestre",
+  "especializados-terrestre",
+  "soluciones-360",
+];
 
 /**
  * URLS DEL BLOG DEL WORDPRESS EN LA RAÍZ. El WordPress publicaba las notas en
@@ -156,6 +165,14 @@ const nextConfig: NextConfig = {
          comodín), pero así siguen ganando si algún día se añade uno. */
       ...["nacional", "internacional"].map((rama) => ({
         source: `/solucion/${rama}{/}?`,
+        destination: "/servicios",
+        permanent: true,
+      })),
+      // La raíz /solucion y las páginas de tipo de solución del legacy no
+      // tienen equivalente propio: van al índice.
+      { source: "/solucion{/}?", destination: "/servicios", permanent: true },
+      ...TIPOS_SOLUCION_LEGACY.map((tipo) => ({
+        source: `/tipo-solucion/${tipo}{/}?`,
         destination: "/servicios",
         permanent: true,
       })),

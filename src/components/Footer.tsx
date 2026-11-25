@@ -58,7 +58,7 @@ import { getServicioBySlug } from "@/lib/servicios-contenido";
  */
 const INFO_LINKS = [
   { href: "/proveedores", label: "Proveedores", live: true },
-  { href: "/vacantes", label: "Trabaja con nosotros", live: true },
+  { href: "/vacantes", label: "Trabaje con nosotros", live: true },
   { href: "/apartado-legal", label: "Apartado legal", live: true },
   {
     href: "/apartado-legal#privacidad",
